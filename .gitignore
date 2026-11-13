@@ -7,3 +7,10 @@ dist/
 !.env.example
 .vercel
 .claude/worktrees/
+
+# Python (tiny V1)
+.venv/
+__pycache__/
+# Downloaded Valio Aimo files (the product file is 87 MB) and generated orders
+data/
+orders/
