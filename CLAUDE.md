@@ -10,7 +10,7 @@ Team project for Junction, November 2026. Repo owned by Léon: github.com/lhary4
 
 ## Challenge
 - Two candidates, decision pending. Full briefs in `contexte/`:
-  - `contexte/challenge-1-valio-aimo.md`: Trusted Trade Agents (Valio Aimo).
+  - `contexte/challenge-1-valio-aimo.md`: Trusted Trade Agents (Valio Aimo). What the APIs and data files really contain: `contexte/valio-aimo-resources.md`.
   - `contexte/challenge-2-meta-glasses.md`: AI Glasses for Everyone, Everyday (Meta).
 - Once the team decides, write the choice here and delete nothing from `contexte/`.
 
