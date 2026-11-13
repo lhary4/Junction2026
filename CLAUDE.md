@@ -14,6 +14,9 @@ Team project for Junction, November 2026. Repo owned by Léon: github.com/lhary4
   - `contexte/challenge-2-meta-glasses.md`: AI Glasses for Everyone, Everyday (Meta).
 - Once the team decides, write the choice here and delete nothing from `contexte/`.
 
+## Idea filter (team decision, 13/11/2026)
+- No games, no gamification, no entertainment-first ideas: the team finds them weak. Every idea must solve a real everyday problem, not be a fun nice-to-have.
+
 ## Where things live
 - `contexte/`: raw challenge context (briefs, rules, API docs, judging criteria, mentor notes). Never put secrets there.
 - Code goes at the root once the challenge and stack are chosen.
