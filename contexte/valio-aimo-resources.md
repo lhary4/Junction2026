@@ -7,6 +7,16 @@ Explored on 13-14/11/2026 from https://junction26.valioaimo.fi/ (event password 
 - **There is no order API.** Quote, order, approval rules and audit log are ours to build. That is exactly what the judges score (autonomy and controls 20%, exceptions 15%).
 - The API doc forbids querying the whole catalog: search the static product file first, call the APIs only on a shortlist. Undisclosed rate limits apply.
 - The brief's example works: the catalog has 32 lactose-free milk products, including 10 L Novobox formats.
+- The portal home page holds no rules, FAQ or judging notes: it only lists the materials, the data caveats and the API access (checked again on 14/11/2026). Rules and criteria live in the brief, `contexte/challenge-1-valio-aimo.md`.
+
+## What the portal home page says (14/11/2026)
+- The challenge material is six items: pricing API, availability API, product data file, its JSON schema, delivery reliability file, carbon footprint file.
+- **Data licence caveat**: the data is "inspired by real world" but "does not contain fully accurate product information and must not be used for anything outside of this challenge". Do not reuse it in other projects, and do not present it as real Valio Aimo data in a public demo.
+- Product data quality varies by maker: factory-made meals with a GTIN usually have precise nutrition and allergen data, fruit and vegetables often do not.
+- Delivery reliability and carbon footprint do not cover every product. Carbon is the average of the product group, not a measure of the product.
+- **The files do not change during the challenge** unless announced separately (OpenAPI description). Cache them locally and do not re-download on every run.
+- In the real world, prices and availability are customer specific and change constantly (OpenAPI description). This is the official reason the APIs must only be called on a shortlist: say it in the pitch as a design choice, not a workaround.
+- `GET /api/ping` exists as a health check (needs the API key). Use it to test the key before debugging anything else.
 
 ## APIs
 Base URL `https://junction26.valioaimo.fi/api`. Every call needs the header `X-API-Key: $VALIO_AIMO_API_KEY` (key on the Junction platform dashboard, put it in `.env`). Without it: HTTP 401. Docs: `/docs` (Swagger), `/redoc`, `/openapi.json`.
