@@ -91,6 +91,14 @@ def _check_not_expired(checkout: AimoCheckout, now: datetime) -> RuleResult:
             message=f"Quote expired at {expires_at:%Y-%m-%d %H:%M}.",
             evidence={"expires_at": expires_at.isoformat(), "now": now.isoformat()},
         )
+    closing = checkout.aimo.closing_time
+    if closing is not None and closing <= now:
+        return RuleResult(
+            rule_id="quote-not-expired",
+            outcome="deny",
+            message=f"Order cut-off passed at {closing:%Y-%m-%d %H:%M}.",
+            evidence={"closing_time": closing.isoformat(), "now": now.isoformat()},
+        )
     return RuleResult(
         rule_id="quote-not-expired",
         outcome="pass",

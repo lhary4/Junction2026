@@ -293,6 +293,8 @@ class ApprovalStore:
             approval = self._approvals.get(approval_id)
             if approval is None:
                 raise ApprovalNotFoundError(approval_id)
+            if approval.status != "pending":
+                raise ApprovalAlreadyDecidedError(f"Approval {approval_id} is {approval.status}")
             updated = approval.model_copy(update={"status": "expired"})
             status = AuthorizationStatus(
                 status="expired",

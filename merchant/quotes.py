@@ -158,7 +158,16 @@ class _Builder:
 
     def _offer(self, product_id: str, answers: valio_client.Answers) -> tuple[Offer | None, str]:
         availability, price = answers.availability.get(product_id), answers.prices.get(product_id)
-        if not availability or not price or price.get("error") or not price.get("catalogPrice"):
+        comp_price = (price or {}).get("comparisonPrice") or {}
+        cat_price = (price or {}).get("catalogPrice") or {}
+        if (
+            not availability
+            or not price
+            or price.get("error")
+            or cat_price.get("value") is None
+            or comp_price.get("value") is None
+            or not price.get("comparisonUnit")
+        ):
             return None, "not_found"
         schedule = availability.get("scheduleLines") or []
         if availability.get("salesBlock") or not schedule or any(s.get("salesBlock") for s in schedule):
@@ -166,7 +175,7 @@ class _Builder:
         if schedule[0]["availableAmount"] <= 0:
             return None, "out_of_stock"
         closing = _time(availability.get("closingTime"))
-        if closing and closing < self.now:
+        if closing and closing <= self.now:
             return None, "late_delivery"
         amount = schedule[0]["availableAmount"]
         stock = amount if availability.get("logisticModel") == "Stock" and amount < PLENTY else None
@@ -270,6 +279,8 @@ class _Builder:
     def _cover(self, need: Need, missing: float):
         """Rank alternatives for what is missing, then add the chosen one as a substitute line."""
         if need.unit == "ST" or not self.catalog.raw(need.product_id):
+            if need.substitute_with:
+                raise QuoteError(f"{need.substitute_with} cannot replace {need.product_id} (offered: none)")
             return  # sales units of two products are not comparable
         original = self.catalog.card(need.product_id)
         options = self._rank(original, missing, need.unit)
@@ -308,6 +319,7 @@ class _Builder:
             pid
             for pid, product in self.catalog.products.items()
             if pid != original.id
+            and not catalog_module._deleted(product)
             and pid not in {n.product_id for n in self.request.needs}
             and (product["category"] == original.category or product["category"] in related or pid in listed)
         ]

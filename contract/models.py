@@ -302,7 +302,10 @@ class AimoCheckout(Checkout):
         return self
 
     def total_minor(self) -> int:
-        return next(t.amount for t in self.totals if t.type == "total")
+        total = next((t.amount for t in self.totals if t.type == "total"), None)
+        if total is None:
+            raise ValueError("checkout totals missing 'total' entry")
+        return total
 
 
 class CheckoutResponse(ContractModel):
@@ -447,7 +450,21 @@ class Receipt(ContractModel):
     iss: str
     iat: int
     reference: str
-    order_id: str
+    order_id: str | None = None
+    error: str | None = None
+    error_description: str | None = None
+
+    @model_validator(mode="after")
+    def status_fields_present(self):
+        if self.status == "Success" and not self.order_id:
+            raise ValueError("Success receipt requires order_id")
+        if self.status == "Error" and (not self.error or not self.error_description):
+            raise ValueError("Error receipt requires error and error_description")
+        return self
+
+    def model_dump(self, **kwargs):
+        kwargs.setdefault("exclude_none", True)
+        return super().model_dump(**kwargs)
 
 
 class Order(ContractModel):

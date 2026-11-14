@@ -248,3 +248,49 @@ def test_clock_is_real_in_live_mode_recorded_in_replay_and_frozen_on_demand(monk
     monkeypatch.setenv("AIMO_FROZEN_NOW", "2026-11-14T13:15:00")
     with pytest.raises(ValueError, match="UTC offset"):
         clock.now()
+
+
+def test_malformed_jwt_header_and_payload_raise_trust_error():
+    import base64
+
+    from jwcrypto.jws import JWS
+
+    from contract.models import Receipt
+    from trust.keys import verify
+
+    non_obj_header = base64.urlsafe_b64encode(b"[]").decode().rstrip("=")
+    with pytest.raises(TrustError, match="malformed JWT header"):
+        verify(f"{non_obj_header}.e30.sig", public_jwks())
+
+    jws = JWS(b"not-json")
+    jws.add_signature(MERCHANT, alg="ES256", protected=json.dumps({"alg": "ES256", "typ": "JWT", "kid": MERCHANT.get("kid")}))
+    with pytest.raises(TrustError, match="bad signature"):
+        verify(jws.serialize(compact=True), public_jwks())
+
+    err_receipt = Receipt.model_validate({
+        "status": "Error",
+        "iss": "valio-aimo",
+        "iat": int(NOW.timestamp()),
+        "reference": "ref",
+        "error": "expired",
+        "error_description": "quote expired",
+    })
+    assert err_receipt.status == "Error"
+
+
+def test_checkout_without_expiry_is_rejected_and_missing_total_raises_value_error():
+    from contract.models import AimoCheckout
+    from trust.checkout import sign_checkout, verify_checkout
+
+    example_path = FIXTURES.parent / "examples" / "checkout.act1.json"
+    data = json.loads(example_path.read_text(encoding="utf-8"))
+    data.pop("expires_at", None)
+    no_exp = AimoCheckout.model_validate(data)
+    with pytest.raises(TrustError, match="no expiry"):
+        verify_checkout(sign_checkout(no_exp, MERCHANT), public_jwks(), NOW)
+
+    data_no_total = json.loads(example_path.read_text(encoding="utf-8"))
+    data_no_total["totals"] = [{"type": "subtotal", "amount": 100}]
+    no_total = AimoCheckout.model_validate(data_no_total)
+    with pytest.raises(ValueError, match="total"):
+        no_total.total_minor()

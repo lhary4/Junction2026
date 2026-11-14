@@ -93,7 +93,7 @@ class AuditLog:
             raise ValueError("AuditLog.append requires a timezone-aware `now` datetime")
 
         with self._lock:
-            existing = self.read()
+            existing = self._read_unlocked()
             # First line in the file has `prev_hash=None`; every line after points to the previous line's hash.
             prev_hash = existing[-1].hash if existing else None
             event = AuditEvent(
@@ -117,22 +117,27 @@ class AuditLog:
                 handle.write(event.model_dump_json() + "\n")
             return event
 
-    def read(self) -> list[AuditEvent]:
-        """Read all events from the log file (returns an empty list if the file does not exist)."""
+    def _read_unlocked(self) -> list[AuditEvent]:
         if not self.path.exists():
             return []
         lines = [line for line in self.path.read_text(encoding="utf-8").splitlines() if line.strip()]
         return [AuditEvent.model_validate_json(line) for line in lines]
+
+    def read(self) -> list[AuditEvent]:
+        """Read all events from the log file (returns an empty list if the file does not exist)."""
+        with self._lock:
+            return self._read_unlocked()
 
     def verify(self) -> int | None:
         """Verify every event's hash, sequence number, and `prev_hash` link.
 
         Returns the 0-based index of the first broken event, or None if the log is intact.
         """
-        if not self.path.exists():
-            return None
+        with self._lock:
+            if not self.path.exists():
+                return None
 
-        lines = [line for line in self.path.read_text(encoding="utf-8").splitlines() if line.strip()]
+            lines = [line for line in self.path.read_text(encoding="utf-8").splitlines() if line.strip()]
         expected_prev: str | None = None
 
         for idx, line in enumerate(lines):

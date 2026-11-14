@@ -81,7 +81,7 @@ def _offer(rules: quotes._Builder, product_id: str, request: OffersRequest) -> O
         comparison_price=_money(price, "comparisonPrice", "eur_minor_per_comparison_unit", answers.as_of),
         comparison_unit=price.get("comparisonUnit"),
         # A product that cannot be ordered states no stock: `reason` says why.
-        stock=rules._stock_claim(found) if found else _unknown(card.sales_unit, answers.as_of),
+        stock=rules._stock_claim(found) if (found and not reason) else _unknown(card.sales_unit, answers.as_of),
         # The date is a promise (delivery reliability says how often it holds), the cut-off is Valio's own rule.
         available_date=_when(schedule[0].get("availableDate"), "date", "declared", answers.as_of),
         closing_time=_when(_iso(availability.get("closingTime")), "datetime", "measured", answers.as_of),
