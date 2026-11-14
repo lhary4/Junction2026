@@ -264,7 +264,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: the demo runs on the restaurant case (`scenarios/restaurant-case/`), not on the milk example of the brief. The page carries a banner "Concept mock-up, Junction 2026, synthetic data", because the video is public and the challenge data must not be shown as real Valio data. The video is recorded in replay mode, so the menu's products must be in the recorded answers. For an order the driver holds no key. For the attack it uses the demo keys that sit in the repo, marked "DEMO ONLY": that is what a leaked key looks like, and it is why the attack proves Valio's own checks and not the guardrails.
 - If we change it: a live pitch would use the same page and the same buttons. Showing a real assistant instead of the driver needs the MCP live mode.
 - Alternatives we looked at: Claude Desktop on screen (too slow, and a chat is what the brief says this is not); an automation tool showing its steps (n8n: one more tool, and the trail already shows the real steps); the four milk acts of the first plan.
-- Decided in: PR #23, 14/11/2026. The driver: PR #30. The attack button: PR for step A10 (`feat/demo-attacks`), 14/11/2026.
+- Decided in: PR #23, 14/11/2026. The driver: PR #30. The attack button: PR #32, 14/11/2026.
 
 ## Demo page: the chef's order in three steps, with a replay of recorded runs
 - Status: trying it
