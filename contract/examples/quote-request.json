@@ -1,0 +1,6 @@
+{
+  "customer": "demo-hotel-chain",
+  "delivery_date": "2026-11-16",
+  "needs": [{ "product_id": "464306", "amount": 1000, "unit": "L" }],
+  "allow_alternatives": true
+}

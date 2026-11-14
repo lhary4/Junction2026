@@ -1,0 +1,14 @@
+{
+  "decision": "deny",
+  "checkout_id": "chk_act1_demo",
+  "checkout_hash": "2vSHcWbHMqq_qrVjbTJK6qv2sTzYBJK590250T5WPLU",
+  "total_minor": 71000,
+  "currency": "EUR",
+  "signer": null,
+  "deadline": null,
+  "decided_at": "2026-11-14T13:31:40+02:00",
+  "rules": [
+    { "rule_id": "quote-signature", "outcome": "deny", "message": "The quote does not match Valio Aimo's signature: it was changed after signing. Nothing is signed, nothing is ordered.", "evidence": { "kid": "valio-aimo-gateway-1", "error": "InvalidJWSSignature" } }
+  ],
+  "judge": []
+}

@@ -7,3 +7,16 @@ dist/
 !.env.example
 .vercel
 .claude/worktrees/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Downloaded Valio data (86 MB product file, two CSV tables): fetched by scripts/fetch_data.py
+data/
+
+# Local run state: orders, approvals, audit logs
+state/

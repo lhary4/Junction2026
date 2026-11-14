@@ -1,0 +1,20 @@
+{
+  "decision": "human",
+  "checkout_id": "chk_act2_demo",
+  "checkout_hash": "2vSHcWbHMqq_qrVjbTJK6qv2sTzYBJK590250T5WPLU",
+  "total_minor": 202000,
+  "currency": "EUR",
+  "signer": null,
+  "deadline": "2026-11-15T17:00:00+02:00",
+  "decided_at": "2026-11-14T13:20:03+02:00",
+  "rules": [
+    { "rule_id": "quote-signature", "outcome": "pass", "message": "Quote signed by valio-aimo with key valio-aimo-gateway-1.", "evidence": { "kid": "valio-aimo-gateway-1" } },
+    { "rule_id": "quote-not-expired", "outcome": "pass", "message": "Quote valid until 2026-11-15 17:00.", "evidence": { "expires_at": "2026-11-15T17:00:00+02:00" } },
+    { "rule_id": "merchant-allowed", "outcome": "pass", "message": "Valio Aimo is an allowed merchant.", "evidence": { "merchant_id": "valio-aimo" } },
+    { "rule_id": "allergen-not-blocked", "outcome": "pass", "message": "No blocked allergen in the order.", "evidence": { "contains": ["AM"], "blocked": ["AP", "AN"] } },
+    { "rule_id": "allergen-data-known", "outcome": "pass", "message": "Allergen data is complete for every line.", "evidence": {} },
+    { "rule_id": "delivery-on-time", "outcome": "pass", "message": "Delivery on 2026-11-16, as requested.", "evidence": { "requested": "2026-11-16", "promised": "2026-11-16" } },
+    { "rule_id": "spend-limit", "outcome": "human", "message": "2020.00 EUR is above the 1500.00 EUR limit: a human must sign.", "evidence": { "total_minor": 202000, "limit_minor": 150000 } }
+  ],
+  "judge": []
+}

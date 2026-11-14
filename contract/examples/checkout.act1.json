@@ -1,0 +1,56 @@
+{
+  "id": "chk_act1_demo",
+  "merchant": { "id": "valio-aimo", "name": "Valio Aimo" },
+  "status": "ready_for_complete",
+  "currency": "EUR",
+  "line_items": [
+    {
+      "id": "li-1",
+      "item": { "id": "464306", "title": "Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free", "price": 101 },
+      "quantity": 1000,
+      "totals": [
+        { "type": "subtotal", "amount": 101000 },
+        { "type": "total", "amount": 101000 }
+      ]
+    }
+  ],
+  "totals": [
+    { "type": "subtotal", "amount": 101000 },
+    { "type": "total", "amount": 101000 }
+  ],
+  "links": [{ "type": "terms_of_service", "url": "https://example.com/tos" }],
+  "expires_at": "2026-11-15T17:00:00+02:00",
+  "aimo": {
+    "customer": "demo-hotel-chain",
+    "issued_at": "2026-11-14T13:15:00+02:00",
+    "totals_exclude_tax": true,
+    "requested": [{ "product_id": "464306", "amount": 1000, "unit": "L" }],
+    "requested_delivery_date": "2026-11-16",
+    "delivery_date": "2026-11-16",
+    "closing_time": "2026-11-15T17:00:00+02:00",
+    "lines": {
+      "li-1": {
+        "product_id": "464306",
+        "category": "10400",
+        "sales_unit": "ST",
+        "base_quantity": 1000.0,
+        "base_unit": "L",
+        "comparison_price_minor": 101,
+        "comparison_unit": "L",
+        "substitute_for": null,
+        "logistic_model": "Stock",
+        "available_date": "2026-11-16",
+        "closing_time": "2026-11-15T17:00:00+02:00",
+        "stock": { "value": 2400, "unit": "ST", "source": "aimo_stock_count", "as_of": "2026-11-14T13:15:00+02:00", "certainty": "measured" },
+        "price": { "value": 101, "unit": "eur_minor_per_sales_unit", "source": "aimo_price_api", "as_of": "2026-11-14T13:15:00+02:00", "certainty": "measured" },
+        "origin": { "value": "FI", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+        "allergens": { "contains": ["AM"], "free_from": [], "data": "complete" },
+        "delivery_reliability": { "value": 1.0, "unit": "share_delivered", "source": "aimo_delivery_history", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "measured" },
+        "carbon_footprint": { "value": 1.1, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+        "labels": ["GOODS_FROM_FINLAND_BLUE_SWAN"]
+      }
+    },
+    "shortfalls": [],
+    "alternatives": []
+  }
+}
