@@ -2,6 +2,24 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## A9: the sandbox payment (14/11, 22:00)
+
+Once the mandates verify, the gateway books the order's amount on a simulated invoice account, and the order comes back with its payment. No real money moves, and every sentence about it says "sandbox".
+
+- **The order has two more objects** (`contract/models.py`, both `null` on an order taken before this step): `mandate` is what the payment mandate allowed as Valio read it (the agent's cap, or `null` when the chef signed, the amount, the instrument), `payment` is the booking (`payment_id`, `status: "captured"`, `amount_minor`, `instrument`, `terms`, `sandbox: true`, `captured_at`).
+- **The account** is one file per customer in `state/merchant/accounts/`: credit limit, amount used, one line per payment. `dev.py --fresh` empties it. A mandate sent twice books once. A refused order books nothing.
+- **One more refusal**: an order that does not fit on the account is refused with HTTP 403, like one above the cap. A mandate that names another customer's account is refused too.
+- **The trail**: step 6 is `done`, its sentence starts with "Sandbox payment" and its proof is the payment id. Step 5 now ends with the amount and the cap Valio read in the mandate. One more audit line on Valio's side, `payment_captured`.
+- **Checked** on the page in Chrome, live, three services: button 1 lights the seven steps, and the receipt card reads "Sandbox payment: EUR 186.89 booked on invoice-account:demo-restaurant-helsinki. Invoice at 14 days (simulated). No real money moves."
+
+**Two values are made up for the sandbox**, and the code and `TECH-CHOICES.md` say so: the credit limit, EUR 20,000 a customer, and the terms, "Invoice at 14 days (simulated)". Valio's real ones are not in the challenge data. Change them in `merchant/payments.py` if the pitch needs other words.
+
+**Rehearsals.** With EUR 20,000 the account takes about a hundred demo orders. Past that, orders are refused with "exceeds what is left on the invoice account". Start with `uv run python scripts/dev.py --fresh` before a rehearsal or a recording.
+
+**The example files are now recorded by a script**, `scripts/record_demo_states.py`: it runs the driver through the gateway and the harness in live mode and writes what `GET /state` answers. The four files it writes (idle, normal order, substitution pending and approved) carry the payment. Step 1 has no hash in them any more: the first recording took it from inside the harness, which the driver cannot do. The attack file is the older one, until A10.
+
+For Colette: nothing to change on the page. It already reads the payment line from step 6.
+
 ## A8: the demo driver, buttons 1 and 2 (14/11, 21:45)
 
 `scenarios/run.py`, port 8003. `uv run python scripts/dev.py` now starts three services, and the page is on `http://localhost:8002/portal.html` (the harness serves it, with `kitchen/` and the example files: checked, HTTP 200 for the three).

@@ -10,7 +10,7 @@ from fastapi.testclient import TestClient
 
 from common.audit import AuditLog, default_log_path
 from contract.models import AuditEvent, BuyerPolicy, CheckoutResponse, Order
-from merchant import audit, store
+from merchant import audit, payments, store
 from merchant.app import app
 from trust.checkout import checkout_hash
 from trust.keys import private_key, public_jwk, public_jwks
@@ -172,6 +172,66 @@ def test_another_mandate_for_an_ordered_quote_is_refused(open_mandates):
     refused(response, f"already ordered as {ordered['order_id']}")
 
 
+# ---------- Sandbox payment ----------
+
+
+def test_an_accepted_order_is_booked_on_the_customers_invoice_account(open_mandates):
+    issued = quote(1000)
+    response = complete(issued.checkout_id, close_as_agent(open_mandates, AGENT, issued.checkout_jwt))
+    order = Order.model_validate(response.json())
+    payment = order.payment
+    assert (payment.status, payment.amount_minor, payment.currency, payment.sandbox) == (
+        "captured",
+        101000,
+        "EUR",
+        True,
+    )
+    assert payment.instrument == "invoice-account:demo-hotel-chain" and payment.payment_id.startswith("pay_")
+    assert payment.captured_at == order.accepted_at
+    # What the payment mandate allowed, as Valio read it: the cap comes from the open mandate the manager signed.
+    assert order.mandate.model_dump() == {
+        "cap_minor": 150000,
+        "amount_minor": 101000,
+        "currency": "EUR",
+        "instrument": "invoice-account:demo-hotel-chain",
+    }
+    booked = payments.account("demo-hotel-chain")
+    assert (booked.used_minor, booked.credit_limit_minor) == (101000, payments.CREDIT_LIMIT_MINOR)
+    assert [(b.payment_id, b.order_id, b.amount_minor) for b in booked.bookings] == [
+        (payment.payment_id, order.order_id, 101000)
+    ]
+    assert Order.model_validate(client.get(f"/orders/{order.order_id}").json()).payment == payment
+
+
+def test_an_order_the_manager_signed_has_no_cap_and_is_booked_too():
+    issued = quote(2000)
+    order = Order.model_validate(complete(issued.checkout_id, close_as_human(MANAGER, issued.checkout_jwt)).json())
+    assert (order.mandate.cap_minor, order.mandate.amount_minor) == (None, 202000)
+    assert order.payment.amount_minor == 202000
+    assert payments.account("demo-hotel-chain").used_minor == 202000
+
+
+def test_a_mandate_sent_twice_and_a_refused_order_book_nothing_more(open_mandates):
+    issued = quote(1000)
+    authorization = close_as_agent(open_mandates, AGENT, issued.checkout_jwt)
+    complete(issued.checkout_id, authorization)
+    complete(issued.checkout_id, authorization)
+    above = quote(2000)
+    refused(complete(above.checkout_id, close_as_agent(open_mandates, AGENT, above.checkout_jwt)), "exceeds maximum")
+    booked = payments.account("demo-hotel-chain")
+    assert booked.used_minor == 101000 and len(booked.bookings) == 1
+
+
+def test_an_order_above_what_is_left_on_the_account_is_refused(open_mandates, monkeypatch):
+    monkeypatch.setattr(payments, "CREDIT_LIMIT_MINOR", 150000)
+    first, second = quote(1000), quote(1000)
+    assert complete(first.checkout_id, close_as_agent(open_mandates, AGENT, first.checkout_jwt)).status_code == 200
+    response = complete(second.checkout_id, close_as_agent(open_mandates, AGENT, second.checkout_jwt))
+    refused(response, "exceeds what is left on the invoice account (49000 of 150000)")
+    assert store.order_for_checkout(second.checkout_id) is None
+    assert payments.account("demo-hotel-chain").used_minor == 101000
+
+
 # ---------- Audit ----------
 
 
@@ -186,16 +246,21 @@ def test_audit_tells_the_story_and_every_line_points_at_the_previous_one(open_ma
     assert [event.action for event in log] == [
         "quote_issued",
         "mandate_verified",
+        "payment_captured",
         "order_accepted",
         "order_replayed",
         "order_refused",
     ]
     assert log[0].what == "Quote for 1000 ST of 464306, 1010.00 EUR excl. tax."
-    assert order["order_id"] in log[2].what and "already ordered" in log[4].why
+    assert log[2].what == (
+        f"Sandbox payment {order['payment']['payment_id']}: 1010.00 EUR booked on invoice-account:demo-hotel-chain."
+    )
+    assert "1010.00 of 20000.00 EUR used" in log[2].why and "No real money moves" in log[2].why
+    assert order["order_id"] in log[3].what and "already ordered" in log[5].why
     assert {(event.side, event.checkout_id, event.checkout_hash) for event in log} == {
         ("merchant", issued.checkout_id, checkout_hash(issued.checkout_jwt))
     }
-    assert [event.seq for event in log] == [1, 2, 3, 4, 5]
+    assert [event.seq for event in log] == [1, 2, 3, 4, 5, 6]
     assert [event.prev_hash for event in log] == [None] + [event.hash for event in log[:-1]]
     assert gateway_log().verify() is None
 

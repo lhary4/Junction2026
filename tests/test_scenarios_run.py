@@ -66,11 +66,27 @@ def test_an_order_inside_the_limit_is_signed_by_the_agent(services):
     assert steps["signed_quote"].proof == state.order.checkout_hash
     assert (steps["closed_mandates"].signer, steps["closed_mandates"].proof) == ("agent", state.order.mandate_reference)
     assert steps["merchant_verifies"].status == "done" and "spend cap" in steps["merchant_verifies"].detail
+    assert "EUR 1,010.00, within the EUR 1,500.00 cap" in steps["merchant_verifies"].detail
     assert steps["signed_receipt"].status == "done" and steps["signed_receipt"].proof
-    # Until the gateway books payments (step A9), the trail must not show a charge.
-    assert steps["sandbox_payment"].status == "skipped"
+    # The charge is a sandbox, and the step says so in words the page shows as they are.
+    payment = steps["sandbox_payment"]
+    assert (payment.status, payment.proof, payment.at) == (
+        "done",
+        state.order.payment.payment_id,
+        state.order.accepted_at,
+    )
+    assert payment.detail.startswith(
+        "Sandbox payment: EUR 1,010.00 booked on invoice-account:demo-restaurant-helsinki."
+    )
+    assert payment.detail.endswith("No real money moves.")
+    assert {step.status for step in state.steps} == {"done"}
 
-    assert [event.action for event in state.audit.merchant] == ["quote_issued", "mandate_verified", "order_accepted"]
+    assert [event.action for event in state.audit.merchant] == [
+        "quote_issued",
+        "mandate_verified",
+        "payment_captured",
+        "order_accepted",
+    ]
     assert state.audit.buyer and all(event.checkout_id == state.quote.id for event in state.audit.buyer)
     assert driver.state() == state  # asking again changes nothing
 
@@ -93,6 +109,8 @@ def test_an_order_above_the_limit_waits_for_the_chef_then_is_signed_by_the_chef(
     steps = steps_of(state)
     assert (steps["closed_mandates"].signer, steps["closed_mandates"].status) == ("manager", "done")
     assert steps["closed_mandates"].proof == state.order.mandate_reference
+    assert "EUR 2,020.00, no cap: the chef signed this exact order" in steps["merchant_verifies"].detail
+    assert steps["sandbox_payment"].status == "done" and state.order.payment.amount_minor == 202000
     assert state.approval.status == "approved" and state.approval.decided_by == "chef"
 
 
