@@ -1,7 +1,8 @@
 """The demo driver (scenarios/run.py) through the real gateway and the real harness, in replay mode.
 
 The menu's products are not in the recorded answers yet (step A11), so the flow is tested on the recorded milk:
-1,000 litres is under the EUR 1,500 limit (the agent signs), 2,000 litres is above it (a human signs).
+1,000 litres is under the EUR 1,500 limit (the agent signs), 2,000 litres is above it (a human signs, and an agent
+that signs it anyway is refused by Valio).
 """
 
 import json
@@ -12,8 +13,9 @@ from fastapi.testclient import TestClient
 
 from contract.models import DemoState
 from harness.app import create_app as create_harness
+from merchant import audit, payments, store
 from merchant.app import app as gateway_app
-from scenarios.run import KITCHEN, SCENARIOS, Driver, Scenario, create_app, request_of
+from scenarios.run import KITCHEN, SCENARIOS, Driver, DriverError, Scenario, create_app, request_of
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "contract" / "examples"
@@ -28,6 +30,26 @@ MILK = (
         "substitution", "Above the limit", "A human signs.", "Make it 2,000 litres.", (("464306", 2000, "L"),), MONDAY
     ),
     Scenario("other-day", "Not recorded", "Replay has no answer.", "For Tuesday.", (("464306", 1, "L"),), "2026-11-17"),
+    Scenario(
+        "attack",
+        "Attack",
+        "Three bad mandates.",
+        "Order 2,000 litres.",
+        (("464306", 2000, "L"),),
+        MONDAY,
+        attack=True,
+        other_needs=(("464306", 1000, "L"),),
+    ),
+    Scenario(
+        "attack-under-the-cap",
+        "No attack",
+        "Valio would accept this one.",
+        "Order 1,000 litres.",
+        (("464306", 1000, "L"),),
+        MONDAY,
+        attack=True,
+        other_needs=(("464306", 500, "L"),),
+    ),
 )
 
 
@@ -51,7 +73,7 @@ def test_nothing_has_run_after_a_reset(services):
     state = driver.reset()
     assert (state.scenario.status, state.scenario.id, state.request, state.quote) == ("idle", None, None, None)
     assert {step.status for step in state.steps} == {"pending"}
-    assert [scenario.id for scenario in state.scenarios] == ["normal-order", "substitution", "other-day"]
+    assert [scenario.id for scenario in state.scenarios] == [scenario.id for scenario in MILK]
 
 
 def test_an_order_inside_the_limit_is_signed_by_the_agent(services):
@@ -128,6 +150,46 @@ def test_an_order_the_chef_rejects_ends_refused_with_nothing_sent_to_valio(servi
     assert [event.action for event in state.audit.merchant] == ["quote_issued"]
 
 
+def test_three_bad_mandates_sent_straight_to_valio_are_all_refused(services):
+    driver, _ = services
+    state = driver.run("attack")
+    assert state.scenario.status == "refused" and state.quote.total_minor() == 202000
+    assert (state.verdict, state.authorization, state.approval, state.order) == (None, None, None, None)
+
+    by_key = {attack.key: attack for attack in state.attacks}
+    assert list(by_key) == ["above-cap", "changed-quote", "mandate-for-another-quote"]
+    assert {attack.status for attack in state.attacks} == {"refused"}
+    assert by_key["above-cap"].title == "The agent signs EUR 2,020.00 itself, above its EUR 1,500.00 cap"
+    assert by_key["above-cap"].problems == ["Amount 202000 exceeds maximum 150000"]
+    assert "mismatch" in " ".join(by_key["changed-quote"].problems)
+    assert "EUR 1,010.00" in by_key["mandate-for-another-quote"].title
+    assert by_key["mandate-for-another-quote"].problems  # the mandate itself is valid, for the other quote only
+
+    steps = steps_of(state)
+    assert [steps[key].status for key in ("open_mandate", "signed_quote")] == ["done", "done"]
+    assert steps["verdict"].status == "skipped" and "did not ask the harness" in steps["verdict"].detail
+    assert (steps["closed_mandates"].signer, steps["closed_mandates"].status) == ("agent", "done")
+    assert steps["merchant_verifies"].status == "refused" and "3 of 3 refused" in steps["merchant_verifies"].detail
+    assert {steps[key].status for key in ("sandbox_payment", "signed_receipt")} == {"skipped"}
+
+    # The harness never heard of it, Valio wrote one line per refusal, and nothing was ordered or booked.
+    assert state.audit.buyer == []
+    assert [event.action for event in state.audit.merchant] == ["quote_issued"] + ["order_refused"] * 3
+    assert store.order_for_checkout(state.quote.id) is None
+    assert payments.account(state.quote.aimo.customer).used_minor == 0
+    assert driver.state() == state
+
+
+def test_a_quote_under_the_cap_is_never_attacked(services):
+    """Valio would accept an agent mandate for it: the driver stops before sending anything."""
+    driver, _ = services
+    with pytest.raises(DriverError, match="EUR 1,010.00 is within EUR 1,500.00, nothing sent") as stopped:
+        driver.run("attack-under-the-cap")
+    assert stopped.value.status_code == 500
+    assert driver.state().scenario.status == "idle"
+    assert [event.action for event in audit.events()] == ["quote_issued"]
+
+
 def test_routes_run_state_reset_and_errors(services):
     driver, _ = services
     page = TestClient(create_app(driver))
@@ -151,7 +213,7 @@ def test_routes_run_state_reset_and_errors(services):
 @pytest.mark.parametrize("scenario", SCENARIOS, ids=lambda scenario: scenario.id)
 def test_the_restaurant_scenarios_ask_what_the_recorded_examples_asked(scenario):
     """The page's stock files and its replay mode are built on the examples: the driver must ask for the same lines."""
-    name = {"normal-order": "normal-order", "substitution": "substitution.pending"}[scenario.id]
+    name = {"normal-order": "normal-order", "substitution": "substitution.pending", "attack": "attack"}[scenario.id]
     recorded = json.loads((EXAMPLES / f"demo-state.{name}.json").read_text(encoding="utf-8"))
     assert request_of(scenario) == recorded["request"]
     assert recorded["kitchen"] == KITCHEN

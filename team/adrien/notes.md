@@ -2,7 +2,25 @@
 
 Results, numbers and open questions for the others. Newest first.
 
-## A9: the sandbox payment (14/11, 22:00)
+## A10: button 3, the attack (14/11, 22:00)
+
+The driver has its third scenario. It plays an agent whose key leaked: it asks Valio for a quote above the cap, never asks the harness, and sends three bad mandates straight to the gateway. The gateway needed no change: it already refused all three.
+
+| What the agent tries | What Valio answers (live, on the restaurant case) |
+|---|---|
+| Signs EUR 1,783.15 itself, above its EUR 1,500 cap | "Amount 178315 exceeds maximum 150000" |
+| Halves a price in the quote and signs that | "Checkout checkout_hash mismatch", and two more problems |
+| Reuses a mandate signed for another, smaller quote (EUR 186.89) | "mandate rejected: ValueError: KB-SD-JWT nonce mismatch" |
+
+- **The quote** is twelve weeks of the normal order at once. Ten weeks is EUR 1,497.65, under the cap, and Valio would rightly accept the agent's mandate for it. So the driver checks the total against the cap first and sends nothing when the quote is under it.
+- **The third attack is not a replay of a used mandate.** Sending the same mandate twice on its own quote is not an attack for Valio: it answers the same order again, so that a lost answer never orders twice. What it refuses is a mandate used on another quote, and that is what the driver sends. The smaller quote is asked for and never ordered.
+- **Nothing is ordered, nothing is booked**, and the buyer's audit side is empty: the harness never heard of it. Valio's log has one line per refusal.
+- **Checked** on the page in Chrome, live, three services: three buttons, "No order was placed", the trail red on "Valio verifies", the three refusals with Valio's sentences.
+- **The example file** `demo-state.attack.json` is now recorded by `scripts/record_demo_states.py` like the four others.
+
+To decide for the video: Valio's sentences are the SDK's own words. They are true and they are on screen as they are. If the pitch wants plain words ("the quote was changed after Valio signed it"), the place is `trust/mandates.py`, where the problems are written, not the page.
+
+## A9: the sandbox payment (14/11, 21:55)
 
 Once the mandates verify, the gateway books the order's amount on a simulated invoice account, and the order comes back with its payment. No real money moves, and every sentence about it says "sandbox".
 
