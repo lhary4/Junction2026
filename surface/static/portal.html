@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Valio Aimo: kitchen order (concept mock-up)</title>
+    <link rel="preload" href="fonts/figtree.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/sofia-sans-extra-condensed.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="portal.css" />
+  </head>
+  <body>
+    <!-- The Valio Aimo header: a petrol row with the signed-in customer, then the lime band. -->
+    <header class="site">
+      <div class="site__top">
+        <div class="wrap">
+          <div class="account" id="account"></div>
+        </div>
+      </div>
+      <div class="site__band">
+        <div class="wrap">
+          <a class="logo" href="portal.html" aria-label="Valio Aimo, home">
+            <img src="img/valio-aimo-logo-petrol.svg" alt="Valio Aimo" width="120" height="40" />
+          </a>
+          <h1 class="band__title display">Kitchen order</h1>
+          <!-- The services to cook for, from the kitchen's bookings and planning. -->
+          <div class="planning" id="planning"></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- The chef's three steps, like a checkout, and the button of the current step. -->
+    <nav class="flow" aria-label="Order steps">
+      <div class="wrap">
+        <ol class="flow__steps" id="flow"></ol>
+        <div class="flow__cta" id="cta"></div>
+      </div>
+    </nav>
+
+    <!-- Who signs: the seven steps of the order, lit one by one while the agent works. -->
+    <section class="trail" aria-label="Who signs, step by step">
+      <div class="wrap" id="trail"></div>
+    </section>
+
+    <main class="work wrap">
+      <div class="work__main" id="main" aria-live="polite"><p class="loading">Loading…</p></div>
+      <aside class="work__side">
+        <section class="menu" id="menu" aria-label="This week's menu"></section>
+        <section class="agent" id="agent" aria-label="Buying agent"></section>
+      </aside>
+    </main>
+
+    <!-- For the team only: not part of the customer's page. -->
+    <footer class="demo" id="demo" aria-label="Demo controls"></footer>
+
+    <script src="portal.js"></script>
+  </body>
+</html>

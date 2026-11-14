@@ -1,0 +1,156 @@
+{
+  "_sample": "Synthetic sample data for the demo: it stands in for the restaurant's own system (recipes, stock count, bookings). Not Valio data.",
+  "source": "scenarios/restaurant-case/menu.md",
+  "covers_per_service": 50,
+  "recipes": [
+    {
+      "id": "starter",
+      "course": "Starter",
+      "name": "Cured rainbow trout",
+      "with": "roasted Finnish beetroot, horseradish smetana, rye crisp, dill",
+      "ingredients": [
+        {
+          "product_id": "461921",
+          "name": "Rainbow trout fillet",
+          "per_service": "3.3 kg raw"
+        },
+        {
+          "product_id": "468172",
+          "name": "Fine sea salt (cure)",
+          "per_service": "130 g"
+        },
+        {
+          "product_id": "460325",
+          "name": "Caster sugar (cure)",
+          "per_service": "130 g"
+        },
+        {
+          "product_id": "460395",
+          "name": "Dill",
+          "per_service": "2 bunches"
+        },
+        {
+          "product_id": "460837",
+          "name": "Red beetroot",
+          "per_service": "4 kg"
+        },
+        {
+          "product_id": "460810",
+          "name": "Yellow beetroot",
+          "per_service": "1.5 kg"
+        },
+        {
+          "product_id": "466608",
+          "name": "Rapeseed oil",
+          "per_service": "0.2 l"
+        },
+        {
+          "product_id": "476890",
+          "name": "Smetana, lactose free",
+          "per_service": "1.5 kg"
+        },
+        {
+          "product_id": "460727",
+          "name": "Fresh horseradish",
+          "per_service": "150 g"
+        },
+        {
+          "product_id": "467958",
+          "name": "Thin rye crispbread",
+          "per_service": "2 packs of 300 g"
+        }
+      ]
+    },
+    {
+      "id": "main",
+      "course": "Main",
+      "name": "Sautéed reindeer (poronkäristys)",
+      "with": "butter-mashed almond potatoes, lingonberries, pickled cucumber",
+      "ingredients": [
+        {
+          "product_id": "465607",
+          "name": "Reindeer strips for sautéing, frozen",
+          "per_service": "7.5 kg"
+        },
+        {
+          "product_id": "463437",
+          "name": "Butter, lactose free, salted",
+          "per_service": "1.75 kg"
+        },
+        {
+          "product_id": "460195",
+          "name": "Onions",
+          "per_service": "1.5 kg"
+        },
+        {
+          "product_id": "468172",
+          "name": "Fine sea salt",
+          "per_service": "135 g"
+        },
+        {
+          "product_id": "461009",
+          "name": "Ground black pepper",
+          "per_service": "10 g"
+        },
+        {
+          "product_id": "460078",
+          "name": "Almond potatoes",
+          "per_service": "11 kg raw"
+        },
+        {
+          "product_id": "464306",
+          "name": "Lactose-free semi-skimmed milk",
+          "per_service": "2.5 l"
+        },
+        {
+          "product_id": "465815",
+          "name": "Lingonberry jam",
+          "per_service": "1.5 kg"
+        },
+        {
+          "product_id": "468513",
+          "name": "Pickled cucumbers",
+          "per_service": "1.25 kg drained"
+        }
+      ]
+    },
+    {
+      "id": "dessert",
+      "course": "Dessert",
+      "name": "Warm squeaky cheese (leipäjuusto)",
+      "with": "cloudberry jam, whipped cream, oat crumble",
+      "ingredients": [
+        {
+          "product_id": "474880",
+          "name": "Squeaky cheese (leipäjuusto), lactose free",
+          "per_service": "3.5 kg"
+        },
+        {
+          "product_id": "463437",
+          "name": "Butter, lactose free, salted",
+          "per_service": "400 g"
+        },
+        {
+          "product_id": "469044",
+          "name": "Cloudberry jam",
+          "per_service": "1.5 kg"
+        },
+        {
+          "product_id": "464194",
+          "name": "Whipping cream, lactose free",
+          "per_service": "1.25 l"
+        },
+        {
+          "product_id": "460200",
+          "name": "Wholegrain oat flakes",
+          "per_service": "500 g"
+        },
+        {
+          "product_id": "460325",
+          "name": "Caster sugar",
+          "per_service": "200 g"
+        }
+      ]
+    }
+  ]
+}
