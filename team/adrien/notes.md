@@ -2,6 +2,26 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## Refusals in plain words, and the hash of step 1 (14/11, 22:20)
+
+**What Valio answers when it refuses is now written to be read on the page.** The words of the AP2 SDK are translated in `trust/mandates.py`. Amounts are in euros, a quote is named by its id, and a problem the code does not know is passed on unchanged.
+
+| Before | Now |
+|---|---|
+| "Amount 178315 exceeds maximum 150000" | "The amount, EUR 1,783.15, is above the EUR 1,500.00 the agent may sign alone." |
+| "Checkout checkout_hash mismatch: expected 7byP…, got QY-b…" | "The mandate does not match the quote Valio Aimo signed: the quote was changed, or it is another one." |
+| "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_a', got 'chk_b'" | "The mandate was signed for another quote (chk_b), not for this one (chk_a)." |
+| "mandate rejected: InvalidJWSSignature: Verification failed for all signatures…" | "A signature on the mandate does not verify: it was not signed with the expected key." |
+| "amount 101000 exceeds what is left on the invoice account (49000 of 150000)" | "EUR 1,010.00 does not fit on the invoice account: EUR 490.00 left of EUR 1,500.00." |
+
+The full list is in `docs/contract.md`, "The order". The harness looks for the word "expired" in Valio's problems to close an approval that came too late: both expiry sentences keep that word.
+
+**Step 1 of the trail has its hash.** Léon added `GET /mandates/open` to the harness (PR #33). The driver shows its `payment_hash` and its `issued_at` on the open mandate step.
+
+**The examples are recorded again**, with the restaurant policy that is now on `main`: the cheese is at 0.64 and 0.93.
+
+For Léon: `docs/demo-script.md` describes the third attack as a "previously used mandate re-submitted against a second quote". What the driver sends is a mandate signed for another quote and never used. The reason is in the A10 section below.
+
 ## A10: button 3, the attack (14/11, 22:00)
 
 The driver has its third scenario. It plays an agent whose key leaked: it asks Valio for a quote above the cap, never asks the harness, and sends three bad mandates straight to the gateway. The gateway needed no change: it already refused all three.

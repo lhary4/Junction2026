@@ -12,6 +12,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
+from common.money import money
 from contract.models import AimoCheckout, MandateFacts, Payment
 from merchant import store
 
@@ -62,15 +63,18 @@ def capture(checkout: AimoCheckout, facts: MandateFacts, order_id: str, now: dat
     """Book the quote's total on the customer's account. Call it once the mandates verify, under the order lock."""
     customer = checkout.aimo.customer
     if not store.SAFE_ID.match(customer):
-        raise PaymentRefused(f"customer {customer!r} cannot have an invoice account")
+        raise PaymentRefused(f"The customer {customer!r} cannot have an invoice account.")
     if facts.instrument != instrument_of(customer):
-        raise PaymentRefused(f"payment instrument {facts.instrument} is not {customer}'s invoice account")
+        raise PaymentRefused(
+            f"The payment mandate names {facts.instrument}, which is not {customer}'s invoice account."
+        )
     booked = account(customer, checkout.currency)
     amount = checkout.total_minor()
     if booked.used_minor + amount > booked.credit_limit_minor:
-        left = booked.credit_limit_minor - booked.used_minor
+        left = money(booked.credit_limit_minor - booked.used_minor, booked.currency)
+        limit = money(booked.credit_limit_minor, booked.currency)
         raise PaymentRefused(
-            f"amount {amount} exceeds what is left on the invoice account ({left} of {booked.credit_limit_minor})"
+            f"{money(amount, checkout.currency)} does not fit on the invoice account: {left} left of {limit}."
         )
     payment = Payment(
         payment_id=f"pay_{uuid.uuid4().hex[:8]}",

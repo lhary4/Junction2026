@@ -143,7 +143,19 @@ The spend cap is carried by the open payment mandate (`AmountRange`), so the gat
 | The amount does not fit on the invoice account, or the mandate names another account | HTTP 403 |
 | Unknown quote id | HTTP 404 |
 
-A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created and nothing is booked on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `payment_captured`, `order_accepted`, `order_replayed`, `order_refused`.
+A refusal is `{"problems": ["...", "..."]}`: every problem found. Nothing is created and nothing is booked on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `payment_captured`, `order_accepted`, `order_replayed`, `order_refused`.
+
+Each problem is a full sentence in plain words, written to be read on the page as it is. Amounts are in euros, never in cents, and a quote is named by its id. The words of the AP2 SDK are translated in `trust/mandates.py`; a problem it does not know is passed on unchanged, so nothing is ever hidden.
+
+| Case | The sentence |
+|---|---|
+| The agent signs above its cap | "The amount, EUR 1,783.15, is above the EUR 1,500.00 the agent may sign alone." |
+| The quote was changed after Valio signed it | "The mandate does not match the quote Valio Aimo signed: the quote was changed, or it is another one." |
+| A mandate signed for another quote | "The mandate was signed for another quote (chk_57e50cf2), not for this one (chk_d11c92d3)." |
+| A mandate not signed with the expected key | "A signature on the mandate does not verify: it was not signed with the expected key." |
+| An open mandate past its date | "A mandate in the chain expired on 01/11/2026 at 00:00: the manager must sign a new one." |
+| The quote itself is past its date | "The quote expired on 15/11/2026 at 13:29." |
+| The amount does not fit on the invoice account | "EUR 1,010.00 does not fit on the invoice account: EUR 490.00 left of EUR 1,500.00." |
 
 **The sandbox payment.** No real money moves. A wholesale customer pays on invoice, so the payment mandate names the customer's invoice account as its instrument (`invoice-account:<customer>`). Once the mandates verify, the gateway books the quote's total on a simulated account, one file per customer under `state/merchant/accounts/`: a credit limit, what is booked so far, one line per payment. The order then carries two more objects:
 
@@ -182,7 +194,7 @@ A step is `key`, `title`, `signer` (`manager`, `agent`, `merchant` or `none`), `
 
 | `key` | Signer | `proof` |
 |---|---|---|
-| `open_mandate` | `manager` | none yet: the harness shows its open mandates nowhere |
+| `open_mandate` | `manager` | hash of the open payment mandate, the one that carries the spend cap (`payment_hash` of `GET /mandates/open` on the harness) |
 | `signed_quote` | `merchant` | the quote hash (`checkout_hash`) |
 | `verdict` | `none` | none: the rules are in `verdict` |
 | `closed_mandates` | `agent` on `auto`, `manager` on `human`, `none` until the verdict says who | the mandate reference, the one the order and the receipt carry |
@@ -229,6 +241,7 @@ Harness, port 8002 (`harness/`):
 | `GET /approvals/{id}` | | `ApprovalRequest` |
 | `POST /approvals/{id}/decision` | `{"decision": "approve" or "reject", "decided_by"}` | `AuthorizationStatus` |
 | `GET /policy` | | `BuyerPolicy` |
+| `GET /mandates/open` | | the fingerprints of the open mandates the manager signed in advance: `{"policy_id", "issued_at", "checkout_hash", "payment_hash"}`. Hashes only, never the tokens |
 | `GET /audit` | | `[AuditEvent]` |
 | `GET /` | | serves `surface/static` (and `/contract/examples` for `?mock=1`) |
 
@@ -260,7 +273,7 @@ The state then has no verdict, no approval and no order. Its `attacks` carry Val
 | A scenario is still running | HTTP 409 |
 | The gateway or the harness does not answer, or refuses the request | HTTP 502 with a readable `detail` that names the service. The state goes back to idle: nothing half-done is shown |
 
-One step of the trail is not complete yet: `open_mandate` has no `proof`, because the harness holds the open mandates and has no route that shows them.
+In the attack, the hash on the `open_mandate` step is the one of the open mandates the driver built for the leaked key, since those are the ones in the three bad mandates.
 
 The three services allow cross-origin calls from `localhost`, so the page can read them all.
 

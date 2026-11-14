@@ -59,7 +59,8 @@ def services(tmp_path, monkeypatch):
     monkeypatch.setenv("AIMO_FROZEN_NOW", FROZEN)
     monkeypatch.setenv("AIMO_STATE_DIR", str(tmp_path))
     with TestClient(gateway_app) as gateway:
-        harness_app = create_harness(http_client=gateway, judge_fn=lambda *_a, **_kw: [])
+        quiet = lambda *_a, **_kw: None  # a test must never message the chef's phone
+        harness_app = create_harness(http_client=gateway, judge_fn=lambda *_a, **_kw: [], notify_fn=quiet)
         with TestClient(harness_app) as harness:
             yield Driver(MILK, gateway=gateway, harness=harness), harness
 
@@ -77,7 +78,7 @@ def test_nothing_has_run_after_a_reset(services):
 
 
 def test_an_order_inside_the_limit_is_signed_by_the_agent(services):
-    driver, _ = services
+    driver, harness = services
     state = driver.run("normal-order")
     assert state.scenario.status == "done" and state.verdict.decision == "auto"
     assert (state.order.signed_by, state.order.total_minor) == ("agent", 101000)
@@ -85,6 +86,8 @@ def test_an_order_inside_the_limit_is_signed_by_the_agent(services):
 
     steps = steps_of(state)
     assert steps["open_mandate"].status == "done" and "EUR 1,500.00" in steps["open_mandate"].detail
+    # The fingerprint of the open payment mandate the harness holds, as the harness itself gives it.
+    assert steps["open_mandate"].proof == harness.get("/mandates/open").json()["payment_hash"]
     assert steps["signed_quote"].proof == state.order.checkout_hash
     assert (steps["closed_mandates"].signer, steps["closed_mandates"].proof) == ("agent", state.order.mandate_reference)
     assert steps["merchant_verifies"].status == "done" and "spend cap" in steps["merchant_verifies"].detail
@@ -160,13 +163,18 @@ def test_three_bad_mandates_sent_straight_to_valio_are_all_refused(services):
     assert list(by_key) == ["above-cap", "changed-quote", "mandate-for-another-quote"]
     assert {attack.status for attack in state.attacks} == {"refused"}
     assert by_key["above-cap"].title == "The agent signs EUR 2,020.00 itself, above its EUR 1,500.00 cap"
-    assert by_key["above-cap"].problems == ["Amount 202000 exceeds maximum 150000"]
-    assert "mismatch" in " ".join(by_key["changed-quote"].problems)
+    assert by_key["above-cap"].problems == [
+        "The amount, EUR 2,020.00, is above the EUR 1,500.00 the agent may sign alone."
+    ]
+    assert "does not match the quote Valio Aimo signed" in by_key["changed-quote"].problems[0]
     assert "EUR 1,010.00" in by_key["mandate-for-another-quote"].title
-    assert by_key["mandate-for-another-quote"].problems  # the mandate itself is valid, for the other quote only
+    other_quote = by_key["mandate-for-another-quote"].problems  # the mandate itself is valid, for the other quote only
+    assert len(other_quote) == 1 and other_quote[0].startswith("The mandate was signed for another quote (chk_")
+    assert other_quote[0].endswith(f"not for this one ({state.quote.id}).")
 
     steps = steps_of(state)
     assert [steps[key].status for key in ("open_mandate", "signed_quote")] == ["done", "done"]
+    assert steps["open_mandate"].proof and steps["open_mandate"].at  # the open mandates the leaked key came with
     assert steps["verdict"].status == "skipped" and "did not ask the harness" in steps["verdict"].detail
     assert (steps["closed_mandates"].signer, steps["closed_mandates"].status) == ("agent", "done")
     assert steps["merchant_verifies"].status == "refused" and "3 of 3 refused" in steps["merchant_verifies"].detail

@@ -51,7 +51,8 @@ def main(argv: list[str]) -> int:
     with tempfile.TemporaryDirectory() as state_folder:
         os.environ["AIMO_STATE_DIR"] = state_folder
         gateway = TestClient(gateway_app)
-        harness = TestClient(create_harness(http_client=gateway, policy_path=policy))
+        quiet = lambda *_args, **_kwargs: None  # a recording must never message the chef's phone
+        harness = TestClient(create_harness(http_client=gateway, policy_path=policy, notify_fn=quiet))
         with gateway, harness:
             driver = Driver(gateway=gateway, harness=harness)
             write("idle", expect(driver.reset(), "idle"))

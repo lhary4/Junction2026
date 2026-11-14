@@ -2,6 +2,7 @@
 
 import json
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 from ap2.sdk.utils import b64url_decode, compute_sha256_b64url
 from jwcrypto.jwk import JWK
@@ -10,6 +11,8 @@ from pydantic import ValidationError
 from contract.models import AimoCheckout
 from trust import TrustError
 from trust.keys import sign, verify
+
+HELSINKI = ZoneInfo("Europe/Helsinki")
 
 
 def sign_checkout(checkout: AimoCheckout, merchant_key: JWK) -> str:
@@ -21,9 +24,10 @@ def verify_checkout(checkout_jwt: str, merchant_jwks: dict, now: datetime) -> Ai
     """Raises TrustError with rule 'quote-signature' (bad signature or shape) or 'quote-not-expired'."""
     checkout = _parse(verify(checkout_jwt, merchant_jwks))
     if checkout.expires_at is None:
-        raise TrustError("quote has no expiry", rule="quote-not-expired")
+        raise TrustError("The quote has no expiry date, so it cannot be trusted.", rule="quote-not-expired")
     if checkout.expires_at <= now:
-        raise TrustError(f"quote expired at {checkout.expires_at.isoformat()}", rule="quote-not-expired")
+        expired = checkout.expires_at.astimezone(HELSINKI)
+        raise TrustError(f"The quote expired on {expired:%d/%m/%Y at %H:%M}.", rule="quote-not-expired")
     return checkout
 
 

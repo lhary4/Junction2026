@@ -118,33 +118,51 @@ def test_2_tampered_quote_is_refused(open_mandates):
     tampered = f"{header}.{forged}.{signature}"
     with pytest.raises(TrustError):
         verify_checkout(tampered, public_jwks(), NOW)
-    refused(verify_mandates(close_as_agent(open_mandates, AGENT, jwt), tampered, MANAGER_PUB), "checkout_hash mismatch")
+    refused(
+        verify_mandates(close_as_agent(open_mandates, AGENT, jwt), tampered, MANAGER_PUB),
+        "does not match the quote Valio Aimo signed",
+    )
 
 
 def test_3_merchant_not_in_the_mandate_is_refused(open_mandates):
     jwt = quote(1, merchant=Merchant(id="fake-wholesaler", name="Fake Wholesaler"))
-    refused(verify_mandates(close_as_agent(open_mandates, AGENT, jwt), jwt, MANAGER_PUB), "not in allowed list")
+    refused(
+        verify_mandates(close_as_agent(open_mandates, AGENT, jwt), jwt, MANAGER_PUB),
+        "is not a merchant the agent is allowed to order from",
+    )
 
 
 def test_4_open_mandate_forged_by_someone_else_is_refused():
     forged = issue_open_mandates(policy(), ATTACKER, public_jwk("agent"))
     jwt = quote(1)
-    refused(verify_mandates(close_as_agent(forged, AGENT, jwt), jwt, MANAGER_PUB), "mandate rejected")
+    refused(
+        verify_mandates(close_as_agent(forged, AGENT, jwt), jwt, MANAGER_PUB),
+        "A signature on the mandate does not verify",
+    )
 
 
 def test_5_another_agent_using_our_mandate_is_refused(open_mandates):
     jwt = quote(1)
-    refused(verify_mandates(close_as_agent(open_mandates, ATTACKER, jwt), jwt, MANAGER_PUB), "mandate rejected")
+    refused(
+        verify_mandates(close_as_agent(open_mandates, ATTACKER, jwt), jwt, MANAGER_PUB),
+        "A signature on the mandate does not verify",
+    )
 
 
 def test_6_authorization_replayed_on_another_quote_is_refused(open_mandates):
     act1, act3 = quote(1), quote(3)
-    refused(verify_mandates(close_as_agent(open_mandates, AGENT, act1), act3, MANAGER_PUB), "nonce mismatch")
+    refused(
+        verify_mandates(close_as_agent(open_mandates, AGENT, act1), act3, MANAGER_PUB),
+        "signed for another quote (chk_act1_demo), not for this one (chk_act3_demo)",
+    )
 
 
 def test_7_authorization_replayed_on_a_new_quote_with_the_same_id_is_refused(open_mandates):
     first, second = quote(1), quote(1)  # same content, new signature: a different token, so a different hash
-    refused(verify_mandates(close_as_agent(open_mandates, AGENT, first), second, MANAGER_PUB), "checkout_hash mismatch")
+    refused(
+        verify_mandates(close_as_agent(open_mandates, AGENT, first), second, MANAGER_PUB),
+        "does not match the quote Valio Aimo signed",
+    )
 
 
 def test_8_expired_open_mandate_is_refused():
@@ -155,7 +173,10 @@ def test_8_expired_open_mandate_is_refused():
 
 def test_9_above_the_spend_cap_is_refused_for_the_agent(open_mandates):
     jwt = quote(2)  # 2 020 EUR against a 1 500 EUR cap
-    refused(verify_mandates(close_as_agent(open_mandates, AGENT, jwt), jwt, MANAGER_PUB), "150000")
+    refused(
+        verify_mandates(close_as_agent(open_mandates, AGENT, jwt), jwt, MANAGER_PUB),
+        "EUR 2,020.00, is above the EUR 1,500.00 the agent may sign alone",
+    )
 
 
 def test_10_payment_smaller_than_the_quote_is_refused(open_mandates):
@@ -171,13 +192,16 @@ def test_10_payment_smaller_than_the_quote_is_refused(open_mandates):
         holder_key=AGENT, mandate_token=open_mandates.payment, payloads=[small], aud="valio-aimo", nonce="chk_act2_demo"
     )
     authorization = honest.model_copy(update={"payment_mandate": lying})
-    refused(verify_mandates(authorization, jwt, MANAGER_PUB), "is not the quote total")
+    refused(verify_mandates(authorization, jwt, MANAGER_PUB), "is for EUR 1.00, the quote's total is EUR 2,020.00")
 
 
 def test_11_agent_chain_claiming_a_human_signed_it_is_refused(open_mandates):
     jwt = quote(1)
     authorization = close_as_agent(open_mandates, AGENT, jwt).model_copy(update={"signed_by": "human"})
-    refused(verify_mandates(authorization, jwt, MANAGER_PUB), "says signed by human, is agent")
+    refused(
+        verify_mandates(authorization, jwt, MANAGER_PUB),
+        "says a human signed it, but the mandates are signed by the agent",
+    )
 
 
 # ---------- Human signs this exact quote (spike 2: above the cap) ----------
@@ -193,7 +217,7 @@ def test_12_human_signed_order_above_the_cap_is_accepted():
 
 def test_13_human_form_signed_with_the_agent_key_is_refused():
     jwt = quote(2)
-    refused(verify_mandates(close_as_human(AGENT, jwt), jwt, MANAGER_PUB), "mandate rejected")
+    refused(verify_mandates(close_as_human(AGENT, jwt), jwt, MANAGER_PUB), "A signature on the mandate does not verify")
 
 
 def test_14_human_approval_reused_for_another_quote_is_refused():
@@ -207,7 +231,7 @@ def test_mixed_forms_are_refused(open_mandates):
     mixed = Authorization(
         signed_by="agent", checkout_mandate=agent.checkout_mandate, payment_mandate=human.payment_mandate
     )
-    refused(verify_mandates(mixed, jwt, MANAGER_PUB), "mix agent and human")
+    refused(verify_mandates(mixed, jwt, MANAGER_PUB), "one is signed by the agent, the other by a human")
 
 
 def test_recorded_open_mandates_work_with_the_demo_agent_key():
