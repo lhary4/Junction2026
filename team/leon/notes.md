@@ -2,6 +2,33 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## Harness hardening against the real gateway, real fixtures & 61 substitution pairs (answers to Adrien's PR #18 & PR #19 notes)
+
+Thanks Adrien for the thorough read in PR #18 and PR #19! Addressed all four items plus several extra edge cases we found while playing through `contract/fixtures/valio/` (157 products), `scenarios/policy.demo.json`, `scenarios/pairs.csv` (30 milk pairs), and `scenarios/pairs.families.csv` (31 cross-family pairs):
+
+1. **Pre-acceptance (`_is_pre_accepted` in `harness/rules.py`) — coffee milk `463380` & vanilla milk `473142` now hit Gemini Decision instead of flying through:**
+   - Even with `"pre_accepted": "same_category_and_same_allergens"` in `scenarios/policy.demo.json`, pre-acceptance now ONLY triggers when **(a)** the agent did not force an explicit `substitute_with`, **(b)** the chosen `best` candidate in `checkout.aimo.alternatives` is explicitly `"listed as a substitute in the catalog"` (never a cheapest-in-category fallback), and **(c)** no origin, quality label, non-lactose `free_from` allergen, or key dietary/plainness claim (`FREE_FROM_LACTOSE`, `ORGANIC`, `UNSWEETENED`, etc.) is lost.
+   - **Important Act 3 finding for Adrien & Colette (`469363 -> 464306` vs `464201`):** In replay mode, `469363` is **UHT** (`temp=8°C`) while Valio's default listed substitute `464306` is **chilled** (`temp=4°C`). Under `scenarios/policy.demo.json` (*"Colder storage needed: a UHT or shelf-stable product replaced by a chilled one -> A HUMAN DECIDES"*), if `"pre_accepted"` were changed to `"none"`, `gemini-decision-1` scores `469363 -> 464306` at **`0.614` (`human`)** because of the UHT -> chilled storage change! Keeping `"pre_accepted": "same_category_and_same_allergens"` tightened to catalog-listed `best` substitutes without `substitute_with` solves both at once: Act 3's default `469363 -> 464306` stays `auto` (trusted Valio catalog substitute), while `463380` (Arla Cafè milk -> **`0.168`, `human`**), `473142` (sweetened vanilla coffee milk -> **`0.068`, `deny`/`human`**), `460509` (non-organic soya -> **`0.044`, `deny`/`human`**), and `464201` (Valio UHT lactose-free Finnish milk -> **`0.943`, `auto`**) all go through `gemini-decision-1`.
+2. **Product cards passed to the judge (`harness/app.py`, `harness/rules.py`, `harness/judge.py`):**
+   - `harness/app.py` now enriches substitution products via `GET /products/search?q={name}&limit=20` on the gateway before calling `evaluate()`, recovering `nutritional_claims` (e.g. `FREE_FROM_LACTOSE`), `brand`, `sales_unit`, `base_unit`, and `size_per_sales_unit` — verified to match **157/157** products in `contract/fixtures/valio/products.json` without needing a breaking `contract/` change!
+   - `_build_original_card` also merges signed `origin` and `labels` from the original product's partial-stock line (such as `li-1` in Act 3), and signed quote facts always take precedence over catalog search fields.
+   - `harness/judge.py` now maps all **29 standard GS1 Synkka allergen codes** (not just 6), includes allergen `data_status`, and passes `origin_country`, `labels`, `nutritional_claims`, and pack/unit sizes while still stripping marketing copy, prices, and untrusted `request_text` (tested live: keeping `request_text` out keeps agent prompt-injection influence at **0%**).
+   - That directly solved the `469363 -> 464201` mystery: `464201` declares lactose-free via `nutritional_claims: ["FREE_FROM_LACTOSE"]` (with `free_from: []`) and Finnish origin via `origin: "FI"` + `labels: ["GOODS_FROM_FINLAND_BLUE_SWAN"]`. Passing those structured fields lifted `469363 -> 464201` from `0.069` back to **`0.943` (`auto`)**.
+3. **Live 61-pair benchmark on `gemini-decision-1` (`scenarios/pairs.csv` + `scenarios/pairs.families.csv`):**
+   - **0 false `auto`s across all 50 `ask` + `no` pairs (100% precision on `auto`)**: every single `ask` pair (33/33) scored `< 0.85` (`0.017`–`0.799`), and the one `0.799` pair also has missing allergen data caught by `allergen-data-known`.
+   - **17/17 `no` pairs (100%)** scored `<= 0.133` (`0.010`–`0.133`), all cleanly below `judge_floor = 0.15`.
+   - Conclusion for Colette: `judge_auto_threshold = 0.85` and `judge_floor = 0.15` in `scenarios/policy.demo.json` work cleanly as-is!
+4. **Approval deadline vs quote expiry (`harness/rules.py`):**
+   - Approval `deadline` now uses `min(checkout.expires_at, checkout.aimo.closing_time)` instead of `closing_time` alone, so in replay mode (`expires_at = 13:29:07` vs `closing_time = 17:00` next day) a pending card never claims to stay open after the quote itself has expired.
+5. **Gateway errors & lost `/complete` retry safety (`harness/app.py`, `harness/approvals.py`):**
+   - Unreachable gateway / timeout / invalid JSON now returns a clean **HTTP 502** with a readable detail instead of an unhandled 500, and a malformed outer `checkout` payload fails closed as `deny` (`quote-signature`).
+   - `ApprovalStore` now persists `signed_mandates.json` before `POST /checkouts/{id}/complete` so if a network drop loses Valio's 200 response, retrying `/authorize` or `/decision` replays the **exact same** `Authorization` and hits `merchant/orders.py`'s idempotent fast path instead of getting refused with HTTP 403.
+   - Removed hardcoded `"Valio Aimo"` / `"valio-aimo"` strings in `harness/app.py` in favor of `checkout.merchant.name` / `checkout.merchant.id`.
+6. **Multi-substitution quotes, uncovered shortfalls & policy expiry (`harness/rules.py`):**
+   - Rules now inspect **every** substitute line in multi-item quotes (not just `sub_lines[0]`), escalate uncovered shortfalls (`checkout.aimo.shortfalls` with `allow_alternatives=False`) to `human` instead of auto-ordering a partial delivery, and route expired buyer policies (`now >= policy.valid_until`) to `human`.
+7. **Shared per-file lock in `common/audit.py` (PR #18 follow-up):**
+   - `common/audit.py` now keeps a module-level lock registry keyed by `path.resolve()`, so separate `AuditLog(path)` instances across concurrent web threads serialize cleanly on the same file. Adrien can drop `_LOCK` in `merchant/audit.py` whenever convenient.
+
 ## L4: Harness service (`harness/app.py`, `harness/signer.py`, `harness/approvals.py`)
 
 - L1 + L2 + L3 + L4 are united and tested together with `main` (`uv run python scripts/dev.py` now starts both Valio's gateway on `:8001` and the buyer's harness on `:8002` with one command).

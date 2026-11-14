@@ -368,3 +368,100 @@ def test_matches_verdict_deny_example():
         checkout_hash=expected.checkout_hash,
     )
     assert actual == expected
+
+
+# ---------- Real-world edge cases & anti-bypass checks ----------
+
+
+def test_agent_picked_substitute_or_unlisted_substitute_is_never_pre_accepted():
+    """Arla Cafe milk (463380) shares category 10400 and allergen AM with 469363,
+    but must call the judge instead of slipping through on `auto`."""
+    policy = load_policy()
+    data = copy.deepcopy(_example("checkout.act3.json"))
+    # Case 1: agent explicitly requested `substitute_with` -> must call judge
+    data["aimo"]["requested"][0]["substitute_with"] = "463380"
+    data["line_items"][1]["item"] = {"id": "463380", "title": "Arla Cafè milk 1 L UHT lactose free", "price": 265}
+    data["aimo"]["lines"]["li-2"]["product_id"] = "463380"
+    data["aimo"]["alternatives"] = [
+        {
+            "for_product_id": "469363",
+            "product_id": "463380",
+            "tier": "best",
+            "comparison_price_minor": 265,
+            "comparison_unit": "L",
+            "why": "same category, same declared allergens",
+            "chosen": True,
+        }
+    ]
+    checkout_override = AimoCheckout.model_validate(data)
+    verdict = evaluate(policy, checkout_override, NOW, SIG_PASS, judge=_fake_judge(0.09, 0.38))
+    assert verdict.decision == "human"
+    assert len(verdict.judge) == 2
+
+    # Case 2: even without `substitute_with`, a cheapest-in-category guess not listed in catalog calls the judge
+    data2 = copy.deepcopy(data)
+    data2["aimo"]["requested"][0].pop("substitute_with", None)
+    checkout_unlisted = AimoCheckout.model_validate(data2)
+    verdict2 = evaluate(policy, checkout_unlisted, NOW, SIG_PASS, judge=_fake_judge(0.09, 0.38))
+    assert verdict2.decision == "human"
+    assert len(verdict2.judge) == 2
+
+
+def test_lost_label_origin_or_dietary_claim_is_never_pre_accepted():
+    policy = load_policy()
+    # Dropping GOODS_FROM_FINLAND_BLUE_SWAN on li-2 forces judge evaluation
+    data = copy.deepcopy(_example("checkout.act3.json"))
+    data["aimo"]["lines"]["li-2"]["labels"] = []
+    checkout_no_label = AimoCheckout.model_validate(data)
+    verdict = evaluate(policy, checkout_no_label, NOW, SIG_PASS, judge=_fake_judge(0.50, 0.90))
+    assert verdict.decision == "human"
+    assert len(verdict.judge) == 2
+
+    # Dropping NO_ADDED_SUGARS in enriched product_cards (e.g. plain coffee milk -> vanilla coffee milk) calls judge
+    intact = AimoCheckout.model_validate(_example("checkout.act3.json"))
+    cards = {
+        "469363": {"nutritional_claims": ["FREE_FROM_LACTOSE", "NO_ADDED_SUGARS"]},
+        "464201": {"nutritional_claims": ["FREE_FROM_LACTOSE"]},
+    }
+    verdict_claims = evaluate(policy, intact, NOW, SIG_PASS, judge=_fake_judge(0.02, 0.10), product_cards=cards)
+    assert verdict_claims.decision == "human"
+    assert len(verdict_claims.judge) == 2
+
+
+def test_uncovered_shortfall_requires_human_approval():
+    """If alternatives are disabled and only 384 L of 600 L can be delivered, never auto-sign silently."""
+    policy = load_policy()
+    data = copy.deepcopy(_example("checkout.act3.json"))
+    data["line_items"] = [data["line_items"][0]]
+    data["aimo"]["lines"] = {"li-1": data["aimo"]["lines"]["li-1"]}
+    data["totals"] = data["line_items"][0]["totals"]
+    data["aimo"]["alternatives"] = []
+    partial_checkout = AimoCheckout.model_validate(data)
+
+    verdict = evaluate(policy, partial_checkout, NOW, SIG_PASS)
+    assert verdict.decision == "human"
+    sub_rule = next(r for r in verdict.rules if r.rule_id == "substitution-within-preferences")
+    assert sub_rule.outcome == "human"
+    assert "uncovered shortfall" in sub_rule.message
+    assert "216" in sub_rule.message
+
+
+def test_approval_deadline_never_exceeds_quote_expiry_and_expired_policy_requires_human():
+    policy = load_policy()
+    data = copy.deepcopy(_example("checkout.act2.json"))
+    # Replay quotes expire 24h after recording (13:29:07), earlier than the 17:00 cut-off
+    data["expires_at"] = "2026-11-15T13:29:07+02:00"
+    data["aimo"]["closing_time"] = "2026-11-15T17:00:00+02:00"
+    checkout = AimoCheckout.model_validate(data)
+
+    verdict = evaluate(policy, checkout, NOW, SIG_PASS)
+    assert verdict.decision == "human"
+    assert verdict.deadline == datetime.fromisoformat("2026-11-15T13:29:07+02:00")
+
+    # Once `policy.valid_until` passes, autonomous open mandates are expired -> human must sign
+    expired_policy = policy.model_copy(update={"valid_until": datetime.fromisoformat("2026-11-14T12:00:00+02:00")})
+    act1 = AimoCheckout.model_validate(_example("checkout.act1.json"))
+    verdict_exp_pol = evaluate(expired_policy, act1, NOW, SIG_PASS)
+    assert verdict_exp_pol.decision == "human"
+    spend_rule = next(r for r in verdict_exp_pol.rules if r.rule_id == "spend-limit")
+    assert spend_rule.outcome == "human"

@@ -1,6 +1,7 @@
 """Tests for the hash-chained audit log in common/audit.py (step L2)."""
 
 import json
+import threading
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -123,3 +124,30 @@ def test_append_uses_frozen_clock_when_now_omitted(tmp_path, monkeypatch):
     event = log.append("buyer", "harness", "verdict", "Verdict auto.", "All rules passed.")
     assert event.at.isoformat() == "2026-11-14T13:15:00+02:00"
     assert log.verify() is None
+
+
+def test_concurrent_separate_audit_log_instances_keep_chain_intact(tmp_path):
+    """Creating a fresh AuditLog(path) per request across 8 threads must still serialize writes cleanly."""
+    path = tmp_path / "buyer" / "audit.jsonl"
+
+    def worker(thread_id: int) -> None:
+        for idx in range(25):
+            AuditLog(path).append(
+                "buyer",
+                "harness",
+                "verdict",
+                f"Thread {thread_id} event {idx}.",
+                "Concurrent write test.",
+                now=FIXED_NOW,
+            )
+
+    threads = [threading.Thread(target=worker, args=(t,)) for t in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+
+    events = AuditLog(path).read()
+    assert len(events) == 200
+    assert [e.seq for e in events] == list(range(1, 201))
+    assert AuditLog(path).verify() is None
