@@ -23,6 +23,7 @@ Certainty = Literal["measured", "declared", "estimated", "unknown"]
 ClaimSource = Literal[
     "aimo_stock_count",
     "supplier_warehouse",
+    "aimo_availability_api",
     "aimo_price_api",
     "gs1_synkka",
     "aimo_delivery_history",
@@ -108,6 +109,77 @@ class SearchResponse(ContractModel):
     query: str
     count: int
     products: list[ProductCard]
+
+
+# ---------- Lookup: GET /offers ----------
+
+OfferProblem = Literal["late_delivery", "out_of_stock", "not_found", "unit_mismatch"]
+
+
+class OffersRequest(ContractModel):
+    """The query parameters of GET /offers. `amount` and `unit` go together: what the buyer needs, in their unit."""
+
+    q: str = Field(min_length=2)
+    delivery_date: date
+    amount: float | None = Field(None, gt=0)
+    unit: BuyerUnit | None = None
+    limit: int = Field(10, ge=1, le=50)
+
+    @model_validator(mode="after")
+    def amount_comes_with_its_unit(self):
+        if (self.amount is None) != (self.unit is None):
+            raise ValueError("amount and unit go together: give both, or neither")
+        return self
+
+
+class OfferQuantity(ContractModel):
+    """The amount the buyer asked for, as whole sales units of one product (rounded up), and what they cost."""
+
+    quantity: int = Field(gt=0)
+    base_quantity: float
+    base_unit: BuyerUnit
+    total_minor: int
+    how: str
+    # False: Valio counted fewer units than `quantity`, a quote would split the need. None: no count to compare with.
+    stock_covers: bool | None = None
+
+
+class Offer(ContractModel):
+    """One product that matches a lookup, with its price and whether it can be ordered for the date asked.
+
+    Informative: nothing here commits Valio or the buyer. Only a signed quote (POST /checkouts) does.
+    """
+
+    product: ProductCard
+    orderable: bool
+    reason: OfferProblem | None = None
+    logistic_model: Literal["Stock", "Terminal"] | None = None
+    price: Claim
+    comparison_price: Claim
+    comparison_unit: str | None = None
+    stock: Claim
+    available_date: Claim
+    closing_time: Claim
+    to_order: OfferQuantity | None = None
+
+    @model_validator(mode="after")
+    def reason_says_why_not(self):
+        if self.orderable != (self.reason is None):
+            raise ValueError("reason must be null exactly when orderable is true")
+        return self
+
+
+class OffersResponse(ContractModel):
+    query: str
+    delivery_date: date
+    amount: float | None = None
+    unit: BuyerUnit | None = None
+    as_of: AwareDatetime
+    binding: Literal[False] = False
+    matched: int
+    priced: int
+    count: int
+    offers: list[Offer]
 
 
 # ---------- Quote request: POST /checkouts ----------

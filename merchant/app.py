@@ -4,11 +4,14 @@ Run: uv run uvicorn merchant.app:app --port 8001
 VALIO_MODE=replay (default) serves the answers recorded on 14/11, VALIO_MODE=live calls the Valio APIs.
 """
 
+from typing import Annotated
+
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
-from contract.models import CheckoutResponse, QuoteRequest, SearchResponse
+from contract.models import CheckoutResponse, OffersRequest, OffersResponse, QuoteRequest, SearchResponse
 from merchant import catalog, store
+from merchant.offers import OffersError, find_offers
 from merchant.quotes import QuoteError, build_quote
 from trust.checkout import sign_checkout
 from trust.keys import private_key, public_jwks
@@ -26,6 +29,15 @@ app.add_middleware(
 def search_products(q: str = Query(min_length=2), limit: int = Query(10, ge=1, le=50)) -> SearchResponse:
     products = catalog.load().search(q, limit)
     return SearchResponse(query=q, count=len(products), products=products)
+
+
+@app.get("/offers")
+def lookup_offers(request: Annotated[OffersRequest, Query()]) -> OffersResponse:
+    """Products, prices and availability for a query. Informative: only POST /checkouts returns a signed quote."""
+    try:
+        return find_offers(request)
+    except OffersError as e:
+        raise HTTPException(status_code=422, detail=str(e)) from e
 
 
 @app.post("/checkouts")
