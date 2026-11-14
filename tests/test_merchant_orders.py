@@ -1,12 +1,14 @@
 """The gateway, part 2, in replay mode: an Authorization becomes an order with a signed receipt, or a refusal."""
 
 import json
+import threading
 from pathlib import Path
 
 import pytest
 from ap2.sdk.utils import b64url_decode, b64url_encode
 from fastapi.testclient import TestClient
 
+from common.audit import AuditLog, default_log_path
 from contract.models import AuditEvent, BuyerPolicy, CheckoutResponse, Order
 from merchant import audit, store
 from merchant.app import app
@@ -49,6 +51,11 @@ def quote(litres: int) -> CheckoutResponse:
 
 def complete(checkout_id: str, authorization):
     return client.post(f"/checkouts/{checkout_id}/complete", json=authorization.model_dump())
+
+
+def gateway_log() -> AuditLog:
+    """The gateway's log, read with the shared class: its `verify` is the check the harness runs on its own log."""
+    return AuditLog(default_log_path("merchant"))
 
 
 def refused(response, words: str):
@@ -190,7 +197,26 @@ def test_audit_tells_the_story_and_every_line_points_at_the_previous_one(open_ma
     }
     assert [event.seq for event in log] == [1, 2, 3, 4, 5]
     assert [event.prev_hash for event in log] == [None] + [event.hash for event in log[:-1]]
-    assert all(event.hash == audit.digest(event) for event in log)
+    assert gateway_log().verify() is None
+
+
+def test_the_log_sits_with_the_rest_of_the_gateway_state():
+    assert gateway_log().path == store.state_dir() / "audit.jsonl"
+
+
+def test_requests_at_the_same_time_never_break_the_chain():
+    def write(thread: int):
+        for line in range(20):
+            audit.record("test", f"Line {line} of thread {thread}.", "Eight threads write at once.")
+
+    threads = [threading.Thread(target=write, args=(thread,)) for thread in range(8)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+    assert [event.seq for event in audit.events()] == list(range(1, 161))
+    assert gateway_log().verify() is None
 
 
 def test_a_refusal_answers_cross_origin_calls_from_localhost(open_mandates):
