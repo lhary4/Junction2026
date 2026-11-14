@@ -201,7 +201,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: a substitute must arrive on time, cover the whole missing quantity, have complete allergen data, and keep every "free from" of the original. The harness still checks allergens and asks the judge, this is a first filter on Valio's side. Most stock counts from the mock are "plenty" (9,999,999,999): the quote says "available, count not given" instead of showing that number. Inside one quote the same stock is never promised twice: a second line for the same product, or a second shortfall covered by the same substitute, only gets what the first one left.
 - If we change it: `merchant/quotes.py` only. The related kinds of product are one line in it.
 - Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none); the cheapest of the tier first (what we had until the live run on the restaurant menu); a frozen version as a related kind (the frozen squeaky cheese sits in a category with ice cubes and coffee, so the category says nothing).
-- Decided in: PR #11, 14/11/2026. Name before price: PR for step A7 (`feat/substitute-ranking`), 14/11/2026.
+- Decided in: PR #11, 14/11/2026. Name before price: PR #27, 14/11/2026.
 
 ## Orders: one per quote, and a repeated request gets the same order back
 - Status: decided
