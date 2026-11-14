@@ -17,6 +17,8 @@ Rules the chat keeps (the same as the rest of the product):
 - It may change two things, when the chef asks: the kitchen's own stock count and the quantity to order.
   The service checks every change again before it hands it to the page: a known product, a number that
   is zero or more, and an order that is not already open.
+- It may swap a product for a greener one, when the chef asks, but only for an alternative Valio offered on the page
+  (state.eco.alternatives). Anything else is dropped here, whatever the model said.
 - It fails closed: no key, a timeout or an unreadable answer gives an error, never an invented reply.
 """
 
@@ -66,6 +68,18 @@ If `state.can_edit` is false, an order is open: change nothing and say the quant
 signed or rejected.
 When the chef does not ask for a change, `stock_changes` is empty.
 
+Greener products:
+- `state.eco` is Valio's estimate of the order's carbon footprint (kg CO2e, product group averages, an estimate) and
+  `state.eco.alternatives`: the greener products Valio offers this week, each for one line of the stock table.
+- If the chef asks for a greener, lower-carbon or more eco-friendly option for an ingredient and one is listed for it:
+  if the chef asks you to switch, replace or use it, put it in `swaps` (`product_id` of the line, `swap_to` the
+  alternative's id) and say in one sentence what changes and how much CO2e it saves, with Valio's own figures.
+  If the chef only asks what exists, describe it the same way, change nothing and ask whether to switch.
+- If nothing is listed for that ingredient, say Valio offers no greener alternative for it this week. Never suggest
+  a product that is not listed, never guess a footprint.
+- Swaps follow the same lock as the quantities: if `state.can_edit` is false, change nothing.
+When the chef does not ask for a swap, `swaps` is empty.
+
 What you never do:
 - You never sign, approve, reject or send an order, and you never change the spending limit. The chef does these with
   the buttons on the page. If asked, say which button to use.
@@ -89,17 +103,24 @@ class StockChange(BaseModel):
     amount: float
 
 
+class ProductSwap(BaseModel):
+    product_id: str  # the line of the stock table
+    swap_to: str  # one of the alternatives Valio listed for it in state.eco
+
+
 class ModelAnswer(BaseModel):
-    """What Gemini must return. Checked again by `checked_changes` before anything reaches the page."""
+    """What Gemini must return. Checked again by `checked_changes` and `checked_swaps` before anything reaches the page."""
 
     reply: str
     stock_changes: list[StockChange] = []
+    swaps: list[ProductSwap] = []
 
 
 class ChatAnswer(BaseModel):
     reply: str
     stock_changes: list[StockChange]
-    dropped: int  # changes the model proposed and this service refused
+    swaps: list[ProductSwap] = []
+    dropped: int  # changes and swaps the model proposed and this service refused
     model: str
 
 
@@ -182,6 +203,23 @@ def checked_changes(changes: list[StockChange], state: dict[str, Any]) -> list[S
     ]
 
 
+def checked_swaps(swaps: list[ProductSwap], state: dict[str, Any]) -> list[ProductSwap]:
+    """Keep only the swaps Valio offered on the page (state.eco.alternatives), and only when the table can change."""
+    if state.get("can_edit") is not True:
+        return []
+    eco = state.get("eco")
+    offered = eco.get("alternatives") if isinstance(eco, dict) else None
+    allowed = {
+        (str(alt.get("product_id")), str(alt.get("alternative_id"))) for alt in offered or [] if isinstance(alt, dict)
+    }
+    kept, seen = [], set()
+    for swap in swaps:
+        if (swap.product_id, swap.swap_to) in allowed and swap.product_id not in seen:
+            seen.add(swap.product_id)
+            kept.append(swap)
+    return kept
+
+
 def create_app(*, ask: AskFn | None = None) -> FastAPI:
     active_ask = ask if ask is not None else ask_gemini
 
@@ -212,10 +250,12 @@ def create_app(*, ask: AskFn | None = None) -> FastAPI:
         except AssistantUnavailableError as err:
             raise HTTPException(status_code=503, detail=str(err)) from err
         kept = checked_changes(answer.stock_changes, request.state)
+        swaps = checked_swaps(answer.swaps, request.state)
         return ChatAnswer(
             reply=answer.reply.strip(),
             stock_changes=kept,
-            dropped=len(answer.stock_changes) - len(kept),
+            swaps=swaps,
+            dropped=len(answer.stock_changes) - len(kept) + len(answer.swaps) - len(swaps),
             model=model_name(),
         )
 

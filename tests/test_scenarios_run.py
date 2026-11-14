@@ -239,7 +239,10 @@ def test_page_routes_footprint_and_run_with_lines(restaurant):
     lines = [{"product_id": "463437", "amount": 6.45, "unit": "KG", "name": "Butter", "dish": "Main, Dessert"}]
     answer = page.post("/footprint", json={"lines": lines})
     assert answer.status_code == 200 and answer.json()["alternatives"][0]["alternative"]["id"] == "461904"
-    assert page.post("/footprint", json={"lines": [{"product_id": "463437", "amount": 1, "unit": "BOX"}]}).status_code == 422
+    assert (
+        page.post("/footprint", json={"lines": [{"product_id": "463437", "amount": 1, "unit": "BOX"}]}).status_code
+        == 422
+    )
 
 
 def test_replay_button_2_the_squeaky_cheese_is_replaced_and_the_chef_signs(restaurant):

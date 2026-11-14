@@ -329,6 +329,21 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: approving directly inside Telegram chat (dropped because chat has no browser passkey or quote-fingerprint signing boundary); email or SMS text messages (slower on stage or require paid sender setup).
 - Decided in: Branch feat/harness-notify, 14/11/2026.
 
+## Carbon footprint: an estimate on every order, and a greener swap once a week, from a short checked list
+- Status: decided
+- What it is: before the agent asks for a quote, Valio's gateway estimates the carbon footprint of the lines to order (`POST /footprint`): the weight of each line times the average footprint of its product group, from the challenge's carbon file. It also offers at most two greener products for those lines. The page shows the estimate under the order and under the quote. The chef takes a greener product with a "Greener option" button on the line, with the weekly card beside the order, or by asking the chat.
+- Why: the brief asks for a sustainability comparison, and Valio told us the agent lives in the customer portal. A suggestion only helps if a chef trusts it: so the pairs are few, chosen because they do the same job in the dish, and the rules in code check them again on today's data every time.
+- What it changes for us:
+  - The figures are estimates and say so: one footprint per product group, one litre counted as one kilo. They are never part of the signed quote, and a line with no data is left out of the total and named, never counted as zero.
+  - A pair is offered only if it saves at least a quarter of the CO2e, adds no allergen, has complete allergen data and keeps a lactose-free promise. The first pair is the menu's lactose-free butter for a lactose-free margarine: 42.8 to 25.9 kg CO2e for the week, 40 % less, and the margarine is also cheaper in the quote (EUR 176.10 against EUR 186.89 for the whole order).
+  - The swap changes the cart before the quote. The order then goes through the same quote, safety checks and signatures as any other: no new signing path.
+  - The chat may swap a product only for an alternative the gateway offered on the page. The chat service drops anything else, whatever the model said.
+  - The demo driver now orders the lines the chef confirmed on the page, instead of the scenario's fixed lines. The attack still sends its own.
+  - Once a week: the answer tells the buyer's agent to check every 7 days, on the products ordered each week. "Not this week" hides a suggestion until the next check.
+- If we change it: the list of pairs is one constant in `merchant/footprint.py`. Measured footprints per product, if Valio had them, would replace the group average in one function.
+- Alternatives we looked at: computing the footprint in the page (the page never works out a fact of Valio's); putting it in the signed quote (an estimate should not look signed); asking Gemini to find substitutes on the fly (it could pick a product that changes the dish, and every suggestion would cost a call); suggesting for every product on every order (a chef stops reading).
+- Decided in: PR #44, 15/11/2026.
+
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
 - **Customer token on the gateway** (planned, after the demo flow): today anyone who can reach the gateway can ask a quote for any customer. Valio told us prices are per customer, so a token must say who is asking.

@@ -222,6 +222,7 @@ Valio gateway, port 8001 (`merchant/`):
 |---|---|---|
 | `GET /products/search?q=&limit=` | text query | `{"query", "count", "products": [ProductCard]}` |
 | `GET /offers?q=&delivery_date=&amount=&unit=&limit=` | text query, delivery date, and optionally what is needed (`amount` with `unit`: `L`, `KG` or `ST`) | `OffersResponse`: `{"query", "delivery_date", "amount", "unit", "as_of", "binding": false, "matched", "priced", "count", "offers": [Offer]}`. Not signed |
+| `POST /footprint` | `FootprintRequest`: `{"needs": [Need]}` | `FootprintResponse`: `{"as_of", "binding": false, "method", "total_kg_co2e", "unknown", "lines": [LineFootprint], "review_every_days", "alternatives": [EcoAlternative]}`. Estimates (weight x product group average), never signed. At most two alternatives, from the checked pairs of `merchant/footprint.py`, each only if it saves 25 % or more, adds no allergen, has complete allergen data and keeps a lactose-free promise |
 | `POST /checkouts` | `QuoteRequest` | `{"checkout_id", "checkout_jwt", "checkout": AimoCheckout}` |
 | `GET /checkouts/{id}` | | same as above |
 | `POST /checkouts/{id}/complete` | `Authorization` | `Order`, or HTTP 403 with `{"problems": [...]}` |
@@ -249,7 +250,8 @@ Demo driver, port 8003 (`scenarios/run.py`):
 
 | Route | Input | Output |
 |---|---|---|
-| `POST /scenarios/{id}/run` | | `DemoState` once the scenario has run: `done`, `waiting_for_human` or `refused` |
+| `POST /scenarios/{id}/run` | optional `{"lines": [{"product_id", "amount", "unit"}]}`: the lines the chef confirmed on the page, ordered in place of the scenario's own (the attack always sends its own) | `DemoState` once the scenario has run: `done`, `waiting_for_human` or `refused` |
+| `POST /footprint` | `{"lines": [{"product_id", "amount", "unit"}]}` | the gateway's `FootprintResponse` for these lines |
 | `GET /state` | | `DemoState` |
 | `POST /reset` | | `DemoState`, idle |
 

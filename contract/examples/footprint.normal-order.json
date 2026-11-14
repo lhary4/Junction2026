@@ -1,0 +1,246 @@
+{
+  "as_of": "2026-11-14T13:29:07+02:00",
+  "binding": false,
+  "method": "Weight x the average footprint of the product group (kg CO2e per kg). One litre counts as one kilo. Estimates for comparison, not a measured footprint.",
+  "total_kg_co2e": 145.9,
+  "unknown": [],
+  "lines": [
+    {
+      "product_id": "463437",
+      "name": "Valio Eila® butter 500 g salted lactose free",
+      "amount": 6.45,
+      "unit": "KG",
+      "kg": 6.45,
+      "factor": {
+        "value": 6.635,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 42.8
+    },
+    {
+      "product_id": "464194",
+      "name": "Valio whipping cream 1 l UHT lactose free",
+      "amount": 3.75,
+      "unit": "L",
+      "kg": 3.75,
+      "factor": {
+        "value": 1.81,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 6.79
+    },
+    {
+      "product_id": "476890",
+      "name": "Valio smetana 2 kg lactose free",
+      "amount": 4.5,
+      "unit": "KG",
+      "kg": 4.5,
+      "factor": {
+        "value": 1.93,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 8.69
+    },
+    {
+      "product_id": "464306",
+      "name": "Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free",
+      "amount": 7.5,
+      "unit": "L",
+      "kg": 7.5,
+      "factor": {
+        "value": 1.1,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 8.25
+    },
+    {
+      "product_id": "460200",
+      "name": "Elovena 1kg wholegrain oat flakes",
+      "amount": 1.5,
+      "unit": "KG",
+      "kg": 1.5,
+      "factor": {
+        "value": 0.995,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 1.49
+    },
+    {
+      "product_id": "467958",
+      "name": "VAASAN Original Thin Rye Crispbread 300g",
+      "amount": 6.0,
+      "unit": "ST",
+      "kg": 1.8,
+      "factor": {
+        "value": 1.62,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 2.92
+    },
+    {
+      "product_id": "468513",
+      "name": "Myrttisen Pickled cucumber 4500g",
+      "amount": 2.0,
+      "unit": "ST",
+      "kg": 9.0,
+      "factor": {
+        "value": 8.025,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 72.23
+    },
+    {
+      "product_id": "468172",
+      "name": "Meira Sea salt fine 800g",
+      "amount": 0.94,
+      "unit": "KG",
+      "kg": 0.94,
+      "factor": {
+        "value": 0.42,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 0.39
+    },
+    {
+      "product_id": "460325",
+      "name": "Dansukker Caster Sugar 1kg",
+      "amount": 1.05,
+      "unit": "KG",
+      "kg": 1.05,
+      "factor": {
+        "value": 0.885,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 0.93
+    },
+    {
+      "product_id": "466608",
+      "name": "Apetit Rapeseed oil 10L",
+      "amount": 0.6,
+      "unit": "L",
+      "kg": 0.6,
+      "factor": {
+        "value": 2.425,
+        "unit": "kg_co2e_per_kg",
+        "source": "product_group_average",
+        "as_of": "2026-11-14T13:29:07+02:00",
+        "certainty": "estimated"
+      },
+      "kg_co2e": 1.45
+    }
+  ],
+  "review_every_days": 7,
+  "alternatives": [
+    {
+      "product_id": "463437",
+      "name": "Valio Eila® butter 500 g salted lactose free",
+      "amount": 6.45,
+      "unit": "KG",
+      "alternative": {
+        "id": "461904",
+        "name": "Sunnuntai Lactose free margarine for baking 500 g",
+        "category": "10518",
+        "vendor": "BUNGE FINLAND OY VIILEÄ",
+        "brand": "Sunnuntai",
+        "sales_unit": "PAK",
+        "base_unit": "PAK",
+        "size_per_sales_unit": {
+          "value": 0.5,
+          "unit": "KG",
+          "how": "pack size in the name (500 g) x 1 PAK"
+        },
+        "pack_sizes": [
+          {
+            "unit_id": "PAL",
+            "size_in_base_units": 1280
+          },
+          {
+            "unit_id": "KI",
+            "size_in_base_units": 20
+          }
+        ],
+        "temperature_condition": 4,
+        "allergens": {
+          "contains": [],
+          "free_from": [
+            "AC",
+            "AE",
+            "AF",
+            "AM",
+            "AN",
+            "AP",
+            "AS",
+            "AU",
+            "AW",
+            "AY",
+            "BC",
+            "BM",
+            "NL",
+            "UM"
+          ],
+          "data": "complete"
+        },
+        "nutritional_claims": [
+          "FREE_FROM_LACTOSE",
+          "FREE_FROM_PRESERVATIVES",
+          "VEGAN"
+        ],
+        "labels": [],
+        "origin": {
+          "value": "FI",
+          "unit": "country",
+          "source": "gs1_synkka",
+          "as_of": "2026-11-14T13:29:07+02:00",
+          "certainty": "declared"
+        },
+        "delivery_reliability": {
+          "value": null,
+          "unit": "share_delivered",
+          "source": "none",
+          "as_of": "2026-11-14T13:29:07+02:00",
+          "certainty": "unknown"
+        },
+        "carbon_footprint": {
+          "value": 4.015,
+          "unit": "kg_co2e_per_kg",
+          "source": "product_group_average",
+          "as_of": "2026-11-14T13:29:07+02:00",
+          "certainty": "estimated"
+        },
+        "catalog_substitutes": []
+      },
+      "kg_co2e_before": 42.8,
+      "kg_co2e_after": 25.9,
+      "saving_kg_co2e": 16.9,
+      "saving_share": 0.395,
+      "why": "Same 500 g block, lactose free, made for cooking and baking: it melts and browns like butter in the mash, the reindeer and the crumble. The mash tastes a little less of butter."
+    }
+  ]
+}

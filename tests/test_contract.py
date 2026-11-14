@@ -16,6 +16,7 @@ from contract.models import (
     BuyerPolicy,
     Claim,
     DemoState,
+    FootprintResponse,
     Offer,
     OffersRequest,
     OffersResponse,
@@ -33,12 +34,15 @@ DEMO_STATES = [
     "demo-state.substitution.pending.json",
     "demo-state.substitution.approved.json",
     "demo-state.attack.json",
+    "demo-state.normal-order.greener.json",
 ]
 
 SINGLE = {
     "approval-request.pending.json": ApprovalRequest,
     "authorization.json": Authorization,
     "offers.act1.json": OffersResponse,
+    "footprint.normal-order.json": FootprintResponse,
+    "footprint.normal-order.greener.json": FootprintResponse,
     "order.json": Order,
     "policy.demo.json": BuyerPolicy,
     "quote-request.json": QuoteRequest,
