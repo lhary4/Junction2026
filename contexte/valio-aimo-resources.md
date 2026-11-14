@@ -66,7 +66,7 @@ Download links are on the portal home page (behind the event password) and throu
 | Carbon footprint (CSV `productId,AVG kg CO2-eq/kg`) | Average for the **product group**, not the product | 11,033 products |
 
 ### Product record
-Top-level fields: `id` (the code used by the APIs), `salesUnitGtin`, `salesUnit`, `baseUnit`, `category`, `allowedLotSize`, `deleted`, `temperatureCondition`, `vendorName`, `countryOfOrigin`, `units` (pallet, carton, unit with `gtin` and `sizeInBaseUnits`), `deposits`, `synkkaData`.
+Top-level fields: `id` (the code used by the APIs), `salesUnitGtin`, `salesUnit`, `baseUnit`, `category`, `allowedLotSize`, `deleted`, `temperatureCondition`, `vendorName`, `countryOfOrigin`, `units` (pallet, carton, unit with `gtin` and `sizeInBaseUnits`), `deposits`, `synkkaData`, and for some products `substitutions` (a list of `product` and `substituteProduct` codes: Valio's own suggested replacements, found on 14/11/2026; for example 464306 lists 465039, 464398, 469363 and 464201).
 
 `synkkaData` (GS1 Synkka product data) holds names in `fi`, `en`, `sv`, marketing texts, ingredients, storage and preparation instructions, brand, VAT code, min and max temperature, and `classifications`:
 - `allergen` and `nonAllergen`: GS1 allergen codes with `CONTAINS` or `FREE_FROM` (for example `AM` milk, `AE` egg).

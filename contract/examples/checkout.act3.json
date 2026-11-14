@@ -1,0 +1,96 @@
+{
+  "id": "chk_act3_demo",
+  "merchant": { "id": "valio-aimo", "name": "Valio Aimo" },
+  "status": "ready_for_complete",
+  "currency": "EUR",
+  "line_items": [
+    {
+      "id": "li-1",
+      "item": { "id": "469363", "title": "Arla Semi skimmed milkdrink 1 L UHT lactose free Suomesta", "price": 248 },
+      "quantity": 384,
+      "totals": [
+        { "type": "subtotal", "amount": 95232 },
+        { "type": "total", "amount": 95232 }
+      ]
+    },
+    {
+      "id": "li-2",
+      "item": { "id": "464201", "title": "Valio semi skimmed milk 1 l lactose free UHT", "price": 156 },
+      "quantity": 216,
+      "totals": [
+        { "type": "subtotal", "amount": 33696 },
+        { "type": "total", "amount": 33696 }
+      ]
+    }
+  ],
+  "totals": [
+    { "type": "subtotal", "amount": 128928 },
+    { "type": "total", "amount": 128928 }
+  ],
+  "links": [{ "type": "terms_of_service", "url": "https://example.com/tos" }],
+  "expires_at": "2026-11-15T17:00:00+02:00",
+  "aimo": {
+    "customer": "demo-hotel-chain",
+    "issued_at": "2026-11-14T13:25:00+02:00",
+    "totals_exclude_tax": true,
+    "requested": [{ "product_id": "469363", "amount": 600, "unit": "L" }],
+    "requested_delivery_date": "2026-11-16",
+    "delivery_date": "2026-11-16",
+    "closing_time": "2026-11-15T17:00:00+02:00",
+    "lines": {
+      "li-1": {
+        "product_id": "469363",
+        "category": "10400",
+        "sales_unit": "ST",
+        "base_quantity": 384.0,
+        "base_unit": "L",
+        "comparison_price_minor": 248,
+        "comparison_unit": "L",
+        "substitute_for": null,
+        "logistic_model": "Stock",
+        "available_date": "2026-11-16",
+        "closing_time": "2026-11-15T17:00:00+02:00",
+        "stock": { "value": 384, "unit": "ST", "source": "aimo_stock_count", "as_of": "2026-11-14T13:25:00+02:00", "certainty": "measured" },
+        "price": { "value": 248, "unit": "eur_minor_per_sales_unit", "source": "aimo_price_api", "as_of": "2026-11-14T13:25:00+02:00", "certainty": "measured" },
+        "origin": { "value": "FI", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+        "allergens": { "contains": ["AM"], "free_from": ["ML"], "data": "complete" },
+        "delivery_reliability": { "value": null, "unit": "share_delivered", "source": "none", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "unknown" },
+        "carbon_footprint": { "value": 1.1, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+        "labels": ["GOODS_FROM_FINLAND_BLUE_SWAN"]
+      },
+      "li-2": {
+        "product_id": "464201",
+        "category": "10400",
+        "sales_unit": "ST",
+        "base_quantity": 216.0,
+        "base_unit": "L",
+        "comparison_price_minor": 156,
+        "comparison_unit": "L",
+        "substitute_for": {
+          "product_id": "469363",
+          "name": "Arla Semi skimmed milkdrink 1 L UHT lactose free Suomesta",
+          "category": "10400",
+          "allergens": { "contains": ["AM"], "free_from": ["ML"], "data": "complete" }
+        },
+        "logistic_model": "Stock",
+        "available_date": "2026-11-16",
+        "closing_time": "2026-11-15T17:00:00+02:00",
+        "stock": { "value": 1500, "unit": "ST", "source": "aimo_stock_count", "as_of": "2026-11-14T13:25:00+02:00", "certainty": "measured" },
+        "price": { "value": 156, "unit": "eur_minor_per_sales_unit", "source": "aimo_price_api", "as_of": "2026-11-14T13:25:00+02:00", "certainty": "measured" },
+        "origin": { "value": "FI", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+        "allergens": { "contains": ["AM"], "free_from": [], "data": "complete" },
+        "delivery_reliability": { "value": 1.0, "unit": "share_delivered", "source": "aimo_delivery_history", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "measured" },
+        "carbon_footprint": { "value": 1.1, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+        "labels": ["GOODS_FROM_FINLAND_BLUE_SWAN"]
+      }
+    },
+    "shortfalls": [
+      { "product_id": "469363", "requested_base_quantity": 600.0, "available_base_quantity": 384.0, "missing_base_quantity": 216.0, "base_unit": "L", "reason": "partial_stock" }
+    ],
+    "alternatives": [
+      { "for_product_id": "469363", "product_id": "464201", "tier": "best", "comparison_price_minor": 156, "comparison_unit": "L", "why": "same category, same declared allergens, listed as a substitute in the catalog", "chosen": true },
+      { "for_product_id": "469363", "product_id": "463380", "tier": "better", "comparison_price_minor": 265, "comparison_unit": "L", "why": "same category and allergens, but a coffee milk: different use", "chosen": false },
+      { "for_product_id": "469363", "product_id": "464320", "tier": "good", "comparison_price_minor": 178, "comparison_unit": "L", "why": "plant-based, 60% lower carbon footprint, but contains gluten and oats instead of milk", "chosen": false }
+    ]
+  }
+}

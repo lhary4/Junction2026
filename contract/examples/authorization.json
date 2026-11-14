@@ -1,0 +1,5 @@
+{
+  "signed_by": "agent",
+  "checkout_mandate": "<SD-JWT chain: open checkout mandate signed by the manager, closed by the agent's key, bound to the quote by checkout_hash>",
+  "payment_mandate": "<SD-JWT chain: open payment mandate carrying the spend cap, closed by the agent's key for this amount>"
+}

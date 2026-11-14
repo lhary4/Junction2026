@@ -1,0 +1,21 @@
+{
+  "policy_id": "pol_demo_hotel_1",
+  "customer": "demo-hotel-chain",
+  "agent_id": "buyer-agent-1",
+  "approver": "procurement.manager@demo-hotel.example",
+  "allowed_merchants": [{ "id": "valio-aimo", "name": "Valio Aimo" }],
+  "currency": "EUR",
+  "autonomous_limit_minor": 150000,
+  "blocked_allergens": ["AP", "AN"],
+  "unknown_allergen_data": "human",
+  "allergen_change_on_substitution": "human",
+  "late_delivery": "human",
+  "substitution": {
+    "allowed": true,
+    "pre_accepted": "same_category_and_same_allergens",
+    "preferences_text": "Semi-skimmed lactose-free cow's milk for the breakfast buffet. UHT or fresh are both fine. No flavoured milk and no coffee creamers. Plant-based drinks only with the manager's approval.",
+    "judge_auto_threshold": 0.85,
+    "judge_floor": 0.15
+  },
+  "valid_until": "2026-11-16T23:59:59+02:00"
+}

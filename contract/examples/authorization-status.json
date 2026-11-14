@@ -1,0 +1,68 @@
+{
+  "ordered": {
+    "status": "ordered",
+    "checkout_id": "chk_act1_demo",
+    "decision": "auto",
+    "signed_by": "agent",
+    "order_id": "ord_4b9d2a10",
+    "reasons": [],
+    "approval_id": null,
+    "approval_url": null,
+    "deadline": null
+  },
+  "pending_approval": {
+    "status": "pending_approval",
+    "checkout_id": "chk_act2_demo",
+    "decision": "human",
+    "signed_by": null,
+    "order_id": null,
+    "reasons": ["spend-limit: 2020.00 EUR is above the 1500.00 EUR limit: a human must sign."],
+    "approval_id": "apr_7c1e0b52",
+    "approval_url": "http://localhost:8002/#/approvals/apr_7c1e0b52",
+    "deadline": "2026-11-15T17:00:00+02:00"
+  },
+  "ordered_after_approval": {
+    "status": "ordered",
+    "checkout_id": "chk_act2_demo",
+    "decision": "human",
+    "signed_by": "human",
+    "order_id": "ord_91f3c7de",
+    "reasons": ["spend-limit: 2020.00 EUR is above the 1500.00 EUR limit: a human must sign."],
+    "approval_id": "apr_7c1e0b52",
+    "approval_url": null,
+    "deadline": null
+  },
+  "denied": {
+    "status": "denied",
+    "checkout_id": "chk_act1_demo",
+    "decision": "deny",
+    "signed_by": null,
+    "order_id": null,
+    "reasons": ["quote-signature: The quote does not match Valio Aimo's signature: it was changed after signing. Nothing is signed, nothing is ordered."],
+    "approval_id": null,
+    "approval_url": null,
+    "deadline": null
+  },
+  "rejected": {
+    "status": "rejected",
+    "checkout_id": "chk_act2_demo",
+    "decision": "human",
+    "signed_by": null,
+    "order_id": null,
+    "reasons": ["The approver rejected the request."],
+    "approval_id": "apr_7c1e0b52",
+    "approval_url": null,
+    "deadline": null
+  },
+  "expired": {
+    "status": "expired",
+    "checkout_id": "chk_act2_demo",
+    "decision": "human",
+    "signed_by": null,
+    "order_id": null,
+    "reasons": ["No answer before the order cut-off (2026-11-15 17:00). Nothing was ordered."],
+    "approval_id": "apr_7c1e0b52",
+    "approval_url": null,
+    "deadline": "2026-11-15T17:00:00+02:00"
+  }
+}

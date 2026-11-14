@@ -1,0 +1,47 @@
+{
+  "decision": "human",
+  "checkout_id": "chk_act3_oat_demo",
+  "checkout_hash": "k3Jr0Yc1h8mZ2xQp7Vt5uNw9aBd4EfG6HiJ1KlM0NoP",
+  "total_minor": 133680,
+  "currency": "EUR",
+  "signer": null,
+  "deadline": "2026-11-15T17:00:00+02:00",
+  "decided_at": "2026-11-14T13:27:10+02:00",
+  "rules": [
+    { "rule_id": "quote-signature", "outcome": "pass", "message": "Quote signed by valio-aimo with key valio-aimo-gateway-1.", "evidence": { "kid": "valio-aimo-gateway-1" } },
+    { "rule_id": "quote-not-expired", "outcome": "pass", "message": "Quote valid until 2026-11-15 17:00.", "evidence": { "expires_at": "2026-11-15T17:00:00+02:00" } },
+    { "rule_id": "merchant-allowed", "outcome": "pass", "message": "Valio Aimo is an allowed merchant.", "evidence": { "merchant_id": "valio-aimo" } },
+    { "rule_id": "allergen-not-blocked", "outcome": "pass", "message": "No blocked allergen in the order.", "evidence": { "contains": ["AM", "AW", "GO"], "blocked": ["AP", "AN"] } },
+    { "rule_id": "allergen-data-known", "outcome": "pass", "message": "Allergen data is complete for every line.", "evidence": {} },
+    { "rule_id": "allergen-unchanged-on-substitution", "outcome": "human", "message": "Substitute 464320 contains AW and GO, the original 469363 contains AM: the allergens change, a human must sign.", "evidence": { "original": "469363", "substitute": "464320", "original_contains": ["AM"], "substitute_contains": ["AW", "GO"] } },
+    { "rule_id": "delivery-on-time", "outcome": "pass", "message": "Delivery on 2026-11-16, as requested.", "evidence": { "requested": "2026-11-16", "promised": "2026-11-16" } },
+    { "rule_id": "spend-limit", "outcome": "pass", "message": "1336.80 EUR is within the 1500.00 EUR limit.", "evidence": { "total_minor": 133680, "limit_minor": 150000 } },
+    { "rule_id": "substitution-within-preferences", "outcome": "human", "message": "The judge puts this substitute outside the buyer's stated preferences (0.07, floor 0.15).", "evidence": { "original": "469363", "substitute": "464320" } }
+  ],
+  "judge": [
+    {
+      "question_key": "within_preferences",
+      "type": "noul",
+      "instructions": "Does the candidate product respect every preference the buyer stated for this purchase?",
+      "subject": { "original": "469363", "candidate": "464320" },
+      "probability": 0.07,
+      "confidence": 0.93,
+      "auto_threshold": 0.85,
+      "floor": 0.15,
+      "routed": "human",
+      "model": "gemini-decision-1"
+    },
+    {
+      "question_key": "same_use",
+      "type": "noul",
+      "instructions": "Can the kitchen use the candidate exactly as it would have used the original, without changing anything?",
+      "subject": { "original": "469363", "candidate": "464320" },
+      "probability": 0.22,
+      "confidence": 0.78,
+      "auto_threshold": 0.85,
+      "floor": 0.15,
+      "routed": "human",
+      "model": "gemini-decision-1"
+    }
+  ]
+}

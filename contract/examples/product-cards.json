@@ -1,0 +1,113 @@
+[
+  {
+    "id": "464306",
+    "name": "Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free",
+    "category": "10400",
+    "vendor": "VALIO OY TUORE",
+    "brand": "Valio",
+    "sales_unit": "ST",
+    "base_unit": "ST",
+    "size_per_sales_unit": { "value": 1.0, "unit": "L", "how": "pack size in the name (1 l) x 1 ST" },
+    "pack_sizes": [
+      { "unit_id": "KI", "size_in_base_units": 20 },
+      { "unit_id": "PAL", "size_in_base_units": 160 }
+    ],
+    "temperature_condition": 4,
+    "allergens": { "contains": ["AM"], "free_from": [], "data": "complete" },
+    "nutritional_claims": ["FREE_FROM_LACTOSE", "LOW_FAT", "NO_ADDED_SUGARS", "VEGETARIAN"],
+    "labels": ["GOODS_FROM_FINLAND_BLUE_SWAN"],
+    "origin": { "value": "FI", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+    "delivery_reliability": { "value": 1.0, "unit": "share_delivered", "source": "aimo_delivery_history", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "measured" },
+    "carbon_footprint": { "value": 1.1, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+    "catalog_substitutes": ["465039", "464398", "469363", "464201"]
+  },
+  {
+    "id": "469363",
+    "name": "Arla Semi skimmed milkdrink 1 L UHT lactose free Suomesta",
+    "category": "10400",
+    "vendor": "ARLA OY",
+    "brand": "Arla",
+    "sales_unit": "ST",
+    "base_unit": "ST",
+    "size_per_sales_unit": { "value": 1.0, "unit": "L", "how": "pack size in the name (1 L) x 1 ST" },
+    "pack_sizes": [
+      { "unit_id": "KI", "size_in_base_units": 12 },
+      { "unit_id": "PAL", "size_in_base_units": 576 }
+    ],
+    "temperature_condition": 8,
+    "allergens": { "contains": ["AM"], "free_from": ["ML"], "data": "complete" },
+    "nutritional_claims": ["FREE_FROM_LACTOSE"],
+    "labels": ["GOODS_FROM_FINLAND_BLUE_SWAN"],
+    "origin": { "value": "FI", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+    "delivery_reliability": { "value": null, "unit": "share_delivered", "source": "none", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "unknown" },
+    "carbon_footprint": { "value": 1.1, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+    "catalog_substitutes": []
+  },
+  {
+    "id": "464201",
+    "name": "Valio semi skimmed milk 1 l lactose free UHT",
+    "category": "10400",
+    "vendor": "VALIO OY TUORE",
+    "brand": "Valio",
+    "sales_unit": "ST",
+    "base_unit": "ST",
+    "size_per_sales_unit": { "value": 1.0, "unit": "L", "how": "pack size in the name (1 l) x 1 ST" },
+    "pack_sizes": [
+      { "unit_id": "KI", "size_in_base_units": 10 },
+      { "unit_id": "PAL", "size_in_base_units": 600 }
+    ],
+    "temperature_condition": 4,
+    "allergens": { "contains": ["AM"], "free_from": [], "data": "complete" },
+    "nutritional_claims": ["FREE_FROM_LACTOSE", "LOW_FAT", "NO_ADDED_SUGARS", "VEGETARIAN"],
+    "labels": ["GOODS_FROM_FINLAND_BLUE_SWAN"],
+    "origin": { "value": "FI", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+    "delivery_reliability": { "value": 1.0, "unit": "share_delivered", "source": "aimo_delivery_history", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "measured" },
+    "carbon_footprint": { "value": 1.1, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+    "catalog_substitutes": ["464440"]
+  },
+  {
+    "id": "463380",
+    "name": "Arla Cafè milk 1 L UHT lactose free",
+    "category": "10400",
+    "vendor": "ARLA OY",
+    "brand": "Arla",
+    "sales_unit": "ST",
+    "base_unit": "ST",
+    "size_per_sales_unit": { "value": 1.0, "unit": "L", "how": "pack size in the name (1 L) x 1 ST" },
+    "pack_sizes": [
+      { "unit_id": "KI", "size_in_base_units": 12 },
+      { "unit_id": "PAL", "size_in_base_units": 576 }
+    ],
+    "temperature_condition": 4,
+    "allergens": { "contains": ["AM"], "free_from": ["ML"], "data": "complete" },
+    "nutritional_claims": ["FREE_FROM_LACTOSE"],
+    "labels": ["GOODS_FROM_FINLAND_BLUE_SWAN"],
+    "origin": { "value": "FI", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+    "delivery_reliability": { "value": null, "unit": "share_delivered", "source": "none", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "unknown" },
+    "carbon_footprint": { "value": 1.1, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+    "catalog_substitutes": []
+  },
+  {
+    "id": "464320",
+    "name": "Oatly iKaffe Oat drink 1L",
+    "category": "10402",
+    "vendor": "OATLY EMEA AB",
+    "brand": "Oatly",
+    "sales_unit": "ST",
+    "base_unit": "ST",
+    "size_per_sales_unit": { "value": 1.0, "unit": "L", "how": "pack size in the name (1L) x 1 ST" },
+    "pack_sizes": [
+      { "unit_id": "KI", "size_in_base_units": 6 },
+      { "unit_id": "KRS", "size_in_base_units": 144 },
+      { "unit_id": "PAL", "size_in_base_units": 720 }
+    ],
+    "temperature_condition": 8,
+    "allergens": { "contains": ["AW", "GO"], "free_from": [], "data": "complete" },
+    "nutritional_claims": ["FREE_FROM_SOY", "VEGAN"],
+    "labels": [],
+    "origin": { "value": "SE", "unit": "country", "source": "gs1_synkka", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "declared" },
+    "delivery_reliability": { "value": 1.0, "unit": "share_delivered", "source": "aimo_delivery_history", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "measured" },
+    "carbon_footprint": { "value": 0.435, "unit": "kg_co2e_per_kg", "source": "product_group_average", "as_of": "2026-11-14T11:21:00+02:00", "certainty": "estimated" },
+    "catalog_substitutes": ["469512", "473609"]
+  }
+]
