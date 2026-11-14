@@ -279,10 +279,11 @@ The three services allow cross-origin calls from `localhost`, so the page can re
 
 ## MCP tools (`agent_mcp/`)
 
-What the external agent sees. Six tools, short identifiers only, never a token. `lookup_offers` is in the contract since 14/11 and still has to be added to `agent_mcp/` (what to plug: `team/adrien/notes.md`).
+What the external agent sees. Seven tools, short identifiers only, never a token. `lookup_offers` is in the contract since 14/11 and still has to be added to `agent_mcp/` (what to plug: `team/adrien/notes.md`).
 
 | Tool | Arguments | Returns |
 |---|---|---|
+| `get_kitchen` | none | the restaurant's recipes, bookings and stock count (the kitchen page's files), with `order_needs` (what is short, ready for `request_quote`) and `needed_by` |
 | `search_products` | `query`, `limit` | product cards, without prices |
 | `lookup_offers` | `query`, `delivery_date`, optional `amount` with `unit`, `limit` | the offers of `GET /offers`: cards with price, stock, delivery date, cut-off, and orderable or not. Informative, not signed |
 | `request_quote` | `needs` (list of `product_id`, `amount`, `unit`, optional `substitute_with`), `delivery_date` | `checkout_id` and a readable summary of the quote |

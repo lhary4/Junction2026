@@ -1,7 +1,8 @@
 """MCP server for the external buying agent, on the real services.
 
-Exposes the five tools of docs/contract.md. Each tool calls a running service, so every fact comes from the gateway or
-the harness, never from this file:
+Exposes the tools of docs/contract.md, plus `get_kitchen`. `get_kitchen` reads the restaurant's own data, the files the
+kitchen page reads (surface/static/kitchen/: recipes, bookings, stock count). Every other tool calls a running service,
+so every fact comes from the gateway or the harness, never from this file:
 - search and orders: the Valio gateway (MERCHANT_URL, default http://localhost:8001)
 - authorization status: the buyer's harness (HARNESS_URL, default http://localhost:8002)
 - quotes and authorizations: the demo driver (DRIVER_URL, default http://localhost:8003), which forwards them to the
@@ -18,14 +19,17 @@ The agent never sees a token: quotes come back as a readable summary, orders wit
 
 from __future__ import annotations
 
+import json
 import os
 import sys
+from pathlib import Path
 from typing import Any, Literal, TypedDict
 
 import httpx
 from mcp.server.mcpserver import MCPServer
 from mcp.server.transport_security import TransportSecuritySettings
 
+KITCHEN_DIR = Path(__file__).resolve().parent.parent / "surface" / "static" / "kitchen"  # the page's kitchen data
 HTTP_PORT = 8005
 ANSWER_TIMEOUT_SECONDS = 60  # a quote asks Valio twice, an authorization may ask the judge
 
@@ -41,7 +45,9 @@ SERVER_INSTRUCTIONS = (
     "3. Always pass the buyer's exact original sentence verbatim as `request_text` when calling `authorize_checkout`.\n"
     "4. Human approvals never happen in chat. If `status` is `pending_approval`, state the reason, the `deadline` "
     "(order cut-off), and the `approval_url` where the approver must review and sign.\n"
-    "5. Keep answers short: what was ordered, the total, who signed, the order id."
+    "5. For the menu, recipes, bookings, stock, or 'order what is missing', call `get_kitchen` first. Its "
+    "`order_needs` is what to quote, exactly as given, with `needed_by` as the delivery date: no search is needed.\n"
+    "6. Keep answers short: what was ordered, the total, who signed, the order id."
 )
 
 server = MCPServer("valio-aimo", instructions=SERVER_INSTRUCTIONS)
@@ -163,6 +169,57 @@ def _summarize_checkout(checkout_id: str, checkout: dict[str, Any]) -> dict[str,
         "lines": lines_summary,
         "shortfalls": aimo.get("shortfalls", []),
         "alternatives": aimo.get("alternatives", []),
+    }
+
+
+def _kitchen_file(name: str) -> dict[str, Any]:
+    return json.loads((KITCHEN_DIR / name).read_text(encoding="utf-8"))
+
+
+@server.tool()
+def get_kitchen() -> dict[str, Any]:
+    """The restaurant's own kitchen data: the menu's recipes, the bookings of the coming services, and the stock count.
+
+    Call it for any question about the menu, recipes, bookings, stock, or what the kitchen needs to order.
+    `order_needs` lists what is short for the coming services (need minus stock, computed by the kitchen's system),
+    ready to pass as `needs` to `request_quote`, with `needed_by` (the first service) as `delivery_date`.
+    Never recompute or round these quantities yourself.
+    """
+    recipes = _kitchen_file("recipes.json")
+    bookings = _kitchen_file("bookings.json")
+    stock = _kitchen_file("stock.normal-order.json")
+    services = bookings["services"]
+    short = [line for line in stock["lines"] if line["to_order"] > 0]
+    return {
+        "restaurant": "Demo Restaurant Helsinki (synthetic sample data, not Valio data)",
+        "covers_per_service": recipes["covers_per_service"],
+        "recipes": [
+            {
+                "course": recipe["course"],
+                "dish": f"{recipe['name']}, {recipe['with']}",
+                "ingredients": [
+                    {"product_id": i["product_id"], "name": i["name"], "per_service": i["per_service"]}
+                    for i in recipe["ingredients"]
+                ],
+            }
+            for recipe in recipes["recipes"]
+        ],
+        "services": [
+            {"date": s["date"], "meal": s["meal"], "booked": s["booked"], "projected": s["projected"]} for s in services
+        ],
+        "stock": {
+            "counted_at": stock["counted_at"],
+            "counted_by": stock["counted_by"],
+            "for_services": stock["for_services"],
+            "lines": [
+                {key: line[key] for key in ("product_id", "name", "unit", "need", "in_stock", "to_order", "dishes")}
+                for line in stock["lines"]
+            ],
+        },
+        "needed_by": services[0]["date"],
+        "order_needs": [
+            {"product_id": line["product_id"], "amount": line["to_order"], "unit": line["unit"]} for line in short
+        ],
     }
 
 
