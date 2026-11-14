@@ -216,6 +216,7 @@ class SubstituteFor(ContractModel):
     sales_unit: str | None = None
     base_unit: str | None = None
     size_per_sales_unit: SizePerSalesUnit | None = None
+    temperature_condition: int | None = None
     nutritional_claims: list[str] = []
     labels: list[str] = []
     origin: Claim | None = None
@@ -231,6 +232,7 @@ class LineClaims(ContractModel):
     base_quantity: float
     base_unit: BuyerUnit
     size_per_sales_unit: SizePerSalesUnit | None = None
+    temperature_condition: int | None = None
     comparison_price_minor: int
     comparison_unit: str
     substitute_for: SubstituteFor | None = None

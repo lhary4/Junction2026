@@ -200,6 +200,7 @@ class _Builder:
             base_quantity=base_quantity,
             base_unit=unit,
             size_per_sales_unit=card.size_per_sales_unit,
+            temperature_condition=card.temperature_condition,
             comparison_price_minor=offer.comparison_price_minor,
             comparison_unit=offer.price["comparisonUnit"],
             substitute_for=SubstituteFor(
@@ -211,6 +212,7 @@ class _Builder:
                 sales_unit=replaces.sales_unit,
                 base_unit=replaces.base_unit,
                 size_per_sales_unit=replaces.size_per_sales_unit,
+                temperature_condition=replaces.temperature_condition,
                 nutritional_claims=replaces.nutritional_claims,
                 labels=replaces.labels,
                 origin=replaces.origin,

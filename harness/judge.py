@@ -142,6 +142,8 @@ def _structured_product(card: dict[str, Any]) -> dict[str, Any]:
         structured["sales_unit"] = card["sales_unit"]
     if card.get("base_unit"):
         structured["base_unit"] = card["base_unit"]
+    if card.get("temperature_condition") is not None:
+        structured["temperature_condition"] = card["temperature_condition"]
     size_info = card.get("size_per_sales_unit")
     if isinstance(size_info, dict) and size_info.get("value") is not None and size_info.get("unit"):
         structured["size_per_sales_unit"] = f"{size_info['value']:g} {size_info['unit']}"

@@ -62,6 +62,7 @@ def test_judge_input_strips_marketing_and_unstructured_fields():
         "labels",
         "sales_unit",
         "base_unit",
+        "temperature_condition",
         "size_per_sales_unit",
     }
     assert rendered["candidate_product"]["origin_country"] == "FI"

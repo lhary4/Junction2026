@@ -357,6 +357,8 @@ def _build_original_card(
             card["brand"] = orig_line.brand
         if orig_line.size_per_sales_unit is not None:
             card["size_per_sales_unit"] = orig_line.size_per_sales_unit.model_dump(mode="json")
+        if orig_line.temperature_condition is not None:
+            card["temperature_condition"] = orig_line.temperature_condition
         if orig_line.nutritional_claims:
             card["nutritional_claims"] = list(orig_line.nutritional_claims)
 
@@ -368,6 +370,8 @@ def _build_original_card(
         card["base_unit"] = orig.base_unit
     if orig.size_per_sales_unit is not None:
         card["size_per_sales_unit"] = orig.size_per_sales_unit.model_dump(mode="json")
+    if orig.temperature_condition is not None:
+        card["temperature_condition"] = orig.temperature_condition
     if orig.origin is not None:
         card["origin"] = orig.origin.model_dump(mode="json")
     if orig.labels:
@@ -402,6 +406,8 @@ def _build_candidate_card(
     card["base_unit"] = lc.base_unit
     if lc.size_per_sales_unit is not None:
         card["size_per_sales_unit"] = lc.size_per_sales_unit.model_dump(mode="json")
+    if lc.temperature_condition is not None:
+        card["temperature_condition"] = lc.temperature_condition
     card["nutritional_claims"] = list(lc.nutritional_claims) if lc.nutritional_claims else list(
         card.get("nutritional_claims") or []
     )

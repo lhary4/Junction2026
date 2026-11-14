@@ -400,6 +400,18 @@
           ],
           "default": null
         },
+        "temperature_condition": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Temperature Condition"
+        },
         "comparison_price_minor": {
           "title": "Comparison Price Minor",
           "type": "integer"
@@ -1067,6 +1079,18 @@
             }
           ],
           "default": null
+        },
+        "temperature_condition": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Temperature Condition"
         },
         "nutritional_claims": {
           "default": [],

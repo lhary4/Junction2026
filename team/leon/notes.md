@@ -2,14 +2,15 @@
 
 Results, numbers and open questions for the others. Newest first.
 
-## Signed substitution claims & typed `catalog_listed` flag in the quote (PR #23 follow-up to PR #21)
+## Signed substitution claims & typed `catalog_listed` flag in the quote (PR #25 follow-up to PR #21 & Adrien's PR #24)
 
-Closed the last two contract cleanups so 100% of substitution guardrail & judge inputs come from the ES256-signed quote with zero unsigned `/products/search` lookup and zero string matching on `Alternative.why`:
+Closed the last two contract cleanups (plus both `TECH-CHOICES.md` / `temperature_condition` notes from Adrien's PR #24) so 100% of substitution guardrail & judge inputs come from the ES256-signed quote with zero unsigned `/products/search` lookup and zero string matching on `Alternative.why`:
 - **`contract/models.py` + `merchant/quotes.py` + `contract/schemas/`**:
-  - Added optional defaulted fields on `LineClaims` (`brand`, `size_per_sales_unit`, `nutritional_claims`) and `SubstituteFor` (`brand`, `sales_unit`, `base_unit`, `size_per_sales_unit`, `nutritional_claims`, `labels`, `origin`), plus `catalog_listed: bool = False` on `Alternative`. All existing recorded JWTs and example JSONs stay 100% valid because every new field has a safe default.
-- **`harness/app.py` + `harness/rules.py`**:
-  - Removed `_fetch_product_cards` (`GET /products/search`) from `harness/app.py`—every fact passed to `evaluate()` and `gemini-decision-1` now comes strictly from the verified `checkout_jwt` (`469363 -> 464201` scores **0.9626 (`auto`)** live!).
+  - Added optional defaulted fields on `LineClaims` (`brand`, `size_per_sales_unit`, `temperature_condition`, `nutritional_claims`) and `SubstituteFor` (`brand`, `sales_unit`, `base_unit`, `size_per_sales_unit`, `temperature_condition`, `nutritional_claims`, `labels`, `origin`), plus `catalog_listed: bool = False` on `Alternative`. All existing recorded JWTs and example JSONs stay 100% valid because every new field has a safe default.
+- **`harness/app.py` + `harness/rules.py` + `harness/judge.py`**:
+  - Removed `_fetch_product_cards` (`GET /products/search`) from `harness/app.py`—every fact passed to `evaluate()` and `gemini-decision-1` (including `temperature_condition`) now comes strictly from the verified `checkout_jwt`.
   - `_is_pre_accepted` now checks `chosen_alt.catalog_listed` directly instead of matching `"listed as a substitute in the catalog"` in `chosen_alt.why`.
+  - Corrected `"15-minute expiry"` -> `"24-hour expiry"` in `TECH-CHOICES.md`.
 
 ## Harness hardening against the real gateway, real fixtures & 61 substitution pairs (answers to Adrien's PR #18 & PR #19 notes)
 

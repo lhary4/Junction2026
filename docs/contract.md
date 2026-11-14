@@ -97,7 +97,7 @@ To pick another alternative, the agent asks for a new quote with `substitute_wit
 
 A stock claim of a `Stock` product is `measured` with the count. The mock answers `9999999999` for most of them: the gateway turns that into `"value": "not_given"`, `certainty: "declared"` (Valio says it can deliver, without a count).
 
-A line that replaces another product says so in `substitute_for`, with the replaced product's id, name, brand, category, units, pack size, allergens, nutritional claims, labels and origin (`LineClaims` carries the same structured facts for the substitute line itself). Because the gateway signs all of them inside the quote, the harness and the judge compare the two without another lookup. For a line that is not a substitute, `substitute_for` is `null`.
+A line that replaces another product says so in `substitute_for`, with the replaced product's id, name, brand, category, units, pack size, storage temperature, allergens, nutritional claims, labels and origin (`LineClaims` carries the same structured facts for the substitute line itself). Because the gateway signs all of them inside the quote, the harness and the judge compare the two without another lookup. For a line that is not a substitute, `substitute_for` is `null`.
 
 ### The verdict
 
