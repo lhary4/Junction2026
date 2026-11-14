@@ -54,75 +54,75 @@
         "name": "Butter, lactose free, salted",
         "amount": 77.4,
         "unit": "KG",
-        "dish": "shared"
+        "dish": "Shared"
       },
       {
         "product_id": "464194",
         "name": "Whipping cream, lactose free",
         "amount": 45.0,
         "unit": "L",
-        "dish": "dessert"
+        "dish": "Dessert"
       },
       {
         "product_id": "476890",
         "name": "Smetana, lactose free",
         "amount": 54.0,
         "unit": "KG",
-        "dish": "starter"
+        "dish": "Starter"
       },
       {
         "product_id": "464306",
         "name": "Lactose-free semi-skimmed milk",
         "amount": 90.0,
         "unit": "L",
-        "dish": "main"
+        "dish": "Main"
       },
       {
         "product_id": "460200",
         "name": "Wholegrain oat flakes",
         "amount": 18.0,
         "unit": "KG",
-        "dish": "dessert"
+        "dish": "Dessert"
       },
       {
         "product_id": "467958",
         "name": "Thin rye crispbread",
         "amount": 72.0,
         "unit": "ST",
-        "dish": "starter"
+        "dish": "Starter"
       },
       {
         "product_id": "468513",
         "name": "Pickled cucumbers",
         "amount": 24.0,
         "unit": "ST",
-        "dish": "main"
+        "dish": "Main"
       },
       {
         "product_id": "468172",
         "name": "Fine sea salt",
         "amount": 11.28,
         "unit": "KG",
-        "dish": "shared"
+        "dish": "Shared"
       },
       {
         "product_id": "460325",
         "name": "Caster sugar",
         "amount": 12.6,
         "unit": "KG",
-        "dish": "shared"
+        "dish": "Shared"
       },
       {
         "product_id": "466608",
         "name": "Rapeseed oil",
         "amount": 7.2,
         "unit": "L",
-        "dish": "shared"
+        "dish": "Shared"
       }
     ]
   },
   "quote": {
-    "id": "chk_1d5bfa23",
+    "id": "chk_97dde8bf",
     "merchant": {
       "id": "valio-aimo",
       "name": "Valio Aimo",
@@ -387,7 +387,7 @@
     "continue_url": null,
     "aimo": {
       "customer": "demo-restaurant-helsinki",
-      "issued_at": "2026-11-14T19:53:13.124670+02:00",
+      "issued_at": "2026-11-14T20:51:49.291812+02:00",
       "totals_exclude_tax": true,
       "requested": [
         {
@@ -478,14 +478,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "declared"
           },
           "price": {
             "value": 331,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -552,14 +552,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "declared"
           },
           "price": {
             "value": 391,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -626,14 +626,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "declared"
           },
           "price": {
             "value": 1306,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -701,14 +701,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "declared"
           },
           "price": {
             "value": 101,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -777,14 +777,14 @@
             "value": 137.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "price": {
             "value": 276,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -848,14 +848,14 @@
             "value": 160.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "price": {
             "value": 170,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -934,14 +934,14 @@
             "value": 37.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "price": {
             "value": 1722,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -1013,14 +1013,14 @@
             "value": 2633.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "price": {
             "value": 134,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -1090,14 +1090,14 @@
             "value": "not_given",
             "unit": "BAG",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "declared"
           },
           "price": {
             "value": 155,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -1167,14 +1167,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "declared"
           },
           "price": {
             "value": 2502,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:53:13.124686Z",
+            "as_of": "2026-11-14T18:51:49.291838Z",
             "certainty": "measured"
           },
           "origin": {
@@ -1249,7 +1249,7 @@
       "title": "The agent lowers the price in the quote and signs that",
       "status": "refused",
       "problems": [
-        "Checkout checkout_hash mismatch: expected MKil8UHUUJIn1aosysxbLgi-0rS16rWd2YSfoVjAQMM, got H1T8WDCfA8_Nv1Vwg7bLV8L1d1PVtACssVBpGWepB4Y",
+        "Checkout checkout_hash mismatch: expected mcsOyk0C6ys3pBsoudAxREPUMjFP7ko_rQFSwnAFOnM, got QIYEGBVgeycSgpFGu1kWJG2HtdQZQyY0zZqP2dEKa5c",
         "Amount 178315 exceeds maximum 150000",
         "payment mandate is for another quote"
       ]
@@ -1259,7 +1259,7 @@
       "title": "The agent sends again the mandate of an earlier order",
       "status": "refused",
       "problems": [
-        "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_1d5bfa23', got 'chk_38e812ec'"
+        "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_97dde8bf', got 'chk_b6b2eccb'"
       ]
     }
   ],
@@ -1270,7 +1270,7 @@
       "signer": "manager",
       "status": "done",
       "detail": "Signed in advance by the chef: the agent may order from Valio Aimo, up to EUR 1,500.00 an order, until Mon 16/11 23:59.",
-      "proof": "JU_ga4Xy0l4lT-45_eJ0Ek0x_eMXdSH7nWBsG7VYDGA",
+      "proof": "-Qi1otnuMFir5Ss7OLVwyeuhjjnRqi8GyNQku7jdAOc",
       "at": null
     },
     {
@@ -1279,8 +1279,8 @@
       "signer": "merchant",
       "status": "done",
       "detail": "10 lines, EUR 1,783.15 before tax, signed by Valio Aimo, valid until Sun 15/11 17:00.",
-      "proof": "MKil8UHUUJIn1aosysxbLgi-0rS16rWd2YSfoVjAQMM",
-      "at": "2026-11-14T19:53:13.124670+02:00"
+      "proof": "mcsOyk0C6ys3pBsoudAxREPUMjFP7ko_rQFSwnAFOnM",
+      "at": "2026-11-14T20:51:49.291812+02:00"
     },
     {
       "key": "verdict",
@@ -1307,7 +1307,7 @@
       "status": "refused",
       "detail": "3 of 3 refused by Valio. No valid signature, no order.",
       "proof": null,
-      "at": "2026-11-14T19:53:13.447876+02:00"
+      "at": "2026-11-14T20:51:49.511865+02:00"
     },
     {
       "key": "sandbox_payment",
@@ -1333,59 +1333,59 @@
     "merchant": [
       {
         "seq": 4,
-        "at": "2026-11-14T19:53:13.428496+02:00",
+        "at": "2026-11-14T20:51:49.483679+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "quote_issued",
-        "checkout_id": "chk_1d5bfa23",
-        "checkout_hash": "MKil8UHUUJIn1aosysxbLgi-0rS16rWd2YSfoVjAQMM",
+        "checkout_id": "chk_97dde8bf",
+        "checkout_hash": "mcsOyk0C6ys3pBsoudAxREPUMjFP7ko_rQFSwnAFOnM",
         "what": "Quote for 155 ST of 463437 and 45 ST of 464194 and 27 ST of 476890 and 90 ST of 464306 and 18 ST of 460200 and 72 ST of 467958 and 24 ST of 468513 and 15 ST of 468172 and 13 BAG of 460325 and 1 ST of 466608, 1783.15 EUR excl. tax.",
         "why": "Asked by demo-restaurant-helsinki for delivery on 2026-11-19, valid until 2026-11-15 17:00.",
         "rule": null,
-        "prev_hash": "176713dad737b9ecdaf05c56f955e3129fca783b340495ccf8b2cea02e8e485a",
-        "hash": "cbc902fe948e7c44be01121dbff0b2d491614a72a0a1e30e860efb7b12b4e160"
+        "prev_hash": "12ea73e980e1d1c5bf04c7e8c215b665bfee93f59e60b1252cb000f9156303cc",
+        "hash": "ccf96e32bf7c30c7ce3508c58bc31a773ebf1e924a1c53df4a752858cae18c6e"
       },
       {
         "seq": 5,
-        "at": "2026-11-14T19:53:13.439267+02:00",
+        "at": "2026-11-14T20:51:49.499183+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "order_refused",
-        "checkout_id": "chk_1d5bfa23",
-        "checkout_hash": "MKil8UHUUJIn1aosysxbLgi-0rS16rWd2YSfoVjAQMM",
-        "what": "Order refused for quote chk_1d5bfa23.",
+        "checkout_id": "chk_97dde8bf",
+        "checkout_hash": "mcsOyk0C6ys3pBsoudAxREPUMjFP7ko_rQFSwnAFOnM",
+        "what": "Order refused for quote chk_97dde8bf.",
         "why": "Amount 178315 exceeds maximum 150000",
         "rule": null,
-        "prev_hash": "cbc902fe948e7c44be01121dbff0b2d491614a72a0a1e30e860efb7b12b4e160",
-        "hash": "a7ff7a9899df161c91c5422a87ffc893b45b811e297f17685cf7b36a17302d49"
+        "prev_hash": "ccf96e32bf7c30c7ce3508c58bc31a773ebf1e924a1c53df4a752858cae18c6e",
+        "hash": "0c28004db3ea7fb21410e73d7f2c56c87680c27dd54cfd5072eb89e917fd7932"
       },
       {
         "seq": 6,
-        "at": "2026-11-14T19:53:13.444389+02:00",
+        "at": "2026-11-14T20:51:49.507067+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "order_refused",
-        "checkout_id": "chk_1d5bfa23",
-        "checkout_hash": "MKil8UHUUJIn1aosysxbLgi-0rS16rWd2YSfoVjAQMM",
-        "what": "Order refused for quote chk_1d5bfa23.",
-        "why": "Checkout checkout_hash mismatch: expected MKil8UHUUJIn1aosysxbLgi-0rS16rWd2YSfoVjAQMM, got H1T8WDCfA8_Nv1Vwg7bLV8L1d1PVtACssVBpGWepB4Y; Amount 178315 exceeds maximum 150000; payment mandate is for another quote",
+        "checkout_id": "chk_97dde8bf",
+        "checkout_hash": "mcsOyk0C6ys3pBsoudAxREPUMjFP7ko_rQFSwnAFOnM",
+        "what": "Order refused for quote chk_97dde8bf.",
+        "why": "Checkout checkout_hash mismatch: expected mcsOyk0C6ys3pBsoudAxREPUMjFP7ko_rQFSwnAFOnM, got QIYEGBVgeycSgpFGu1kWJG2HtdQZQyY0zZqP2dEKa5c; Amount 178315 exceeds maximum 150000; payment mandate is for another quote",
         "rule": null,
-        "prev_hash": "a7ff7a9899df161c91c5422a87ffc893b45b811e297f17685cf7b36a17302d49",
-        "hash": "51a17ba9b56198bfa335f952fbe484f7f71190934ba87f5614b5ab48fd0d57b1"
+        "prev_hash": "0c28004db3ea7fb21410e73d7f2c56c87680c27dd54cfd5072eb89e917fd7932",
+        "hash": "75182eb4686b33348a67499f97e796aa961e54f5bfbad42be77544437923a82e"
       },
       {
         "seq": 7,
-        "at": "2026-11-14T19:53:13.447876+02:00",
+        "at": "2026-11-14T20:51:49.511865+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "order_refused",
-        "checkout_id": "chk_1d5bfa23",
-        "checkout_hash": "MKil8UHUUJIn1aosysxbLgi-0rS16rWd2YSfoVjAQMM",
-        "what": "Order refused for quote chk_1d5bfa23.",
-        "why": "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_1d5bfa23', got 'chk_38e812ec'",
+        "checkout_id": "chk_97dde8bf",
+        "checkout_hash": "mcsOyk0C6ys3pBsoudAxREPUMjFP7ko_rQFSwnAFOnM",
+        "what": "Order refused for quote chk_97dde8bf.",
+        "why": "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_97dde8bf', got 'chk_b6b2eccb'",
         "rule": null,
-        "prev_hash": "51a17ba9b56198bfa335f952fbe484f7f71190934ba87f5614b5ab48fd0d57b1",
-        "hash": "783e106e140f0b3391713fc0ac99dd6789975f4168b82087f79240e1fc9fba5b"
+        "prev_hash": "75182eb4686b33348a67499f97e796aa961e54f5bfbad42be77544437923a82e",
+        "hash": "24744840e41379968364fcbf09314d657fe694fce84fc44fce07af38ed2fb61f"
       }
     ]
   }

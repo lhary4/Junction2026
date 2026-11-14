@@ -42,6 +42,7 @@ MAX_VALIDITY = timedelta(hours=24)
 PLENTY = 9_999_999_999  # what the mock answers for most Stock products: available, count not given
 RELATED_CATEGORIES = {"10400": ("10402",), "10402": ("10400",)}  # milk drinks and plant-based drinks
 TIERS = ("best", "better", "good")
+MIN_NAME_WORD = 3  # shorter words ("l", "kg", "ca") say nothing about what a product is
 
 
 class QuoteError(ValueError):
@@ -73,7 +74,22 @@ class Offer:
 
     @property
     def comparison_price_minor(self) -> int:
-        return round(self.price["comparisonPrice"]["value"] * 100)
+        return self._comparison()[0]
+
+    @property
+    def comparison_unit(self) -> str:
+        return self._comparison()[1]
+
+    def _comparison(self) -> tuple[int, str]:
+        """The price per litre or kilo, and that unit. Valio leaves it out for some products (caster sugar 460325):
+        then it is the price divided by the size in the product file, or failing that the price of one sales unit."""
+        given = (self.price.get("comparisonPrice") or {}).get("value")
+        if given and self.price.get("comparisonUnit"):
+            return round(given * 100), self.price["comparisonUnit"]
+        size = self.card.size_per_sales_unit
+        if size.value and size.unit:
+            return round(self.unit_price_minor / size.value), size.unit
+        return self.unit_price_minor, self.card.sales_unit
 
 
 def build_quote(request: QuoteRequest, catalog: Catalog | None = None) -> AimoCheckout:
@@ -202,7 +218,7 @@ class _Builder:
             size_per_sales_unit=card.size_per_sales_unit,
             temperature_condition=card.temperature_condition,
             comparison_price_minor=offer.comparison_price_minor,
-            comparison_unit=offer.price["comparisonUnit"],
+            comparison_unit=offer.comparison_unit,
             substitute_for=SubstituteFor(
                 product_id=replaces.id,
                 name=replaces.name,
@@ -290,7 +306,7 @@ class _Builder:
                     product_id=offer.card.id,
                     tier=tier,
                     comparison_price_minor=offer.comparison_price_minor,
-                    comparison_unit=offer.price["comparisonUnit"],
+                    comparison_unit=offer.comparison_unit,
                     why=why,
                     chosen=chosen,
                     catalog_listed=is_listed,
@@ -319,7 +335,9 @@ class _Builder:
                 continue
             is_listed = pid in listed
             tier, why = _tier(original, offer.card, is_listed)
-            by_tier[tier].append(((not is_listed, offer.comparison_price_minor, pid), offer, why, is_listed))
+            # Valio's own suggestions first, then the closest name, then the cheapest per litre or kilo.
+            order = (not is_listed, -_closeness(original.name, offer.card.name), offer.comparison_price_minor, pid)
+            by_tier[tier].append((order, offer, why, is_listed))
         return {
             tier: [(tier, o, why, is_listed) for _, o, why, is_listed in sorted(found, key=lambda f: f[0])]
             for tier, found in by_tier.items()
@@ -327,7 +345,7 @@ class _Builder:
 
     def _acceptable(self, original: ProductCard, offer: Offer, missing: float, unit: str) -> bool:
         card = offer.card
-        if offer.available_date > self.request.delivery_date or offer.price.get("comparisonUnit") != unit:
+        if offer.available_date > self.request.delivery_date or offer.comparison_unit != unit:
             return False
         if card.allergens.data != "complete" or set(original.allergens.free_from) & set(card.allergens.contains):
             return False
@@ -350,6 +368,22 @@ def _tier(original: ProductCard, candidate: ProductCard, listed: bool) -> tuple[
     if candidate.category == original.category:
         return "better", f"same category, but contains {contains} instead of {', '.join(original.allergens.contains)}"
     return "good", f"related category {candidate.category}, contains {contains}{source}"
+
+
+def _closeness(original: str, candidate: str) -> int:
+    """How much two product names say the same thing: the words of each that the other one has.
+
+    The cheapest product of a category is often another product altogether: for a squeaky cheese it was a cheddar
+    cream, for a lingonberry jam an apple filling. A word may sit inside a longer one, so "lingonberry" and "jam"
+    both count against "lingonberryjam". Pack sizes ("500g", "3kg") and words of one or two letters do not count.
+    """
+    ours, theirs = _name_words(original), _name_words(candidate)
+    shared = lambda word, others: any(word in other or other in word for other in others)
+    return sum(shared(word, theirs) for word in ours) + sum(shared(word, ours) for word in theirs)
+
+
+def _name_words(name: str) -> set[str]:
+    return {w for w in Catalog.words(name) if len(w) >= MIN_NAME_WORD and not any(c.isdigit() for c in w)}
 
 
 def summary(checkout: AimoCheckout) -> str:

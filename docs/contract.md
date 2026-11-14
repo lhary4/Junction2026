@@ -92,11 +92,13 @@ A quote is valid until the order cut-off (`closing_time`), and at most 24 hours.
 
 Inside one quote, stock is counted once. Two needs for the same product, or two shortfalls covered by the same substitute, never add up to more than Valio has: the second one gets what the first one left, and a shortfall for the rest.
 
-`aimo.shortfalls` says what could not be covered. `aimo.alternatives` ranks substitutes from Valio's own assortment, one per tier: `best` (same category, same allergens), `better` (same category, other allergens), `good` (a related category, plant-based drinks for milk drinks). The catalog already lists substitutes for some products (field `substitutions` in the product file, read both ways): they come first in a tier with `catalog_listed: true`, then the cheapest per litre or kilo (`catalog_listed: false`). A substitute is only offered if it arrives on time, covers the whole shortfall, has complete allergen data and keeps every free-from promise of the original (a lactose-free product is only replaced by a lactose-free one). The `best` one is chosen unless `allow_alternatives` is false.
+`aimo.shortfalls` says what could not be covered. `aimo.alternatives` ranks substitutes from Valio's own assortment, one per tier: `best` (same category, same allergens), `better` (same category, other allergens), `good` (a related category, plant-based drinks for milk drinks). The catalog already lists substitutes for some products (field `substitutions` in the product file, read both ways): they come first in a tier with `catalog_listed: true`. Then come the others (`catalog_listed: false`), the closest product name first, then the cheapest per litre or kilo. Closest means the most name words in common, pack sizes left out: the category alone is too wide, the cheapest "cheese" for a squeaky cheese was a cheddar cream. A substitute is only offered if it arrives on time, covers the whole shortfall, has complete allergen data and keeps every free-from promise of the original (a lactose-free product is only replaced by a lactose-free one). The `best` one is chosen unless `allow_alternatives` is false.
 
 To pick another alternative, the agent asks for a new quote with `substitute_with` on the need, for example `{"product_id": "469363", "amount": 600, "unit": "L", "substitute_with": "464320"}`. The gateway refuses a product it would not offer.
 
 A stock claim of a `Stock` product is `measured` with the count. The mock answers `9999999999` for most of them: the gateway turns that into `"value": "not_given"`, `certainty: "declared"` (Valio says it can deliver, without a count).
+
+Each line carries its price per litre or kilo (`comparison_price_minor`, `comparison_unit`) as Valio's price API gives it. For the few products where it gives none (the caster sugar 460325), the gateway divides the price by the size of one sales unit in the product file. If the file has no size either, it is the price of one sales unit and `comparison_unit` is the sales unit.
 
 A line that replaces another product says so in `substitute_for`, with the replaced product's id, name, brand, category, units, pack size, storage temperature, allergens, nutritional claims, labels and origin (`LineClaims` carries the same structured facts for the substitute line itself). Because the gateway signs all of them inside the quote, the harness and the judge compare the two without another lookup. For a line that is not a substitute, `substitute_for` is `null`.
 
@@ -188,7 +190,7 @@ A step is `key`, `title`, `signer` (`manager`, `agent`, `merchant` or `none`), `
 
 An attack's `status` is `pending`, `refused` (the expected end) or `accepted`, which would mean Valio let a bad mandate through: the page must show it as a failure.
 
-Two things in the examples are ahead of the code: the `sandbox_payment` step is illustrative until the gateway books payments (step A9), and the substitution examples will be recorded again once the ranking of substitutes is settled (step A7).
+The examples were recorded with the restaurant's policy (limit EUR 1,500) and the gateway's own pick of substitute, the bread cheese 475072 for the squeaky cheese 474880. One thing in them is ahead of the code: the `sandbox_payment` step is illustrative until the gateway books payments (step A9).
 
 ## Routes
 

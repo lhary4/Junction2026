@@ -2,6 +2,44 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## A7: the live probe, the ranking fix and the ingredient of button 2 (14/11, 21:00)
+
+How I looked: this branch on `main` at `b4f70de`, `VALIO_MODE=live`, delivery on 2026-11-19, the real `merchant.app` behind the real harness, the real Gemini judge, and Léon's restaurant policy taken unchanged from `feat/leon-saturday-evening` (it is not on `main` yet: limit EUR 1,500, thresholds 0.85 and 0.15).
+
+**What the gateway proposed, before and after the fix.** Each need in kilos, as the kitchen states it. No `substitute_with`: this is the gateway's own pick.
+
+| Need | Why it is short | Pick before (cheapest of the tier) | Pick now (closest name, then price) | Judge on the pick now | Verdict |
+|---|---|---|---|---|---|
+| Squeaky cheese 474880, 10.5 kg | `late_delivery`, cut-off passed on 11/11 | 474404 Nacho&Taco cheddar cheese creme, judge 0.01 | 475072 Haapalan lactose-free bread cheese 500 g, 21 pieces, EUR 114.87 | `within_preferences` 0.64, `same_use` 0.93 | `human`: "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign." |
+| Lingonberry jam 465815, 4.5 kg | `out_of_stock`, no delivery on any date | 475860 Saarioinen apple filling, judge 0.01 | 462198 Dronningholm lingonberry jam 1 kg, 5 tubs, EUR 32.70 | 0.31 and 0.75 | `human`, same sentence with 0.31 |
+
+The scores are the ones Léon measured in L5, to the fourth decimal.
+
+**The pick for button 2: the squeaky cheese.** Both cases end with the chef signing, so the fourth button "Above the limit" is not needed. The cheese is the first choice of the plan, it is the dessert's main ingredient, and its two scores tell a clear story: the same use (0.93), but another maker and 500 g pieces instead of 670 g (0.64). The jam stays the fallback, it works the same way.
+
+**What changed in the gateway (`merchant/quotes.py`).**
+
+- Inside a tier: Valio's listed substitutes first, then the closest product name, then the cheapest. Closest is the number of name words the two names share, pack sizes left out, and a word may sit inside a longer one ("lingonberry" and "jam" both count against "lingonberryjam"). Nothing changes in replay: the 201 tests of `main` pass unchanged.
+- A product with no `comparisonPrice` in Valio's price API no longer answers HTTP 500. The caster sugar 460325 is the one on the menu. The quote works the price per kilo out from the price and the size in the product file.
+
+**Button 1, live.** The ten dairy and dry goods lines: EUR 186.89, verdict `auto`, signed by the agent, receipt verified.
+
+**Button 3, live.** Twelve weeks of the normal order at once, EUR 1,783.15, above the EUR 1,500 cap: the three bad mandates are refused. Ten weeks is EUR 1,497.65, under the cap, and the gateway accepted that agent mandate, as it should. The sentences Valio answers are the SDK's own ("KB-SD-JWT nonce mismatch"): true, hard to read in a video.
+
+**The example files are recorded again** (`contract/examples/demo-state.*.json`) from these runs. The cheddar cream is gone from the substitution files.
+
+**Not done, and why.**
+
+- The frozen squeaky cheese 467148 is not offered. Its category, 41770, also holds ice cubes, coffee and banana leaves: declaring it "related" to cheese would offer those too. Léon measured it at 0.01 anyway ("frozen instead of fresh"). So the card shows one substitute, not two.
+- The list of alternatives has one entry: one per tier, and only `best` has a candidate.
+
+**Open, for the three of us.**
+
+- For Colette: `state.quote` is the `AimoCheckout` itself (`state.quote.line_items`, `state.quote.aimo`), not a `CheckoutResponse` as your brief says. `linesTable(state.quote)` works as it is. The token is left out on purpose. `request.lines[].dish` is "Starter", "Main", "Dessert" or "Shared".
+- For Colette and Léon: `kitchen.name` is still "Demo Restaurant Helsinki", made from the customer id. I found no name for the restaurant in the repo. Tell me the name and I record the files again.
+- For Léon, for A8: the driver cannot read the open mandate over HTTP. To show its hash on step 1 of the trail, the harness needs a small route or an audit line when it issues the open mandates.
+- The order's `delivery_date` is 16/11, the day Valio can deliver, while the kitchen asked for 19/11. To decide before the video: show the date asked, or say "from 16/11".
+
 ## After PR #21 (Léon's harness hardening): what is closed, what is left (14/11, evening)
 
 How I looked: `main` at `12bded1`, replay mode, the real `merchant.app` behind the real harness, and the real Gemini judge this time (about 70 calls, under one cent). `uv run pytest` gives 189 passed. The sections below this one describe the harness before PR #21.
