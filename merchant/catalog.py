@@ -84,8 +84,8 @@ class Catalog:
         """
         terms = self.words(query)
         ranked = []
-        for product in self.products.values():
-            if not terms or _deleted(product):
+        for product in self.products.values() if terms else []:
+            if _deleted(product):
                 continue
             scores = [
                 (-sum(t in words for t in terms), sum(not any(t in word for t in terms) for word in words))
