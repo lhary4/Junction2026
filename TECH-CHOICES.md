@@ -147,7 +147,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: replay mode works at any hour, on any day, with no setting. Quote expiry, approval deadlines and receipt times follow the frozen clock, so in replay mode every line of the logs carries the same time and nothing expires on its own: to show an expiry, set `AIMO_FROZEN_NOW` to a time after the deadline. The gateway and the harness must run in the same mode (`VALIO_MODE`), or their clocks disagree. The permissions themselves keep the real time, because the AP2 toolkit stamps the real time when it signs. They are valid until the end of 16/11, so this holds for the whole weekend.
 - If we change it: a ticking frozen clock (starting at the recorded time) would be one function to change.
 - Alternatives we looked at: passing the time everywhere by hand (easy to forget one place); keeping the real clock in replay mode unless someone sets `AIMO_FROZEN_NOW` (what we had first: the demo would have stopped quoting on Sunday at 17:00).
-- Decided in: PR #9, 14/11/2026. Replay mode freezing the clock by itself: PR for the gateway fixes (`feat/gateway-fixes`), 14/11/2026.
+- Decided in: PR #9, 14/11/2026. Replay mode freezing the clock by itself: PR #15, 14/11/2026.
 
 ## Data: local files, live calls on a shortlist, and a replay mode
 - Status: decided
@@ -174,7 +174,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: the size on a product card is a reading of the name, and says how it was read. In a quote it is checked against Valio's own numbers (price divided by price per litre): within 2% the name is confirmed, otherwise the price wins, because Valio invoices on it. Checked on the 157 recorded products: the three that carry a pack count now match the price. On the whole catalog the rule changes about 1,100 cards and gives a size to 160 that had none. It only makes sizes bigger, never smaller.
 - If we change it: `size_per_sales_unit` in `merchant/catalog.py`, and its tests in `tests/test_merchant_robustness.py`.
 - Alternatives we looked at: the name's size alone (wrong for every multipack sold as one unit); trusting only the price per litre (not there before a quote, so a product card would show no size).
-- Decided in: PR #11, 14/11/2026 (reading the name). The pack count: PR for the gateway fixes (`feat/gateway-fixes`), 14/11/2026.
+- Decided in: PR #11, 14/11/2026 (reading the name). The pack count: PR #15, 14/11/2026.
 
 ## Substitutes: the gateway proposes, ranked in three tiers, and never breaks a free-from promise
 - Status: decided (the ranking inside a tier is open: Colette may change what counts first)
