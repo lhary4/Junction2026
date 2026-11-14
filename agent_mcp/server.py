@@ -1,9 +1,9 @@
 """MCP server for the external buying agent, on the real services.
 
-Exposes the tools of docs/contract.md, plus `get_kitchen`. `get_kitchen` reads the restaurant's own data, the files the
+Exposes the seven tools of docs/contract.md. `get_kitchen` reads the restaurant's own data, the files the
 kitchen page reads (surface/static/kitchen/: recipes, bookings, stock count). Every other tool calls a running service,
 so every fact comes from the gateway or the harness, never from this file:
-- search and orders: the Valio gateway (MERCHANT_URL, default http://localhost:8001)
+- search, offers and orders: the Valio gateway (MERCHANT_URL, default http://localhost:8001)
 - authorization status: the buyer's harness (HARNESS_URL, default http://localhost:8002)
 - quotes and authorizations: the demo driver (DRIVER_URL, default http://localhost:8003), which forwards them to the
   gateway and the harness, and shows the order on the kitchen page as the "Chat order"
@@ -27,6 +27,7 @@ from typing import Any, Literal, TypedDict
 
 import httpx
 from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
 
 KITCHEN_DIR = Path(__file__).resolve().parent.parent / "surface" / "static" / "kitchen"  # the page's kitchen data
@@ -37,11 +38,16 @@ SERVER_INSTRUCTIONS = (
     "You are an external wholesale buying agent connected to Valio Aimo and the buyer's guardrail harness. "
     "The buyer is a 50-cover restaurant in Helsinki. Follow these rules strictly:\n"
     "1. Never invent or guess any fact: prices, stock, totals, delivery dates, allergens, reliability, and carbon "
-    "footprint must come exclusively from tool outputs. Product search results have no prices; call `request_quote` "
-    "before stating any price or total. Report `unknown` certainty explicitly as unknown, never as safe or available.\n"
-    "2. When the buyer says what they need, how much, and by when, complete the workflow without asking questions: "
-    "`search_products` (one or two words of the product name, in English), then `request_quote` for the best match, "
-    "then `authorize_checkout` so the buyer's harness decides whether the order is signed automatically or by a human.\n"
+    "footprint must come exclusively from tool outputs. Product search results have no prices. Prices from "
+    "`lookup_offers` are indicative: say so, with their `as_of` time. A price or total only commits Valio once it is in "
+    "the signed quote from `request_quote`. Report `unknown` certainty explicitly as unknown, never as safe or available.\n"
+    "2. To compare products or find the cheapest, call `lookup_offers` once (one or two words of the product name, in "
+    "English): it prices every match in one call, sorted orderable first, then cheapest per litre or kilo. Never call "
+    "`request_quote` product by product to compare prices. Never pick an offer with `orderable: false`: say its "
+    "`reason`. When the buyer says what they need, how much, and by when, complete the workflow without asking "
+    "questions: `lookup_offers` with the amount and unit, `request_quote` for the first orderable offer that fits, then "
+    "`authorize_checkout` so the buyer's harness decides whether the order is signed automatically or by a human. If a "
+    "tool answers with an error, read its message and tell the buyer what it says.\n"
     "3. Always pass the buyer's exact original sentence verbatim as `request_text` when calling `authorize_checkout`.\n"
     "4. Human approvals never happen in chat. If `status` is `pending_approval`, state the reason, the `deadline` "
     "(order cut-off), and the `approval_url` where the approver must review and sign.\n"
@@ -61,8 +67,12 @@ class NeedInput(TypedDict):
     unit: Literal["L", "KG", "ST"]
 
 
-class ServiceError(RuntimeError):
-    """A service did not answer, or refused. The message is what the agent reads."""
+class ServiceError(ToolError):
+    """A service did not answer, or refused. The message is what the agent reads.
+
+    It must be a ToolError: the MCP SDK hides the message of any other exception and the agent reads only
+    "Error executing tool request_quote", with no way to tell "out of stock" from a crash.
+    """
 
 
 def _url(name: str, default: str) -> str:
@@ -237,6 +247,33 @@ def search_products(query: str, limit: int = 5) -> dict[str, Any]:
 
 
 @server.tool()
+def lookup_offers(
+    query: str,
+    delivery_date: str,
+    amount: float | None = None,
+    unit: Literal["L", "KG", "ST"] | None = None,
+    limit: int = 5,
+) -> dict[str, Any]:
+    """Compare products: price, stock, delivery date and cut-off of every product matching `query`, in one call.
+
+    Args:
+        query: One or two words of the product name, in English (for example 'potato', 'whipping cream').
+        delivery_date: Requested delivery date in ISO format `YYYY-MM-DD`.
+        amount: Optional quantity the buyer needs, with `unit` (`'L'`, `'KG'`, or `'ST'`). Both or neither.
+        limit: How many offers to return (5 is enough for a chat, at most 50).
+
+    Offers are sorted: orderable first, then enough counted stock for `amount`, then cheapest per litre or kilo
+    (`comparison_price`, in euro cents). `orderable: false` comes with a `reason` (out of stock, too late, unit
+    mismatch). Prices are indicative and not signed (`binding: false`): to order, call `request_quote` for the product
+    picked. `matched` larger than `priced` means the words were too broad: only the closest names were priced.
+    """
+    params: dict[str, Any] = {"q": query, "delivery_date": delivery_date, "limit": max(1, min(int(limit), 50))}
+    if amount is not None:
+        params |= {"amount": amount, "unit": unit}
+    return gateway("GET", "/offers", params=params)
+
+
+@server.tool()
 def request_quote(needs: list[NeedInput], delivery_date: str) -> dict[str, Any]:
     """Request a Valio Aimo ES256-signed quote for the buyer's product needs and target delivery date.
 
@@ -250,7 +287,7 @@ def request_quote(needs: list[NeedInput], delivery_date: str) -> dict[str, Any]:
     After obtaining the best quote for the buyer's request, call `authorize_checkout` with `checkout_id`.
     """
     if not needs:
-        raise ValueError("needs must contain at least one item")
+        raise ToolError("needs must contain at least one item")
     issued = driver("POST", "/agent/checkouts", json={"needs": needs, "delivery_date": delivery_date})
     return _summarize_checkout(issued["checkout_id"], issued["checkout"])
 
@@ -272,7 +309,7 @@ def authorize_checkout(checkout_id: str, request_text: str) -> dict[str, Any]:
     The order shows on the restaurant's kitchen page at the same time.
     """
     if not request_text or not request_text.strip():
-        raise ValueError("request_text must contain the human's original request sentence")
+        raise ToolError("request_text must contain the human's original request sentence")
     return driver("POST", "/agent/authorize", json={"checkout_id": checkout_id, "request_text": request_text})
 
 
