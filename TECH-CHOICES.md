@@ -239,14 +239,14 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: a database table; a single shared log.
 - Decided in: PR #7, 14/11/2026. Shared verifier in `common/audit.py`: PR #17, 14/11/2026. Gateway moved to the shared code: PR #18, 14/11/2026. Shared per-file lock inside `common/audit.py`: PR #21, 14/11/2026.
 
-## Payments: none, the spend cap travels in an AP2 payment mandate
+## Payments: a sandbox, the order is booked on a simulated invoice account and no real money moves
 - Status: decided
-- What it is: no money moves. Wholesale orders are invoiced on the customer's account, so the "payment instrument" in the mandate is that invoice account. The mandate carries the maximum amount the agent may commit.
-- Why: payment is outside the brief, but the mandate is where AP2 puts the spend limit, and it lets Valio check the limit itself.
-- What it changes for us: nothing to integrate with a bank or a network.
-- If we change it: real payment would add AP2's other roles (credential provider, payment processor).
-- Alternatives we looked at: x402, Nevermined (named in the brief as context, not required).
-- Decided in: PR #7, 14/11/2026.
+- What it is: wholesale orders are invoiced on the customer's account, so the "payment instrument" in the AP2 payment mandate is that invoice account, and the mandate carries the maximum amount the agent may commit. Once Valio's gateway has verified the mandates, it books the order's amount on a pretend account it keeps in a file: a credit limit, what is used so far, one line per payment. The order comes back with that payment, marked `sandbox`.
+- Why: the video has to show the end of the chain, a charge after the signatures. AP2 is a payment protocol, and stopping at "mandate verified" left its last step invisible. A sandbox shows it without a bank, a card network or a payment provider's account.
+- What it changes for us: every screen and every log line about the payment says "sandbox", and the page carries the banner "Concept mock-up". In the video we say "mandate" for what is signed and "sandbox payment" for the charge. The credit limit (EUR 20,000 a customer) and the terms ("Invoice at 14 days") are made up, because Valio's real ones are not in the challenge data. An order that does not fit on the account is refused, like one above the spend cap. Starting the services with `--fresh` empties the accounts.
+- If we change it: real payment would add AP2's other roles (credential provider, payment processor) and a real provider's test mode. Only `merchant/payments.py` and the payment step of the trail would change.
+- Alternatives we looked at: no payment at all (what we had until Saturday evening: the trail stopped at the receipt); a payment provider's test mode such as Stripe (one more account and one more integration for a step the brief does not ask for); x402, Nevermined (named in the brief as context, not required).
+- Decided in: PR #7, 14/11/2026 (the spend cap in the mandate). Sandbox payment: PR for step A9 (`feat/sandbox-payment`), 14/11/2026.
 
 ## Approval page: three plain files, with a mock mode that reads the examples
 - Status: decided
@@ -283,7 +283,6 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
-- **Sandbox payment** (planned for Saturday evening): the gateway books each order on a simulated invoice account, so the video can show a charge. It will replace "Payments: none" below when its PR is merged.
 - **Customer token on the gateway** (planned, after the demo flow): today anyone who can reach the gateway can ask a quote for any customer. Valio told us prices are per customer, so a token must say who is asking.
 - **A message to the chef** (planned for Saturday evening): a Telegram message when an order waits for a human. The approval itself stays on the page.
 
@@ -295,6 +294,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - **React, Vite and SQLite**: a plain page and files are enough and need no build.
 - **Ed25519 signatures**: AP2 does not allow them for quotes.
 - **Running the whole demo inside the chat**: the brief says this is not a chatbot, and approval must happen where the agent cannot reach.
+- **No payment step at all** ("Payments: none"): the trail stopped at the signed receipt, and a video about a payment protocol never showed a charge. Replaced by the sandbox payment.
 - **Claude Desktop as the agent on screen**: our only test of a live assistant took about 2 minutes for one round (on another client, Claude Desktop itself could not run on that laptop), and the video is 2 minutes long. A scripted demo driver sends the same requests.
 - **Search results limited to the most common kind of product**: it hid the right answer whenever another kind matched more often ("butter" returned butter buns only). Every kind is returned now.
 - **Pre-accepting every substitute in the same category and allergen group**: coffee milk and sweetened vanilla milk sit in the same category and allergen group as plain milk, so only catalog-listed replacements in the top tier that lose no origin, label or dietary promise skip the judge now.

@@ -450,6 +450,29 @@ class Receipt(ContractModel):
     order_id: str
 
 
+class MandateFacts(ContractModel):
+    """What the payment mandate allows, as Valio read it once the signatures verified."""
+
+    # The agent's spend cap, from the open mandate the manager signed. Null when the manager signed this exact order.
+    cap_minor: int | None = None
+    amount_minor: int
+    currency: str
+    instrument: str
+
+
+class Payment(ContractModel):
+    """The sandbox charge: the order's amount booked on a simulated invoice account. No real money moves."""
+
+    payment_id: str
+    status: Literal["captured"]
+    amount_minor: int
+    currency: str
+    instrument: str
+    terms: str
+    sandbox: Literal[True] = True
+    captured_at: AwareDatetime
+
+
 class Order(ContractModel):
     order_id: str
     status: Literal["accepted"]  # a refused order is HTTP 403 with {"problems": [...]}, never an Order
@@ -464,6 +487,8 @@ class Order(ContractModel):
     accepted_at: AwareDatetime | None = None
     receipt_jwt: str | None = None
     receipt: Receipt | None = None
+    mandate: MandateFacts | None = None
+    payment: Payment | None = None
 
 
 # ---------- Audit ----------

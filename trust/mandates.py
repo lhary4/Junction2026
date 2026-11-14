@@ -27,7 +27,7 @@ from contract.ap2 import (
     PaymentInstrument,
     PaymentMandate,
 )
-from contract.models import AimoCheckout, Authorization, BuyerPolicy
+from contract.models import AimoCheckout, Authorization, BuyerPolicy, MandateFacts
 from trust import TrustError
 from trust.checkout import checkout_hash, read_checkout
 
@@ -53,6 +53,7 @@ class MandateCheck(BaseModel):
     signed_by: Literal["agent", "human"] | None
     problems: list[str]
     reference: str | None
+    facts: MandateFacts | None = None  # what the payment mandate allows: only when `ok`
 
 
 def issue_open_mandates(policy: BuyerPolicy, manager_key: JWK, agent_public_jwk: dict) -> OpenMandates:
@@ -102,16 +103,22 @@ def verify_mandates(authorization: Authorization, checkout_jwt: str, manager_pub
     problems = [] if actual == authorization.signed_by else [f"says signed by {authorization.signed_by}, is {actual}"]
 
     manager = JWK(**manager_public_jwk)
+    facts = None
     try:
-        if actual == "agent":
-            problems += _verify_agent(authorization, checkout, checkout_jwt, manager)
-        else:
-            problems += _verify_human(authorization, checkout, checkout_jwt, manager)
+        verify = _verify_agent if actual == "agent" else _verify_human
+        found, payment, cap = verify(authorization, checkout, checkout_jwt, manager)
+        problems += found
+        facts = MandateFacts(
+            cap_minor=cap,
+            amount_minor=payment.payment_amount.amount,
+            currency=payment.payment_amount.currency,
+            instrument=payment.payment_instrument.id,
+        )
     except Exception as e:  # noqa: BLE001  the SDK raises ValueError, TypeError or jwcrypto errors for a bad chain
         problems.append(f"mandate rejected: {type(e).__name__}: {e}"[:300])
-    return MandateCheck(
-        ok=not problems, signed_by=actual if not problems else None, problems=problems, reference=reference
-    )
+    if problems:
+        return MandateCheck(ok=False, signed_by=None, problems=problems, reference=reference)
+    return MandateCheck(ok=True, signed_by=actual, problems=[], reference=reference, facts=facts)
 
 
 def _closed_mandates(checkout_jwt: str) -> tuple[AimoCheckout, CheckoutMandate, PaymentMandate]:
@@ -126,7 +133,10 @@ def _closed_mandates(checkout_jwt: str) -> tuple[AimoCheckout, CheckoutMandate, 
     return checkout, closed_checkout, closed_payment
 
 
-def _verify_agent(authorization: Authorization, checkout: AimoCheckout, checkout_jwt: str, manager: JWK) -> list[str]:
+Verified = tuple[list[str], PaymentMandate, int | None]  # problems, the closed payment mandate, the agent's cap
+
+
+def _verify_agent(authorization: Authorization, checkout: AimoCheckout, checkout_jwt: str, manager: JWK) -> Verified:
     """Both chains must start with the manager's key, end with the key the manager bound, and target this quote."""
     bind = {
         "key_or_provider": lambda _token: manager,
@@ -137,17 +147,20 @@ def _verify_agent(authorization: Authorization, checkout: AimoCheckout, checkout
     payment_chain = PaymentMandateChain.parse(_client.verify(token=authorization.payment_mandate, **bind))
     problems = checkout_chain.verify(expected_checkout_hash=checkout_hash(checkout_jwt), checkout_jwt=checkout_jwt)
     problems += payment_chain.verify()
-    return problems + _payment_matches(payment_chain.closed_mandate, checkout, checkout_jwt)
+    problems += _payment_matches(payment_chain.closed_mandate, checkout, checkout_jwt)
+    caps = [c.max for c in payment_chain.open_mandate.constraints if getattr(c, "max", None) is not None]
+    return problems, payment_chain.closed_mandate, min(caps, default=None)
 
 
-def _verify_human(authorization: Authorization, checkout: AimoCheckout, checkout_jwt: str, manager: JWK) -> list[str]:
-    """Both closed mandates must be signed by the manager's own key, for this exact quote."""
+def _verify_human(authorization: Authorization, checkout: AimoCheckout, checkout_jwt: str, manager: JWK) -> Verified:
+    """Both closed mandates must be signed by the manager's own key, for this exact quote. No cap: the manager signs."""
     closed_checkout = _client.verify(authorization.checkout_mandate, manager, payload_type=CheckoutMandate)
     closed_payment = _client.verify(authorization.payment_mandate, manager, payload_type=PaymentMandate)
     problems = []
     if closed_checkout.mandate_payload.checkout_hash != checkout_hash(checkout_jwt):
         problems.append("checkout mandate is for another quote")
-    return problems + _payment_matches(closed_payment.mandate_payload, checkout, checkout_jwt)
+    payment = closed_payment.mandate_payload
+    return problems + _payment_matches(payment, checkout, checkout_jwt), payment, None
 
 
 def _payment_matches(payment: PaymentMandate, checkout: AimoCheckout, checkout_jwt: str) -> list[str]:

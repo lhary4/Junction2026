@@ -382,11 +382,15 @@ def _steps(
             _step(
                 "merchant_verifies",
                 "done",
-                f"{verified.what} {verified.why}" if verified else "Valio checked the mandates and accepted the order.",
+                (
+                    f"{verified.what} {verified.why}"
+                    if verified
+                    else "Valio checked the mandates and accepted the order."
+                )
+                + _mandate_facts(order),
                 at=verified.at if verified else order.accepted_at,
             ),
-            # The gateway does not book payments yet (step A9): the trail says so instead of showing a charge.
-            _step("sandbox_payment", "skipped", "No payment is booked yet: the sandbox payment is not built."),
+            _payment_step(order),
             _step(
                 "signed_receipt",
                 "done",
@@ -429,6 +433,31 @@ def _steps(
         _step("sandbox_payment", "skipped", "Nothing is booked."),
         _step("signed_receipt", "skipped", "No order, no receipt."),
     ]
+
+
+def _mandate_facts(order: Order) -> str:
+    """What the payment mandate allowed, as Valio read it: the amount, and the agent's cap when there is one."""
+    facts = order.mandate
+    if facts is None:
+        return ""
+    if facts.cap_minor is None:
+        return f" Amount {_eur(facts.amount_minor)}, no cap: the chef signed this exact order."
+    return f" Amount {_eur(facts.amount_minor)}, within the {_eur(facts.cap_minor)} cap of the open mandate."
+
+
+def _payment_step(order: Order) -> dict:
+    """The charge is a sandbox: the amount is booked on a simulated invoice account, and the sentence says so."""
+    payment = order.payment
+    if payment is None:  # an order taken before the gateway booked payments
+        return _step("sandbox_payment", "skipped", "No payment was booked for this order.")
+    return _step(
+        "sandbox_payment",
+        "done",
+        f"Sandbox payment: {_eur(payment.amount_minor)} booked on {payment.instrument}. {payment.terms}. "
+        "No real money moves.",
+        proof=payment.payment_id,
+        at=payment.captured_at,
+    )
 
 
 def _open_mandate(policy: BuyerPolicy | None) -> str:

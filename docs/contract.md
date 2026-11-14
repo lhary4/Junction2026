@@ -132,17 +132,27 @@ The spend cap is carried by the open payment mandate (`AmountRange`), so the gat
 
 ### The order
 
-`POST /checkouts/{id}/complete` takes the `Authorization` and checks, in this order: the quote exists, is still the one Valio signed and has not expired; the mandates verify against it (`trust.verify_mandates`); the quote has not been ordered yet.
+`POST /checkouts/{id}/complete` takes the `Authorization` and checks, in this order: the quote exists, is still the one Valio signed and has not expired; the mandates verify against it (`trust.verify_mandates`); the quote has not been ordered yet; the amount fits on the customer's invoice account (the sandbox payment, below).
 
 | Case | Answer |
 |---|---|
-| Everything passes | HTTP 200 with the `Order`, status `accepted`, and a receipt signed by Valio. The receipt's `reference` is the order's `mandate_reference` |
+| Everything passes | HTTP 200 with the `Order`, status `accepted`, its sandbox `payment` and a receipt signed by Valio. The receipt's `reference` is the order's `mandate_reference` |
 | The same mandate is sent again | HTTP 200 with the same `Order`. A retry after a lost answer never orders twice |
 | Another mandate for a quote that is already ordered | HTTP 403 |
 | Expired quote, mandate for another quote or amount, agent mandate above the cap, wrong key | HTTP 403 |
+| The amount does not fit on the invoice account, or the mandate names another account | HTTP 403 |
 | Unknown quote id | HTTP 404 |
 
-A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `order_accepted`, `order_replayed`, `order_refused`.
+A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created and nothing is booked on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `payment_captured`, `order_accepted`, `order_replayed`, `order_refused`.
+
+**The sandbox payment.** No real money moves. A wholesale customer pays on invoice, so the payment mandate names the customer's invoice account as its instrument (`invoice-account:<customer>`). Once the mandates verify, the gateway books the quote's total on a simulated account, one file per customer under `state/merchant/accounts/`: a credit limit, what is booked so far, one line per payment. The order then carries two more objects:
+
+| Field of `Order` | Content |
+|---|---|
+| `mandate` | what the payment mandate allowed, as Valio read it: `cap_minor` (the agent's spend cap from the open mandate, `null` when the manager signed this exact order), `amount_minor`, `currency`, `instrument` |
+| `payment` | `payment_id` (`pay_...`), `status` (`captured`), `amount_minor`, `currency`, `instrument`, `terms`, `sandbox` (always `true`), `captured_at` |
+
+The credit limit (EUR 20,000 a customer) and the terms ("Invoice at 14 days (simulated)") are made up for the sandbox: Valio's real ones are not in the challenge data. A mandate sent twice returns the same order and books nothing more. `scripts/dev.py --fresh` empties the accounts with the rest of the gateway's state.
 
 ### The demo state
 
@@ -172,12 +182,12 @@ A step is `key`, `title`, `signer` (`manager`, `agent`, `merchant` or `none`), `
 
 | `key` | Signer | `proof` |
 |---|---|---|
-| `open_mandate` | `manager` | hash of the open payment mandate |
+| `open_mandate` | `manager` | none yet: the harness shows its open mandates nowhere |
 | `signed_quote` | `merchant` | the quote hash (`checkout_hash`) |
 | `verdict` | `none` | none: the rules are in `verdict` |
 | `closed_mandates` | `agent` on `auto`, `manager` on `human`, `none` until the verdict says who | the mandate reference, the one the order and the receipt carry |
 | `merchant_verifies` | `merchant` | none |
-| `sandbox_payment` | `merchant` | the payment identifier |
+| `sandbox_payment` | `merchant` | the payment identifier (`order.payment.payment_id`). Its `detail` always starts with "Sandbox payment" |
 | `signed_receipt` | `merchant` | hash of the receipt token |
 
 | Step `status` | Meaning |
@@ -190,7 +200,7 @@ A step is `key`, `title`, `signer` (`manager`, `agent`, `merchant` or `none`), `
 
 An attack's `status` is `pending`, `refused` (the expected end) or `accepted`, which would mean Valio let a bad mandate through: the page must show it as a failure.
 
-The examples were recorded with the restaurant's policy (limit EUR 1,500) and the gateway's own pick of substitute, the bread cheese 475072 for the squeaky cheese 474880. One thing in them is ahead of the code: the `sandbox_payment` step is illustrative until the gateway books payments (step A9).
+The examples are recorded by `scripts/record_demo_states.py`: it runs the demo driver through the gateway and the harness in live mode and writes what `GET /state` answers. They were recorded with the restaurant's policy (limit EUR 1,500) and the gateway's own pick of substitute, the bread cheese 475072 for the squeaky cheese 474880. The attack example is older: the driver gets that scenario in step A10.
 
 ## Routes
 
@@ -240,7 +250,7 @@ The chef's decision does not go through the driver: the page sends it to the har
 | A scenario is still running | HTTP 409 |
 | The gateway or the harness does not answer, or refuses the request | HTTP 502 with a readable `detail` that names the service. The state goes back to idle: nothing half-done is shown |
 
-Two steps of the trail are not complete yet in the live state. `open_mandate` has no `proof`: the harness holds the open mandates and has no route that shows them. `sandbox_payment` is `skipped` with a sentence saying so, until the gateway books payments (step A9).
+One step of the trail is not complete yet: `open_mandate` has no `proof`, because the harness holds the open mandates and has no route that shows them.
 
 The three services allow cross-origin calls from `localhost`, so the page can read them all.
 

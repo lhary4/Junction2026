@@ -8,7 +8,7 @@ The demo page is then on http://localhost:8002/portal.html, served by the harnes
 The variables in .env are handed to every service. A variable already set in your terminal wins over .env.
 A service whose code is not in the repo yet is skipped.
 
---fresh removes what earlier runs left: quotes, orders, approvals and both audit logs. Use it before a rehearsal or
+--fresh removes what earlier runs left: quotes, orders, the sandbox invoice accounts, approvals and both audit logs. Use it before a rehearsal or
 the demo. In replay mode the clock is frozen, so an approval left pending never reaches its cut-off and would stay on
 the approval page. It is a start option and not a separate script, because the harness keeps its approvals in memory:
 emptying the files under a running harness would not empty the harness.
