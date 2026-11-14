@@ -82,6 +82,40 @@ At 16:30, stop for five minutes with Léon: his harness must fetch and verify on
 
 With Léon and Colette, write `scenarios/run.py` on one screen: act 1 through the real gateway and the real harness in replay mode. Expected: verdict `auto`, an order with its receipt, matching lines in both logs.
 
-## After 17:00
+## Saturday evening: the 2-minute video (replaces "After 17:00")
 
-In order: live mode for all four acts, the substitute ranking for act 3, then whatever the cut list in `PLAN.md` still allows. Milestones are in `PLAN.md`.
+Read the section "The demo: a 2-minute video, three buttons, one AP2 trail" in `PLAN.md` first. The demo runs on `scenarios/restaurant-case/`, not on milk. Colette builds the page only, so `scenarios/run.py` is yours tonight.
+
+One step = one branch = one small PR, as before.
+
+### A6. The demo state, as a model and example files (by 20:30)
+
+Branch `feat/demo-state-contract`. This unblocks Colette: she builds the page on these files.
+
+1. `DemoState` in `contract/models.py`: `scenarios` (id, title, hint), `scenario` (id, title, status: `idle`, `running`, `waiting_for_human`, `done`, `refused`), `kitchen` (name, covers per service, services, menu), `request` (text, lines with product id, name, amount, unit, dish), `quote`, `verdict`, `authorization`, `approval`, `order` (the existing models, or null), `attacks` (title, status, problems), `steps` (key, title, signer: `manager`, `agent`, `merchant` or `none`, status: `pending`, `done`, `waiting`, `refused` or `skipped`, detail, proof, at), `audit` (buyer and merchant events).
+2. Example files in `contract/examples/`: `demo-state.normal-order.json`, `demo-state.substitution.pending.json`, `demo-state.substitution.approved.json`, `demo-state.attack.json`. Customer `demo-restaurant-helsinki`.
+3. `tests/test_contract.py` validates them. Rerun `scripts/export_schemas.py`.
+
+### A7. The live probe and the substitution ingredient (by 20:45)
+
+No PR needed unless the ranking changes. In live mode (`VALIO_MODE=live`), ask a quote and an authorization for the squeaky cheese 474880, then for the lingonberry jam 465815, each as a need in kilos. Write what the gateway proposes and what the harness decides in `team/adrien/notes.md`. Known weakness: inside a tier the gateway ranks by price, so it may put another cheese or another fruit first. If so, rank the closest product name first, then the price (`merchant/quotes.py`). Pick the case where the chef signs, with Léon's judge numbers.
+
+### A8. The demo driver, buttons 1 and 2 (by 22:30)
+
+Branch `feat/demo-driver`. `scenarios/run.py`, a small FastAPI service on port 8003, also usable from the terminal. It plays the buying agent with the same calls as the MCP tools: `POST /checkouts` on the gateway, `POST /authorize` on the harness. Routes: `POST /scenarios/{id}/run`, `GET /state` (a `DemoState`, built from the quote, the verdict, the approval, the order and both audit logs), `POST /reset`. `scripts/dev.py` starts it as a third service. Cross-origin calls allowed from `localhost`.
+
+### A9. The sandbox payment (by 23:30)
+
+Branch `feat/sandbox-payment`. `merchant/payments.py`: once the mandates verify, book the amount on a simulated invoice account (credit limit, amount used, under `state/merchant/`). `Order` gains `payment` (id, status `captured`, amount, currency, instrument, terms, `sandbox: true`) and the mandate facts the trail shows (cap, amount, instrument). One audit line, `payment_captured`. Update the "Payments" entry of `TECH-CHOICES.md`: no real money moves, and every screen says "sandbox".
+
+### A10. Button 3, the attacks (by 00:15)
+
+Branch `feat/demo-attacks`. Three bad mandates sent straight to `POST /checkouts/{id}/complete`, built with `trust/` like `tests/test_merchant_orders.py`: signed by the agent above its cap, built over a changed quote, replayed on another quote. The gateway already refuses all three.
+
+### A11. The menu in the replay recording (by 01:00)
+
+Branch `feat/fixtures-restaurant`. Add the menu's products and the candidates of the chosen substitution to `contract/fixtures/valio/` by merging. Do not record the 157 existing products again: tests and the frozen clock depend on them. Say in `TECH-CHOICES.md` when the new answers were recorded.
+
+### If time is left
+
+A customer token on the gateway (`Authorization: Bearer` on `/offers`, `/checkouts` and `/orders`, the customer read from the token, switched on by an environment variable until the harness and the page send it), then the MCP live mode with Colette's agreement.
