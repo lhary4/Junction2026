@@ -161,11 +161,15 @@ Harness, port 8002 (`harness/`):
 | Route | Input | Output |
 |---|---|---|
 | `POST /authorize` | `{"checkout_id", "request_text"}` | `AuthorizationStatus` |
+| `GET /authorizations` | | `[AuthorizationStatus]` |
 | `GET /authorizations/{checkout_id}` | | `AuthorizationStatus` |
+| `GET /verdicts/{checkout_id}` | | `Verdict` |
 | `GET /approvals?status=pending` | | `[ApprovalRequest]` |
+| `GET /approvals/{id}` | | `ApprovalRequest` |
 | `POST /approvals/{id}/decision` | `{"decision": "approve" or "reject", "decided_by"}` | `AuthorizationStatus` |
 | `GET /policy` | | `BuyerPolicy` |
 | `GET /audit` | | `[AuditEvent]` |
+| `GET /` | | serves `surface/static` (and `/contract/examples` for `?mock=1`) |
 
 Both services allow cross-origin calls from `localhost`, so the page can read both.
 
@@ -214,4 +218,4 @@ verify_receipt(receipt_jwt: str, merchant_jwks) -> dict
 | `MERCHANT_URL` | harness, agent tools | default `http://localhost:8001` |
 | `HARNESS_URL` | agent tools, surface | default `http://localhost:8002` |
 | `AIMO_DATA_DIR` | gateway, scripts | where the three data files live, default `data/` |
-| `AIMO_STATE_DIR` | gateway | where quotes, orders and the audit log are written, default `state/` |
+| `AIMO_STATE_DIR` | both | where quotes, orders, approvals and both audit logs are written, default `state/` |

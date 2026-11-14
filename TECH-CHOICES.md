@@ -96,13 +96,13 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Decided in: PR #7, 14/11/2026.
 
 ## Models: Claude as the buying agent, Gemini Decision as the judge
-- Status: trying it (decision at the 14:05 sync on 14/11)
-- What it is: Claude Desktop plays the outside buying agent. A second, different model (Google's Gemini Decision) answers yes or no questions with a probability, for one thing only: is this substitute within what the buyer asked for?
-- Why: a judge that is not the agent is harder to fool. It is fast and cheap (0.10 USD per million input tokens, free tier for prototyping, per Google's announcement of 11/11/2026, linked in `docs/architecture.md`).
-- What it changes for us: the judge gives no explanation, so we log the question, the probability and the threshold ourselves. It can only make a verdict stricter. If it does not answer, a human decides.
+- Status: decided
+- What it is: Claude Desktop plays the outside buying agent. A second, different model (Google's Gemini Decision) answers two yes-or-no questions with a probability, for one thing only: when a substitute is not pre-accepted automatically, does it fit the buyer's preferences and can the kitchen use it the same way?
+- Why: a judge that is not the agent is harder to fool. Tested on our real milk case, it ranked the plain lactose-free milk at 96% (auto), the coffee milk at 23% (human) and the oat drink at 2% (human), in a quarter of a second per call (0.10 USD per million input tokens, free tier for prototyping, per Google's announcement of 11/11/2026, linked in `docs/architecture.md`).
+- What it changes for us: we send only structured catalog facts (name, brand, category, allergens, claims) and never marketing descriptions, because marketing text could try to talk the judge into saying yes. The judge gives no explanation, so we log both questions, the probabilities and the thresholds ourselves. It can only make a verdict stricter: if the key is missing, the network fails or an answer takes more than five seconds, a human decides.
 - If we change it: one function in `harness/judge.py`.
-- Alternatives we looked at: Gemini Flash with structured output (our fallback); rules only.
-- Decided in: PR #7, 14/11/2026.
+- Alternatives we looked at: Gemini Flash with structured output (our fallback if the ranking had failed); rules only (cannot read a buyer's plain-English note like "no coffee creamers").
+- Decided in: PR #7, 14/11/2026. Tested and confirmed on the real substitution case: PR for L1–L4 (`feat/harness-service`), 14/11/2026.
 
 ## Stack: Python 3.14 with uv, FastAPI, Pydantic, a plain web page
 - Status: decided
@@ -221,14 +221,23 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon).
 - Decided in: PR #13, 14/11/2026.
 
+## Buyer harness: rules in plain code, one-use approvals with a cut-off, and receipt verification
+- Status: decided
+- What it is: the buyer's web service (port 8002) takes a quote id from the agent, fetches the signed quote directly from Valio, checks Valio's signature first, runs every guardrail rule, and either signs as the agent, opens a one-use approval card for a human, or refuses. After sending a signed permission to Valio, it checks Valio's signed receipt before calling the order confirmed.
+- Why: the agent must never touch a quote token or a signing key, and "sending an order" is not the same thing as "Valio accepted the order". Running every rule instead of stopping at the first problem lets the approval card show every reason at once (for example, over the spend limit and a substitute at the same time).
+- What it changes for us: an unsigned or edited quote stops right away before any rule reads its numbers. Human approval cards sit in `state/buyer/` tied to that quote's exact fingerprint, expire automatically once the order cut-off passes, and can only be answered once (a second click is refused). In the demo, clicking Approve signs with the manager's key kept on the buyer side; in real life, that click would use a passkey in the browser. The harness also serves the approval page directly at `http://localhost:8002/`.
+- If we change it: `harness/` only. Valio's gateway still checks every signature and spend cap on its own side.
+- Alternatives we looked at: stopping at the first failed rule (hides other warnings from the approver); letting the agent pass the quote data to the harness (the agent could alter numbers); trusting HTTP 200 without checking the receipt signature.
+- Decided in: PR for L1–L4 (`feat/harness-service`), 14/11/2026.
+
 ## Audit log: one chained file on each side
 - Status: decided
-- What it is: the buyer's harness and Valio's gateway each write one line per decision: what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited line is detected.
+- What it is: the buyer's harness and Valio's gateway each write one line per decision (`state/buyer/audit.jsonl` and `state/merchant/audit.jsonl`): what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited, deleted or swapped line is caught at its exact line number.
 - Why: the brief asks for a readable record for both the buyer and Valio.
-- What it changes for us: the chain shows tampering, it does not prevent it. The stronger proof is that each side also keeps pieces signed by the other.
-- If we change it: only `common/audit.py`. Until that shared file is merged, Valio's gateway chains its own lines in `merchant/audit.py`, which is the one place to switch over.
+- What it changes for us: the chain shows tampering, it does not prevent it. The stronger proof is that each side also keeps pieces signed by the other. Both logs use the exact same canonical fingerprint formula so a check tool works on both files.
+- If we change it: `common/audit.py` is now shared in the repo and used by the buyer's harness; `merchant/audit.py` uses the identical formula and can point to `common/audit.py` in one line.
 - Alternatives we looked at: a database table; a single shared log.
-- Decided in: PR #7, 14/11/2026.
+- Decided in: PR #7, 14/11/2026. Shared verifier in `common/audit.py`: PR for L1–L4 (`feat/harness-service`), 14/11/2026.
 
 ## Payments: none, the spend cap travels in an AP2 payment mandate
 - Status: decided
