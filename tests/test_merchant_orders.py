@@ -109,7 +109,7 @@ def test_human_signed_mandate_is_accepted_above_the_cap():
 def test_agent_mandate_above_the_cap_is_refused(open_mandates):
     issued = quote(2000)
     response = complete(issued.checkout_id, close_as_agent(open_mandates, AGENT, issued.checkout_jwt))
-    refused(response, "202000 exceeds maximum 150000")
+    refused(response, "EUR 2,020.00, is above the EUR 1,500.00 the agent may sign alone")
     assert store.order_for_checkout(issued.checkout_id) is None
 
 
@@ -129,14 +129,14 @@ def test_mandate_for_another_quote_is_refused(open_mandates):
 
 def test_human_mandate_signed_with_the_agent_key_is_refused():
     issued = quote(2000)
-    refused(complete(issued.checkout_id, close_as_human(AGENT, issued.checkout_jwt)), "mandate rejected")
+    refused(complete(issued.checkout_id, close_as_human(AGENT, issued.checkout_jwt)), "does not verify")
 
 
 def test_expired_quote_is_refused(open_mandates, monkeypatch):
     issued = quote(1000)
     authorization = close_as_agent(open_mandates, AGENT, issued.checkout_jwt)
     monkeypatch.setenv("AIMO_FROZEN_NOW", AFTER_EXPIRY)
-    refused(complete(issued.checkout_id, authorization), "quote expired")
+    refused(complete(issued.checkout_id, authorization), "The quote expired on 15/11/2026 at 13:29.")
 
 
 def test_quote_edited_in_the_gateway_state_is_refused(open_mandates):
@@ -217,7 +217,7 @@ def test_a_mandate_sent_twice_and_a_refused_order_book_nothing_more(open_mandate
     complete(issued.checkout_id, authorization)
     complete(issued.checkout_id, authorization)
     above = quote(2000)
-    refused(complete(above.checkout_id, close_as_agent(open_mandates, AGENT, above.checkout_jwt)), "exceeds maximum")
+    refused(complete(above.checkout_id, close_as_agent(open_mandates, AGENT, above.checkout_jwt)), "is above the")
     booked = payments.account("demo-hotel-chain")
     assert booked.used_minor == 101000 and len(booked.bookings) == 1
 
@@ -227,7 +227,7 @@ def test_an_order_above_what_is_left_on_the_account_is_refused(open_mandates, mo
     first, second = quote(1000), quote(1000)
     assert complete(first.checkout_id, close_as_agent(open_mandates, AGENT, first.checkout_jwt)).status_code == 200
     response = complete(second.checkout_id, close_as_agent(open_mandates, AGENT, second.checkout_jwt))
-    refused(response, "exceeds what is left on the invoice account (49000 of 150000)")
+    refused(response, "EUR 1,010.00 does not fit on the invoice account: EUR 490.00 left of EUR 1,500.00.")
     assert store.order_for_checkout(second.checkout_id) is None
     assert payments.account("demo-hotel-chain").used_minor == 101000
 

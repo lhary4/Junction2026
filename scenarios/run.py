@@ -36,6 +36,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+from common.money import money
 from contract.models import (
     ApprovalRequest,
     AuditEvent,
@@ -163,6 +164,14 @@ class DriverError(Exception):
         self.status_code, self.detail = status_code, detail
 
 
+class OpenMandateProofs(BaseModel):
+    """The fingerprints of the open mandates the manager signed in advance: GET /mandates/open on the harness."""
+
+    issued_at: datetime
+    checkout_hash: str
+    payment_hash: str  # the one the trail shows: the payment mandate carries the spend cap
+
+
 @dataclass
 class _Run:
     """What the driver remembers of the scenario on screen."""
@@ -171,6 +180,7 @@ class _Run:
     running: bool = True
     issued: CheckoutResponse | None = None
     attacks: list[dict] | None = None  # what Valio answered to each bad mandate, once they were sent
+    stolen: OpenMandateProofs | None = None  # the attack only: the open mandates the leaked key came with
 
 
 def service_url(name: str, default: str) -> str:
@@ -251,11 +261,12 @@ class Driver:
             return self._build(
                 run,
                 status,
-                steps=_attack_steps(policy, issued, run.attacks, audit),
+                steps=_attack_steps(policy, run.stolen, issued, run.attacks, audit),
                 quote=issued.checkout,
                 attacks=sent,
                 audit=audit,
             )
+        proofs = self._get(self.harness, "harness", "/mandates/open", OpenMandateProofs)
         verdict = self._get(self.harness, "harness", f"/verdicts/{checkout_id}", Verdict)
         authorization = self._get(self.harness, "harness", f"/authorizations/{checkout_id}", AuthorizationStatus)
         approval = order = None
@@ -271,7 +282,7 @@ class Driver:
         return self._build(
             run,
             status,
-            steps=_steps(policy, issued, verdict, authorization, approval, order, audit),
+            steps=_steps(policy, proofs, issued, verdict, authorization, approval, order, audit),
             quote=issued.checkout,
             verdict=verdict,
             authorization=authorization,
@@ -297,7 +308,7 @@ class Driver:
         if total <= cap:
             raise DriverError(
                 500,
-                f"the attack needs a quote above the agent's cap: {_eur(total)} is within {_eur(cap)}, nothing sent",
+                f"the attack needs a quote above the agent's cap: {money(total)} is within {money(cap)}, nothing sent",
             )
         run.issued = target
         other = self._quote(scenario, scenario.other_needs)
@@ -305,10 +316,15 @@ class Driver:
         # The stolen material: the agent's key, and open mandates the manager signed for that key.
         agent = private_key("agent")
         open_mandates = issue_open_mandates(policy, private_key("manager"), public_jwk("agent"))
+        run.stolen = OpenMandateProofs(
+            issued_at=datetime.now(HELSINKI),
+            checkout_hash=checkout_hash(open_mandates.checkout),
+            payment_hash=checkout_hash(open_mandates.payment),
+        )
         tries = (
             (
                 "above-cap",
-                f"The agent signs {_eur(total)} itself, above its {_eur(cap)} cap",
+                f"The agent signs {money(total)} itself, above its {money(cap)} cap",
                 close_as_agent(open_mandates, agent, target.checkout_jwt),
             ),
             (
@@ -318,7 +334,7 @@ class Driver:
             ),
             (
                 "mandate-for-another-quote",
-                f"The agent reuses a mandate signed for another, smaller quote ({_eur(other.checkout.total_minor())})",
+                f"The agent reuses a mandate signed for another, smaller quote ({money(other.checkout.total_minor())})",
                 close_as_agent(open_mandates, agent, other.checkout_jwt),
             ),
         )
@@ -432,6 +448,7 @@ def _step(key: str, status: str = "pending", detail: str | None = None, signer: 
 
 def _steps(
     policy: BuyerPolicy | None,
+    proofs: OpenMandateProofs | None,
     issued: CheckoutResponse,
     verdict: Verdict | None,
     authorization: AuthorizationStatus | None,
@@ -440,8 +457,8 @@ def _steps(
     audit: dict[str, list[AuditEvent]],
 ) -> list[dict]:
     """The trail for one quote. Each sentence says what happened and who did it, from what the services answered."""
-    total = _eur(issued.checkout.total_minor())
-    steps = [_step("open_mandate", "done", _open_mandate(policy)), _quote_step(issued)]
+    total = money(issued.checkout.total_minor())
+    steps = [_open_mandate_step(policy, proofs), _quote_step(issued)]
     if verdict is None or authorization is None:
         return steps + [_step(key) for key, _, _ in TRAIL[2:]]
 
@@ -533,10 +550,14 @@ def _steps(
 
 
 def _attack_steps(
-    policy: BuyerPolicy | None, issued: CheckoutResponse, attacks: list[dict] | None, audit: dict[str, list[AuditEvent]]
+    policy: BuyerPolicy | None,
+    proofs: OpenMandateProofs | None,
+    issued: CheckoutResponse,
+    attacks: list[dict] | None,
+    audit: dict[str, list[AuditEvent]],
 ) -> list[dict]:
     """The trail of the attack: the quote is real, the harness is skipped, and Valio refuses what the agent signed."""
-    steps = [_step("open_mandate", "done", _open_mandate(policy)), _quote_step(issued)]
+    steps = [_open_mandate_step(policy, proofs), _quote_step(issued)]
     if attacks is None:  # the mandates are not sent yet
         return steps + [_step(key) for key, _, _ in TRAIL[2:]]
     refused = sum(attack["status"] == "refused" for attack in attacks)
@@ -569,7 +590,7 @@ def _quote_step(issued: CheckoutResponse) -> dict:
     return _step(
         "signed_quote",
         "done",
-        f"{lines} line{'s' if lines != 1 else ''}, {_eur(checkout.total_minor())} before tax, "
+        f"{lines} line{'s' if lines != 1 else ''}, {money(checkout.total_minor())} before tax, "
         f"signed by {checkout.merchant.name}, valid until {_when(checkout.expires_at)}.",
         proof=checkout_hash(issued.checkout_jwt),
         at=checkout.aimo.issued_at,
@@ -592,8 +613,8 @@ def _mandate_facts(order: Order) -> str:
     if facts is None:
         return ""
     if facts.cap_minor is None:
-        return f" Amount {_eur(facts.amount_minor)}, no cap: the chef signed this exact order."
-    return f" Amount {_eur(facts.amount_minor)}, within the {_eur(facts.cap_minor)} cap of the open mandate."
+        return f" Amount {money(facts.amount_minor)}, no cap: the chef signed this exact order."
+    return f" Amount {money(facts.amount_minor)}, within the {money(facts.cap_minor)} cap of the open mandate."
 
 
 def _payment_step(order: Order) -> dict:
@@ -604,11 +625,17 @@ def _payment_step(order: Order) -> dict:
     return _step(
         "sandbox_payment",
         "done",
-        f"Sandbox payment: {_eur(payment.amount_minor)} booked on {payment.instrument}. {payment.terms}. "
+        f"Sandbox payment: {money(payment.amount_minor)} booked on {payment.instrument}. {payment.terms}. "
         "No real money moves.",
         proof=payment.payment_id,
         at=payment.captured_at,
     )
+
+
+def _open_mandate_step(policy: BuyerPolicy | None, proofs: OpenMandateProofs | None) -> dict:
+    """Step 1: what the chef signed in advance, with the fingerprint of the open payment mandate when it is known."""
+    known = {"proof": proofs.payment_hash, "at": proofs.issued_at} if proofs else {}
+    return _step("open_mandate", "done", _open_mandate(policy), **known)
 
 
 def _open_mandate(policy: BuyerPolicy | None) -> str:
@@ -617,16 +644,12 @@ def _open_mandate(policy: BuyerPolicy | None) -> str:
     merchants = ", ".join(merchant.name or merchant.id for merchant in policy.allowed_merchants)
     return (
         f"Signed in advance by the chef: the agent may order from {merchants}, up to "
-        f"{_eur(policy.autonomous_limit_minor)} an order, until {_when(policy.valid_until)}."
+        f"{money(policy.autonomous_limit_minor)} an order, until {_when(policy.valid_until)}."
     )
 
 
 def _event_time(events: list[AuditEvent], action: str) -> datetime | None:
     return next((event.at for event in events if event.action == action), None)
-
-
-def _eur(minor: int) -> str:
-    return f"EUR {minor / 100:,.2f}"
 
 
 def _when(value: datetime | None) -> str:

@@ -6,17 +6,25 @@ human, the manager signs both closed mandates directly for this exact quote. The
 
 Binding: `aud` is the merchant id, `nonce` is the checkout id, the payment's `transaction_id` is the checkout hash.
 Mandate times (`iat`, `exp`) use the real clock, because the SDK stamps the real time when it signs.
+
+A refusal is a list of problems, and each one is a sentence a buyer can read on the approval page: the SDK's own
+words ("KB-SD-JWT nonce mismatch") are put in plain words here, with the amounts and the quote ids they name.
 """
 
+import re
+from datetime import datetime
 from typing import Literal
+from zoneinfo import ZoneInfo
 
 from ap2.sdk.checkout_mandate_chain import CheckoutMandateChain
 from ap2.sdk.mandate import MandateClient
 from ap2.sdk.payment_mandate_chain import PaymentMandateChain
 from ap2.sdk.utils import compute_sha256_b64url
 from jwcrypto.jwk import JWK
+from jwcrypto.jws import InvalidJWSSignature
 from pydantic import BaseModel, ConfigDict
 
+from common.money import money
 from contract.ap2 import (
     AllowedMerchants,
     Amount,
@@ -33,6 +41,7 @@ from trust.checkout import checkout_hash, read_checkout
 
 _client = MandateClient()
 CHAIN = "~~"  # an agent-closed mandate is "<open mandate>~~<closed hop>"; a human-signed one is a single token
+HELSINKI = ZoneInfo("Europe/Helsinki")
 
 
 class OpenMandates(BaseModel):
@@ -96,18 +105,20 @@ def verify_mandates(authorization: Authorization, checkout_jwt: str, manager_pub
 
     chained = {CHAIN in authorization.checkout_mandate, CHAIN in authorization.payment_mandate}
     if len(chained) != 1:
-        return MandateCheck(
-            ok=False, signed_by=None, problems=["mandates mix agent and human forms"], reference=reference
-        )
+        mixed = "The two mandates do not go together: one is signed by the agent, the other by a human."
+        return MandateCheck(ok=False, signed_by=None, problems=[mixed], reference=reference)
     actual = "agent" if chained == {True} else "human"
-    problems = [] if actual == authorization.signed_by else [f"says signed by {authorization.signed_by}, is {actual}"]
+    problems = []
+    if actual != authorization.signed_by:
+        said, signer = _signer_words(authorization.signed_by), _signer_words(actual)
+        problems.append(f"The request says {said} signed it, but the mandates are signed by {signer}.")
 
     manager = JWK(**manager_public_jwk)
     facts = None
     try:
         verify = _verify_agent if actual == "agent" else _verify_human
         found, payment, cap = verify(authorization, checkout, checkout_jwt, manager)
-        problems += found
+        problems += [_plain(problem, checkout) for problem in found]
         facts = MandateFacts(
             cap_minor=cap,
             amount_minor=payment.payment_amount.amount,
@@ -115,7 +126,7 @@ def verify_mandates(authorization: Authorization, checkout_jwt: str, manager_pub
             instrument=payment.payment_instrument.id,
         )
     except Exception as e:  # noqa: BLE001  the SDK raises ValueError, TypeError or jwcrypto errors for a bad chain
-        problems.append(f"mandate rejected: {type(e).__name__}: {e}"[:300])
+        problems.append(_why_rejected(e))
     if problems:
         return MandateCheck(ok=False, signed_by=None, problems=problems, reference=reference)
     return MandateCheck(ok=True, signed_by=actual, problems=[], reference=reference, facts=facts)
@@ -158,7 +169,7 @@ def _verify_human(authorization: Authorization, checkout: AimoCheckout, checkout
     closed_payment = _client.verify(authorization.payment_mandate, manager, payload_type=PaymentMandate)
     problems = []
     if closed_checkout.mandate_payload.checkout_hash != checkout_hash(checkout_jwt):
-        problems.append("checkout mandate is for another quote")
+        problems.append("The mandate is for another quote.")
     payment = closed_payment.mandate_payload
     return problems + _payment_matches(payment, checkout, checkout_jwt), payment, None
 
@@ -167,11 +178,44 @@ def _payment_matches(payment: PaymentMandate, checkout: AimoCheckout, checkout_j
     """The cap check alone would accept a payment smaller than the quote: the amount must be the quote's total."""
     problems = []
     if payment.transaction_id != checkout_hash(checkout_jwt):
-        problems.append("payment mandate is for another quote")
-    if (payment.payment_amount.amount, payment.payment_amount.currency) != (checkout.total_minor(), checkout.currency):
-        problems.append(
-            f"payment amount {payment.payment_amount.amount} is not the quote total {checkout.total_minor()}"
-        )
+        problems.append("The payment mandate is for another quote.")
+    paid = (payment.payment_amount.amount, payment.payment_amount.currency)
+    if paid != (checkout.total_minor(), checkout.currency):
+        total = money(checkout.total_minor(), checkout.currency)
+        problems.append(f"The payment mandate is for {money(*paid)}, the quote's total is {total}.")
     if payment.payee.id != checkout.merchant.id:
-        problems.append(f"payee {payment.payee.id} is not the quote's merchant")
+        problems.append(f"The payment mandate pays {payment.payee.id}, not the merchant of this quote.")
     return problems
+
+
+# ---------- refusals in plain words ----------
+
+
+def _plain(problem: str, checkout: AimoCheckout) -> str:
+    """One problem the SDK found, as a sentence a buyer can read. A sentence we do not know is left as it is."""
+    if found := re.fullmatch(r"Amount (\d+) exceeds maximum (\d+)", problem):
+        amount, cap = (money(int(minor), checkout.currency) for minor in found.groups())
+        return f"The amount, {amount}, is above the {cap} the agent may sign alone."
+    if problem.startswith("Checkout checkout_hash mismatch"):
+        signer = checkout.merchant.name or checkout.merchant.id
+        return f"The mandate does not match the quote {signer} signed: the quote was changed, or it is another one."
+    if found := re.fullmatch(r"Merchant (.+) not in allowed list", problem):
+        return f"{found[1]} is not a merchant the agent is allowed to order from."
+    return problem
+
+
+def _why_rejected(error: Exception) -> str:
+    """Why the SDK refused to read a mandate at all: a bad signature, another quote, a mandate past its date."""
+    text = str(error)
+    if isinstance(error, InvalidJWSSignature):
+        return "A signature on the mandate does not verify: it was not signed with the expected key."
+    if found := re.search(r"nonce mismatch: expected '([^']+)', got '([^']+)'", text):
+        return f"The mandate was signed for another quote ({found[2]}), not for this one ({found[1]})."
+    if found := re.search(r"expired at (\d+)", text):
+        when = datetime.fromtimestamp(int(found[1]), HELSINKI)
+        return f"A mandate in the chain expired on {when:%d/%m/%Y at %H:%M}: the manager must sign a new one."
+    return f"The mandate could not be verified ({type(error).__name__}: {text})"[:300]
+
+
+def _signer_words(signed_by: str) -> str:
+    return "a human" if signed_by == "human" else "the agent"
