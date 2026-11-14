@@ -1,9 +1,18 @@
 # `agent_mcp` — External Buying Agent MCP Server
 
-Exposes the five Valio Aimo buying-agent tools over MCP `stdio` using `MCPServer` (`mcp >= 2.3`).
-In Step C1, all tools read from `contract/examples/` relative to `agent_mcp/server.py`, so the server runs cleanly from any working directory.
+Exposes the five Valio Aimo buying-agent tools over MCP using `MCPServer` (`mcp >= 2.3`).
+Since the live MCP PR, every tool calls the running services (start them with `uv run python scripts/dev.py`, with `VALIO_MODE=live` to order any catalog product). Quotes and authorizations go through the demo driver, so a chat order shows on the kitchen page.
 
-## Run standalone
+```bash
+uv run python agent_mcp/server.py                                stdio, for Claude Desktop
+uv run python agent_mcp/server.py --http                         http://127.0.0.1:8005/mcp
+cloudflared tunnel --url http://localhost:8005                   a public https address for claude.ai or ChatGPT
+uv run python agent_mcp/server.py --http abc.trycloudflare.com   let that tunnel host through
+```
+
+The connector address is then `https://abc.trycloudflare.com/mcp`. Anyone with it can place sandbox orders: close the tunnel after use.
+
+## Before the live MCP PR (Step C1, example files)
 
 ```bash
 /Users/colettejoulie/.local/bin/uv run --python 3.14 --with "mcp>=2.3" python /Users/colettejoulie/Desktop/Junction2026/agent_mcp/server.py
