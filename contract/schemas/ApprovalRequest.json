@@ -1,0 +1,266 @@
+{
+  "$defs": {
+    "JudgeAnswer": {
+      "additionalProperties": false,
+      "description": "What we asked the judge and what came back. The model gives no explanation, so we keep the question.",
+      "properties": {
+        "question_key": {
+          "title": "Question Key",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "instructions": {
+          "title": "Instructions",
+          "type": "string"
+        },
+        "subject": {
+          "$ref": "#/$defs/JudgeSubject"
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probability"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "auto_threshold": {
+          "title": "Auto Threshold",
+          "type": "number"
+        },
+        "floor": {
+          "title": "Floor",
+          "type": "number"
+        },
+        "routed": {
+          "enum": [
+            "auto",
+            "human"
+          ],
+          "title": "Routed",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question_key",
+        "type",
+        "instructions",
+        "subject",
+        "auto_threshold",
+        "floor",
+        "routed",
+        "model"
+      ],
+      "title": "JudgeAnswer",
+      "type": "object"
+    },
+    "JudgeSubject": {
+      "additionalProperties": false,
+      "properties": {
+        "original": {
+          "title": "Original",
+          "type": "string"
+        },
+        "candidate": {
+          "title": "Candidate",
+          "type": "string"
+        }
+      },
+      "required": [
+        "original",
+        "candidate"
+      ],
+      "title": "JudgeSubject",
+      "type": "object"
+    },
+    "RuleResult": {
+      "additionalProperties": false,
+      "properties": {
+        "rule_id": {
+          "enum": [
+            "quote-signature",
+            "quote-not-expired",
+            "merchant-allowed",
+            "allergen-not-blocked",
+            "allergen-data-known",
+            "allergen-unchanged-on-substitution",
+            "delivery-on-time",
+            "spend-limit",
+            "substitution-within-preferences"
+          ],
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "pass",
+            "human",
+            "deny"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "evidence": {
+          "additionalProperties": true,
+          "default": {},
+          "title": "Evidence",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rule_id",
+        "outcome",
+        "message"
+      ],
+      "title": "RuleResult",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "approval_id": {
+      "title": "Approval Id",
+      "type": "string"
+    },
+    "checkout_id": {
+      "title": "Checkout Id",
+      "type": "string"
+    },
+    "checkout_hash": {
+      "title": "Checkout Hash",
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "expired"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "total_minor": {
+      "title": "Total Minor",
+      "type": "integer"
+    },
+    "currency": {
+      "title": "Currency",
+      "type": "string"
+    },
+    "reasons": {
+      "items": {
+        "$ref": "#/$defs/RuleResult"
+      },
+      "title": "Reasons",
+      "type": "array"
+    },
+    "judge": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/JudgeAnswer"
+      },
+      "title": "Judge",
+      "type": "array"
+    },
+    "request_text": {
+      "title": "Request Text",
+      "type": "string"
+    },
+    "requested_at": {
+      "format": "date-time",
+      "title": "Requested At",
+      "type": "string"
+    },
+    "deadline": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
+    },
+    "decided_by": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Decided By"
+    },
+    "decided_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Decided At"
+    },
+    "order_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Order Id"
+    }
+  },
+  "required": [
+    "approval_id",
+    "checkout_id",
+    "checkout_hash",
+    "status",
+    "total_minor",
+    "currency",
+    "reasons",
+    "request_text",
+    "requested_at"
+  ],
+  "title": "ApprovalRequest",
+  "type": "object"
+}

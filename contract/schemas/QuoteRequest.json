@@ -1,0 +1,67 @@
+{
+  "$defs": {
+    "Need": {
+      "additionalProperties": false,
+      "description": "What the buyer asked for, in their own unit (litres, kilos or sales units).",
+      "properties": {
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "unit": {
+          "enum": [
+            "L",
+            "KG",
+            "ST"
+          ],
+          "title": "Unit",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product_id",
+        "amount",
+        "unit"
+      ],
+      "title": "Need",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "customer": {
+      "title": "Customer",
+      "type": "string"
+    },
+    "delivery_date": {
+      "format": "date",
+      "title": "Delivery Date",
+      "type": "string"
+    },
+    "needs": {
+      "items": {
+        "$ref": "#/$defs/Need"
+      },
+      "minItems": 1,
+      "title": "Needs",
+      "type": "array"
+    },
+    "allow_alternatives": {
+      "default": true,
+      "title": "Allow Alternatives",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "customer",
+    "delivery_date",
+    "needs"
+  ],
+  "title": "QuoteRequest",
+  "type": "object"
+}

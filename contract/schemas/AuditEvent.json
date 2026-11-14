@@ -1,0 +1,110 @@
+{
+  "additionalProperties": false,
+  "description": "One line of a hash-chained audit log. Each side keeps its own chain.",
+  "properties": {
+    "seq": {
+      "minimum": 1,
+      "title": "Seq",
+      "type": "integer"
+    },
+    "at": {
+      "format": "date-time",
+      "title": "At",
+      "type": "string"
+    },
+    "side": {
+      "enum": [
+        "buyer",
+        "merchant"
+      ],
+      "title": "Side",
+      "type": "string"
+    },
+    "actor": {
+      "enum": [
+        "agent",
+        "harness",
+        "human",
+        "merchant"
+      ],
+      "title": "Actor",
+      "type": "string"
+    },
+    "action": {
+      "title": "Action",
+      "type": "string"
+    },
+    "checkout_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Checkout Id"
+    },
+    "checkout_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Checkout Hash"
+    },
+    "what": {
+      "title": "What",
+      "type": "string"
+    },
+    "why": {
+      "title": "Why",
+      "type": "string"
+    },
+    "rule": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Rule"
+    },
+    "prev_hash": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Prev Hash"
+    },
+    "hash": {
+      "title": "Hash",
+      "type": "string"
+    }
+  },
+  "required": [
+    "seq",
+    "at",
+    "side",
+    "actor",
+    "action",
+    "what",
+    "why",
+    "hash"
+  ],
+  "title": "AuditEvent",
+  "type": "object"
+}

@@ -1,0 +1,29 @@
+{
+  "additionalProperties": false,
+  "description": "The two AP2 mandate chains the harness sends to the gateway. Never shown to the agent.",
+  "properties": {
+    "signed_by": {
+      "enum": [
+        "agent",
+        "human"
+      ],
+      "title": "Signed By",
+      "type": "string"
+    },
+    "checkout_mandate": {
+      "title": "Checkout Mandate",
+      "type": "string"
+    },
+    "payment_mandate": {
+      "title": "Payment Mandate",
+      "type": "string"
+    }
+  },
+  "required": [
+    "signed_by",
+    "checkout_mandate",
+    "payment_mandate"
+  ],
+  "title": "Authorization",
+  "type": "object"
+}

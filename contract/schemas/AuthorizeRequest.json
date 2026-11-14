@@ -1,0 +1,20 @@
+{
+  "additionalProperties": false,
+  "description": "Body of POST /authorize on the harness.",
+  "properties": {
+    "checkout_id": {
+      "title": "Checkout Id",
+      "type": "string"
+    },
+    "request_text": {
+      "title": "Request Text",
+      "type": "string"
+    }
+  },
+  "required": [
+    "checkout_id",
+    "request_text"
+  ],
+  "title": "AuthorizeRequest",
+  "type": "object"
+}

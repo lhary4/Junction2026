@@ -1,0 +1,143 @@
+{
+  "$defs": {
+    "Receipt": {
+      "additionalProperties": false,
+      "description": "Decoded payload of the receipt JWT the gateway signs.",
+      "properties": {
+        "status": {
+          "enum": [
+            "Success",
+            "Error"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "iss": {
+          "title": "Iss",
+          "type": "string"
+        },
+        "iat": {
+          "title": "Iat",
+          "type": "integer"
+        },
+        "reference": {
+          "title": "Reference",
+          "type": "string"
+        },
+        "order_id": {
+          "title": "Order Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "iss",
+        "iat",
+        "reference",
+        "order_id"
+      ],
+      "title": "Receipt",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "order_id": {
+      "title": "Order Id",
+      "type": "string"
+    },
+    "status": {
+      "const": "accepted",
+      "title": "Status",
+      "type": "string"
+    },
+    "checkout_id": {
+      "title": "Checkout Id",
+      "type": "string"
+    },
+    "checkout_hash": {
+      "title": "Checkout Hash",
+      "type": "string"
+    },
+    "mandate_reference": {
+      "title": "Mandate Reference",
+      "type": "string"
+    },
+    "signed_by": {
+      "enum": [
+        "agent",
+        "human"
+      ],
+      "title": "Signed By",
+      "type": "string"
+    },
+    "total_minor": {
+      "title": "Total Minor",
+      "type": "integer"
+    },
+    "currency": {
+      "title": "Currency",
+      "type": "string"
+    },
+    "delivery_date": {
+      "format": "date",
+      "title": "Delivery Date",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "accepted_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Accepted At"
+    },
+    "receipt_jwt": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Receipt Jwt"
+    },
+    "receipt": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Receipt"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    }
+  },
+  "required": [
+    "order_id",
+    "status",
+    "checkout_id",
+    "checkout_hash",
+    "mandate_reference",
+    "signed_by",
+    "total_minor",
+    "currency",
+    "delivery_date",
+    "created_at"
+  ],
+  "title": "Order",
+  "type": "object"
+}

@@ -122,6 +122,15 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: a hand-written API description file.
 - Decided in: PR #7, 14/11/2026.
 
+## Data contract: strict models, generated schemas
+- Status: decided
+- What it is: our models refuse any field they do not know. A misspelled field name is an error, not a value silently dropped. The signed quote also checks that every line has its facts under `aimo.lines`, and the other way round. `scripts/export_schemas.py` writes one JSON Schema file per model into `contract/schemas/`, for tools and readers that are not Python.
+- Why: in a signed quote, a dropped field is a fact that disappears without anyone noticing. An error at the first test is cheaper than a wrong order in the demo.
+- What it changes for us: when you add a field, add it to `contract/models.py` first, or the other lanes' code will refuse your messages. Fields that can be empty default to empty, so a quote stored without its empty fields still loads. Never edit `contract/schemas/` by hand: rerun the script.
+- If we change it: switching to "accept unknown fields" is one line in `contract/models.py`, but typos would then pass the tests.
+- Alternatives we looked at: accepting unknown fields like the AP2 SDK does.
+- Decided in: PR #8, 14/11/2026.
+
 ## Data: local files, live calls on a shortlist, and a replay mode
 - Status: decided
 - What it is: the product file and the two small tables (delivery reliability, carbon footprint) are downloaded once and never committed. Prices and stock are asked from Valio only for a shortlist. A replay mode serves answers recorded on 14/11 with a frozen clock.
