@@ -212,7 +212,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: the quote, the order and the page show 19/11 for the restaurant. Each line still keeps Valio's own earliest day (`available_date`). The order cut-off stays the one Valio gives (Sunday 15/11 17:00): it is the cut-off for its earliest day, so it may be earlier than needed for a later delivery, never later. The demo examples were recorded again in live mode: only the dates changed.
 - If we change it: one line in `merchant/quotes.py`, then record the demo examples again (`scripts/record_demo_states.py`).
 - Alternatives we looked at: keeping Valio's earliest day (wrong day on the page and in the chat); moving the cut-off later by the same number of days (that would be a fact Valio never gave).
-- Decided in: PR to come, 14/11/2026.
+- Decided in: PR #42, 14/11/2026.
 
 ## Orders: one per quote, and a repeated request gets the same order back
 - Status: decided
