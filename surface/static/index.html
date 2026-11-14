@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Trusted Trade Agents: approvals</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="topbar__brand">
+        <span class="topbar__mark" aria-hidden="true"></span>
+        <div>
+          <div class="topbar__title">Trusted Trade Agents</div>
+          <div class="topbar__sub" id="buyer-line">Buyer side</div>
+        </div>
+      </div>
+      <nav class="tabs" aria-label="Areas">
+        <a class="tab" data-view="offers" href="#/offers">Offers</a>
+        <a class="tab" data-view="approvals" href="#/approvals">Approvals <span class="tab__count" id="pending-count" hidden></span></a>
+        <a class="tab" data-view="audit" href="#/audit">Audit</a>
+      </nav>
+    </header>
+
+    <!-- Everything below is drawn by app.js from the data it loads. -->
+    <main id="app" class="page">
+      <p class="loading">Loading…</p>
+    </main>
+
+    <footer id="rehearsal" class="rehearsal" hidden></footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

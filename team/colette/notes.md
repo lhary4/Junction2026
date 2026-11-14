@@ -2,6 +2,22 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## C2: the page in mock mode
+
+- Done: `surface/static/` shows the three areas from `contract/examples/`. How to run it and one link per screen: `surface/README.md`.
+- Checked in headless Chrome on 14/11: the four offers screens, both approval cards in their four states, both buttons, a card expiring when the countdown reaches zero, the audit page, and that HTML typed into the agent's sentence stays plain text.
+- Live mode is not built: without `?mock=1` the page says so. That is step C4.
+
+Questions for Adrien (examples and contract):
+- **The comparison table has one price in act 1.** Product cards carry no price, and the act 1 quote only prices 464306, so the four other rows read "unknown, not in this quote". For a full price comparison in act 1, either the agent asks one quote per candidate, or a quote lists the prices of the other candidates. Which one do we want?
+- There is no example quote for `chk_act3_oat_demo` (the oat drink order of `verdict.human.substitution.json`). The substitution card shows "lines not in the example files" and takes the total from the verdict. An example `checkout.act3-oat.json` would complete it.
+- There is no `ApprovalRequest` example for a substitution. The page builds one from the verdict (rules that did not pass become the reasons). Is that what the harness will send?
+- Two facts have no certainty level in the contract: the delivery date of a line (`available_date`) and the price of an alternative (`aimo.alternatives[].comparison_price_minor`). The page shows them with a "certainty not stated" badge instead of guessing.
+- `chk_act3_demo` has no verdict in the examples, so its signature line reads "not checked yet".
+
+Question for Léon:
+- `approval_url` in the examples is `http://localhost:8002/#/approvals/apr_...` (the harness's port). The page understands `#/approvals/<id>`, but it is served on port 8003. Will the harness serve `surface/static/`, or should the link point to 8003?
+
 ## What Junction asks us to hand in
 
 - Deadline: **Sunday 15/11/2026 at 10:00** (strict auto-close, no late submissions; must switch project status from **DRAFT** to **FINAL** before 10:00 — FINAL projects can still be edited until 10:00).
