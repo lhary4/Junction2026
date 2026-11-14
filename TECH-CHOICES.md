@@ -90,14 +90,14 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Status: decided
 - What it is: MCP is the standard plug that lets an AI assistant use outside tools. Our agent gets five tools. Behind them run two small web services, one for Valio, one for the buyer's harness.
 - Why: we do not have to write the agent, and it is a real outside agent, as in the brief. The services also work without MCP, for any other client.
-- What it changes for us: the agent only passes short identifiers, never a signed token. The human approves on a separate page, not in the chat.
+- What it changes for us: the agent only passes short identifiers, never a signed token. The human approves on a separate page, not in the chat. A Valio Aimo engineer told us the agent will first live inside their own customer portal, and that MCP is for the customers whose ERP has its own agent (`contexte/mentor-notes.md`). So in the video the two services are called by a small demo driver behind a portal page, and MCP is shown as the second door to the same services.
 - If we change it: only `agent_mcp/` changes.
 - Alternatives we looked at: our own agent loop; a chat-only demo (the brief says this is not about a chatbot, and an agent could approve itself).
-- Decided in: PR #7, 14/11/2026.
+- Decided in: PR #7, 14/11/2026. Portal first, MCP as the second door: PR #23, 14/11/2026.
 
 ## Models: Claude as the buying agent, Gemini Decision as the judge
 - Status: decided
-- What it is: Claude Desktop plays the outside buying agent. A second, different model (Google's Gemini Decision) answers two yes-or-no questions with a probability, for one thing only: when a substitute is not pre-accepted automatically, does it fit the buyer's preferences and can the kitchen use it the same way?
+- What it is: any assistant that speaks MCP, Claude for example, can play the outside buying agent. In the video the agent's steps are played by a scripted demo driver (see "Demo format"). A second, different model (Google's Gemini Decision) answers two yes-or-no questions with a probability, for one thing only: when a substitute is not pre-accepted automatically, does it fit the buyer's preferences and can the kitchen use it the same way?
 - Why: a judge that is not the agent is harder to fool. Tested on our real milk case, it ranked the plain lactose-free milk above 93% (`auto`), the coffee milk around 17–25% (`human`) and the oat drink below 16% (`human`), in about a fifth of a second per call (0.10 USD per million input tokens, free tier for prototyping, per Google's announcement of 11/11/2026, linked in `docs/architecture.md`). Tested across all 61 labelled product pairs in `scenarios/`, zero out of 50 "ask a human" or "reject" pairs were wrongly approved automatically, and all 17 "reject" pairs scored below the 15% floor.
 - What it changes for us: a substitute skips the judge only when Valio's own catalog lists it as a replacement in the top tier, the agent did not force a specific substitute, and no origin, quality label or dietary promise is lost; every other substitute goes to the judge. We send structured facts (name, brand, category, storage temperature, origin, quality labels, nutritional claims, pack sizes and all 29 standard allergen codes) enriched from Valio's catalog search while letting the signed quote win on every signed fact, and we never send marketing descriptions or the agent's own request sentence so neither can talk the judge into saying yes. The judge gives no explanation, so we log both questions, the probabilities and the thresholds ourselves. It can only make a verdict stricter: if the key is missing, the network fails or an answer takes more than five seconds, a human decides.
 - If we change it: one function in `harness/judge.py`, and the pre-acceptance check in `harness/rules.py`.
@@ -257,8 +257,20 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: React (a build step, dropped earlier); the harness serving ready-made pages (the page could not be built before the harness).
 - Decided in: PR for step C2 (`feat/surface-mock`), 14/11/2026.
 
+## Demo format: a 2-minute video on a portal page with scenario buttons
+- Status: decided
+- What it is: what we hand in is a video of 2 minutes at most, not a live demo. It is recorded on one page that looks like a Valio Aimo customer portal for one restaurant. A panel on the left has one button per scenario: a normal order, a substitution, an attack. A click runs the real flow. The right side shows the seven steps of the authorization (the AP2 trail) and who signed each one. A small service, the demo driver, plays the buying agent: it sends the same requests an MCP agent would send, and gives the page everything it shows as one piece of data (the demo state).
+- Why: Junction asks for a video, strictly 2 minutes. A scripted driver makes every take the same, where a live assistant took about 2 minutes for one round in our only test. One piece of data for the page lets the page be built on example files before the services are wired.
+- What it changes for us: the demo runs on the restaurant case (`scenarios/restaurant-case/`), not on the milk example of the brief. The page carries a banner "Concept mock-up, Junction 2026, synthetic data", because the video is public and the challenge data must not be shown as real Valio data. The video is recorded in replay mode, so the menu's products must be in the recorded answers.
+- If we change it: a live pitch would use the same page and the same buttons. Showing a real assistant instead of the driver needs the MCP live mode.
+- Alternatives we looked at: Claude Desktop on screen (too slow, and a chat is what the brief says this is not); an automation tool showing its steps (n8n: one more tool, and the trail already shows the real steps); the four milk acts of the first plan.
+- Decided in: PR #23, 14/11/2026.
+
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
+- **Sandbox payment** (planned for Saturday evening): the gateway books each order on a simulated invoice account, so the video can show a charge. It will replace "Payments: none" below when its PR is merged.
+- **Customer token on the gateway** (planned, after the demo flow): today anyone who can reach the gateway can ask a quote for any customer. Valio told us prices are per customer, so a token must say who is asking.
+- **A message to the chef** (planned for Saturday evening): a Telegram message when an order waits for a human. The approval itself stays on the page.
 
 ## Choices we dropped
 - **Our own agent loop**: an outside assistant through MCP does the job and is closer to the brief's "external agent".
@@ -268,5 +280,6 @@ None of us is a seasoned developer. This file explains every technical choice in
 - **React, Vite and SQLite**: a plain page and files are enough and need no build.
 - **Ed25519 signatures**: AP2 does not allow them for quotes.
 - **Running the whole demo inside the chat**: the brief says this is not a chatbot, and approval must happen where the agent cannot reach.
+- **Claude Desktop as the agent on screen**: our only test of a live assistant took about 2 minutes for one round (on another client, Claude Desktop itself could not run on that laptop), and the video is 2 minutes long. A scripted demo driver sends the same requests.
 - **Search results limited to the most common kind of product**: it hid the right answer whenever another kind matched more often ("butter" returned butter buns only). Every kind is returned now.
 - **Pre-accepting every substitute in the same category and allergen group**: coffee milk and sweetened vanilla milk sit in the same category and allergen group as plain milk, so only catalog-listed replacements in the top tier that lose no origin, label or dietary promise skip the judge now.

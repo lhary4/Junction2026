@@ -101,6 +101,36 @@ At 16:30, stop for five minutes with Adrien: fetch and verify one real quote fro
 
 With Adrien and Colette, write `scenarios/run.py` on one screen: act 1 through the real pieces.
 
-## After 17:00
+## Saturday evening: the 2-minute video (replaces "After 17:00")
 
-In order: the judge wired into act 3, the thresholds set from Colette's labelled pairs (keep the table of results, it goes in the pitch), the attack switch for act 4, approvals that expire on their own.
+Read the section "The demo: a 2-minute video, three buttons, one AP2 trail" in `PLAN.md` first. The demo runs on `scenarios/restaurant-case/`, not on milk. Adrien builds the demo driver (`scenarios/run.py`, port 8003) and the sandbox payment. Colette builds the page only, so the policy file and the words are yours tonight.
+
+One step = one branch = one small PR, as before. Do not edit `merchant/`, `contract/`, `trust/`, `surface/` or `scenarios/run.py`.
+
+### L5. The restaurant's policy and the judge on the candidates (by 20:45)
+
+Branch `feat/restaurant-policy`. `scenarios/policy.demo.json` is Colette's file: tell her before you edit it.
+
+1. Customer `demo-restaurant-helsinki`, approver `chef@demo-restaurant.example`. Keep the limit (EUR 1,500), the blocked allergens (AP, AN) and the thresholds.
+2. Rewrite only the first line of `preferences_text` for this kitchen: a Nordic set menu, every dairy product is lactose free, no peanuts and no tree nuts. Keep the three lists.
+3. Run the real judge on the candidates of the substitution scenario, with cards built the way the harness really builds them: the squeaky cheese 474880 to 467148 (same maker, frozen) and to 475072 (another maker, chilled), and the lingonberry jam 465815 to 462198. The full product file is needed (`uv run python scripts/fetch_data.py`, `VALIO_MODE=live`).
+4. Probability, confidence and routing go in `team/leon/notes.md`. Tell Adrien the numbers: we want the case where the chef signs.
+
+### L6. A message to the chef when an approval is created (by 22:00)
+
+Branch `feat/harness-notify`. `harness/notify.py`: one Telegram message (Bot API `sendMessage`) with the reason in one sentence, the total, the deadline and the link to the approval page. Variables `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID`, added to `.env.example` without values. Timeout of 2 seconds, any failure is swallowed and logged: a message must never change or delay a verdict. No variable set means no call. The approval itself stays on the page, never in the chat. Test with a fake HTTP client. Add an entry to `TECH-CHOICES.md`.
+
+### L7. The words (by 00:30)
+
+Branch `feat/demo-script`.
+
+1. `docs/demo-script.md`: the video second by second, 1:55 in total, on the beats of `PLAN.md`. For each beat: what is on screen, the sentence said, what to do if it fails. Say "mandate" for what is signed and "sandbox payment" for the charge.
+2. `docs/pitch-deck.md`, five slides: the problem, the idea (the verdict decides who signs), the demo, the standards (MCP, UCP Checkout, AP2, ES256) and what we add to them, what comes next. Export it to PDF.
+
+### L8. After Adrien's payment PR
+
+Pull, run the harness tests, fix what the new `payment` field of `Order` breaks.
+
+### Bonus, 90 minutes at most, only once L5 to L8 are merged
+
+A WebAuthn passkey on "Approve and sign", with the quote hash as the challenge, verified by the harness before `sign_human`. Tell Colette first: it touches her button.
