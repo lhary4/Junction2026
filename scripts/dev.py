@@ -1,11 +1,12 @@
-"""Start the two services for local work: the Valio gateway on 8001 and the harness on 8002.
+"""Start the three services for local work: the Valio gateway on 8001, the harness on 8002 and the demo driver on 8003.
 
 Run: uv run python scripts/dev.py            add --reload to restart a service when its code changes
                                              add --fresh to empty the local state first
-Stop both with Ctrl+C. Works the same on macOS, Linux and Windows.
+Stop them all with Ctrl+C. Works the same on macOS, Linux and Windows.
+The demo page is then on http://localhost:8002/portal.html, served by the harness.
 
-The variables in .env are handed to both services. A variable already set in your terminal wins over .env.
-A service whose code is not in the repo yet is skipped, so this works before the harness is merged.
+The variables in .env are handed to every service. A variable already set in your terminal wins over .env.
+A service whose code is not in the repo yet is skipped.
 
 --fresh removes what earlier runs left: quotes, orders, approvals and both audit logs. Use it before a rehearsal or
 the demo. In replay mode the clock is frozen, so an approval left pending never reaches its cut-off and would stay on
@@ -22,7 +23,11 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-SERVICES = (("gateway", "merchant.app:app", 8001), ("harness", "harness.app:app", 8002))
+SERVICES = (
+    ("gateway", "merchant.app:app", 8001),
+    ("harness", "harness.app:app", 8002),
+    ("driver", "scenarios.run:app", 8003),  # plays the buying agent for the demo page, keeps nothing on disk
+)
 STATE_FOLDERS = ("merchant", "buyer")  # what the gateway and the harness write, under the state folder
 STOP_TIMEOUT_SECONDS = 10
 

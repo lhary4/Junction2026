@@ -2,6 +2,46 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## A8: the demo driver, buttons 1 and 2 (14/11, 21:45)
+
+`scenarios/run.py`, port 8003. `uv run python scripts/dev.py` now starts three services, and the page is on `http://localhost:8002/portal.html` (the harness serves it, with `kitchen/` and the example files: checked, HTTP 200 for the three).
+
+**How I checked.** Three real processes on spare ports, `VALIO_MODE=live`, called over HTTP the way the page calls them, with `main`'s policy file (still the hotel's, limit EUR 1,500).
+
+| Button | Time | End | What the state says |
+|---|---|---|---|
+| 1 Normal order | 1.3 s | `done` | 10 lines, EUR 186.89, verdict `auto`, signed by the agent, receipt |
+| 2 Substitution | 1.0 s | `waiting_for_human` | bread cheese 475072 for the squeaky cheese, EUR 114.87, judge 0.52 and 0.89 |
+| 2, after `POST /approvals/{id}/decision` on the harness | | `done` | signed by the chef, receipt |
+
+`GET /state` answers in 1 ms when idle and 5 ms after a run. The page waits 1.5 s at most.
+
+With the hotel policy the judge gives 0.52. With Léon's restaurant policy it gave 0.64 (A7). Both end `human`. The number on screen changes when his policy is merged.
+
+**The page, clicked through in Chrome against the three services** (`portal.html` served by the harness, live mode, 21:42). The strip says "driver live, harness live". Button 1: recipes, stock, "Agent order", then the quote table with its ten lines, the trail lit to the receipt, the receipt card. Button 2: the verdict card, the card with both cheeses side by side, "Approve and sign", then "Signed by chef" and the receipt. No error from the page in the console.
+
+Three things show on screen and are not the driver's to fix:
+
+- "Delivery Mon 16 Nov" next to "Needed by Thu 19 Nov". The quote's `delivery_date` is the day Valio can deliver. To decide before the video.
+- The account name, top right, is `kitchen.name`: "Demo Restaurant Helsinki", still a placeholder.
+- The payment line of the receipt card reads "No payment is booked yet: the sandbox payment is not built." Right for tonight, gone with A9. Do not record the final video before A9.
+
+**For Colette, answers to your questions.**
+
+- Lines sent to `POST /scenarios/{id}/run`: not tonight. A scenario sends its own lines, a test holds them equal to the example files your stock files are built on. Letting the chef change a line means the request no longer matches a recorded run, and the video is recorded in replay.
+- Recipes, stock and bookings in `DemoState`: not tonight, they stay your files. The same test keeps the request and your "to order" lines from drifting apart: if I change a scenario's lines, it fails.
+- A rejected approval: it works live. The state ends `refused`, step 4 says "The chef rejected this order", steps 5 to 7 are `skipped`. No example file for it yet.
+- The harness serves `portal.html` and `kitchen/` as they are: yes.
+- In live mode the page shows two buttons, because `state.scenarios` has two. The attack comes with A10.
+- If the gateway or the harness is down, a run answers HTTP 502 with a sentence that names the service. Your page shows it under "Something did not answer".
+
+**Two steps of the trail are incomplete in the live state.**
+
+- Step 1 has no hash. For Léon: the harness holds the open mandates and shows them nowhere. One route would do, for example `GET /mandates/open` answering the hash of each token and the time they were issued, or one audit line when they are issued.
+- Step 6 is `skipped` and says "No payment is booked yet". It turns `done` with A9.
+
+**What the driver cannot do yet.** Replay mode: the menu's products are not in the recorded answers (A11), so in replay a run answers HTTP 502 with the gateway's sentence. The tests run the flow on the recorded milk instead.
+
 ## A7: the live probe, the ranking fix and the ingredient of button 2 (14/11, 21:00)
 
 How I looked: this branch on `main` at `b4f70de`, `VALIO_MODE=live`, delivery on 2026-11-19, the real `merchant.app` behind the real harness, the real Gemini judge, and Léon's restaurant policy taken unchanged from `feat/leon-saturday-evening` (it is not on `main` yet: limit EUR 1,500, thresholds 0.85 and 0.15).
