@@ -734,6 +734,17 @@ function requestTable() {
     </table>`;
 }
 
+/* One sentence under the quote when Valio gave no stock count on some lines. It never blocks the order: unknown is shown, not hidden. */
+function stockNote(quote) {
+  const total = quote.line_items.length;
+  const unconfirmed = quote.line_items.filter((item) => {
+    const stock = quote.aimo.lines[item.id]?.stock;
+    return !stock || stock.certainty === "unknown" || typeof stock.value !== "number";
+  }).length;
+  if (unconfirmed === 0) return "";
+  return `<p class="stock-note">Stock not confirmed on ${unconfirmed} of ${total} ${total === 1 ? "line" : "lines"}: Valio gave no count. This does not stop the order.</p>`;
+}
+
 function quoteTable(state) {
   const quote = state.quote;
   const total = quote.totals.find((item) => item.type === "total");
@@ -764,7 +775,7 @@ function quoteTable(state) {
       <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Total</th><th>Valio's stock</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr><td colspan="3">Total before tax</td><td class="num"><b>${esc(money(total.amount, quote.currency))}</b></td><td></td></tr></tfoot>
-    </table>`;
+    </table>${stockNote(quote)}`;
 }
 
 /* A card moves in once, when the step it belongs to lights up. */

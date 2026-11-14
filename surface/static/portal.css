@@ -2349,3 +2349,13 @@ input {
     transition: none !important;
   }
 }
+
+/* Under the quote: Valio gave no stock count on some lines. Informative, not a warning: the order is not blocked. */
+.stock-note {
+  margin: 10px 0 0;
+  padding: 8px 12px;
+  background: var(--mist);
+  border-left: 4px solid var(--grey);
+  color: var(--ink);
+  font-size: 0.86rem;
+}

@@ -54,7 +54,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Status: decided
 - What it is: in a quote, stock, price, origin, delivery reliability and carbon footprint each come with where the value comes from, when, and a certainty level: measured, declared, estimated or unknown.
 - Why: a signature proves Valio said it and nobody changed it. It does not prove it is true. The certainty level is what lets an agent decide without a manual check.
-- What it changes for us: unknown is a real value, shown as "unknown" and never read as "fine". Missing allergen data goes to a human.
+- What it changes for us: unknown is a real value, shown as "unknown" and never read as "fine". Missing allergen data goes to a human. Missing stock does not: when Valio gives no count (a product it cannot count, or "plenty"), both pages say it under the quote ("Stock not confirmed on 6 of 10 lines: Valio gave no count. This does not stop the order.") and the order still goes ahead. The signature proves Valio promised, not that the stock exists. Whether an unknown stock should ever go to a human is an open question for the mentors.
 - If we change it: the quote format, the rules and the comparison table change.
 - Alternatives we looked at: signing the quote only, without sources.
 - Decided in: PR #7, 14/11/2026.
