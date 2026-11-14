@@ -63,6 +63,10 @@ The gateway signs the whole payload as an ES256 JWT. `checkout_hash` is the base
 
 A quote is valid until the order cut-off (`closing_time`), and at most 24 hours. That is the brief's "fixed prices": the price holds while a human takes the time to approve.
 
+`POST /checkouts` answers HTTP 422 when the request cannot become a quote (unknown product, a unit the product does not have, a date replay mode has no answers for) and HTTP 503 when Valio's own API gives no usable answer: nothing is wrong with the request, it can be sent again. Both carry a readable `detail`.
+
+Inside one quote, stock is counted once. Two needs for the same product, or two shortfalls covered by the same substitute, never add up to more than Valio has: the second one gets what the first one left, and a shortfall for the rest.
+
 `aimo.shortfalls` says what could not be covered. `aimo.alternatives` ranks substitutes from Valio's own assortment, one per tier: `best` (same category, same allergens), `better` (same category, other allergens), `good` (a related category, plant-based drinks for milk drinks). The catalog already lists substitutes for some products (field `substitutions` in the product file, read both ways): they come first in a tier, then the cheapest per litre or kilo. A substitute is only offered if it arrives on time, covers the whole shortfall, has complete allergen data and keeps every free-from promise of the original (a lactose-free product is only replaced by a lactose-free one). The `best` one is chosen unless `allow_alternatives` is false.
 
 To pick another alternative, the agent asks for a new quote with `substitute_with` on the need, for example `{"product_id": "469363", "amount": 600, "unit": "L", "substitute_with": "464320"}`. The gateway refuses a product it would not offer.
@@ -98,6 +102,20 @@ A judge answer keeps what we asked and what came back, because the model returns
 | `deny` | nobody | no mandate, so no order |
 
 The spend cap is carried by the open payment mandate (`AmountRange`), so the gateway itself refuses an agent-signed order above the cap.
+
+### The order
+
+`POST /checkouts/{id}/complete` takes the `Authorization` and checks, in this order: the quote exists, is still the one Valio signed and has not expired; the mandates verify against it (`trust.verify_mandates`); the quote has not been ordered yet.
+
+| Case | Answer |
+|---|---|
+| Everything passes | HTTP 200 with the `Order`, status `accepted`, and a receipt signed by Valio. The receipt's `reference` is the order's `mandate_reference` |
+| The same mandate is sent again | HTTP 200 with the same `Order`. A retry after a lost answer never orders twice |
+| Another mandate for a quote that is already ordered | HTTP 403 |
+| Expired quote, mandate for another quote or amount, agent mandate above the cap, wrong key | HTTP 403 |
+| Unknown quote id | HTTP 404 |
+
+A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `order_accepted`, `order_replayed`, `order_refused`.
 
 ## Routes
 
@@ -165,8 +183,9 @@ verify_receipt(receipt_jwt: str, merchant_jwks) -> dict
 |---|---|---|
 | `VALIO_AIMO_API_KEY` | gateway, scripts | key for the Valio mock APIs |
 | `GEMINI_API_KEY` | harness | key for Gemini Decision (AI Studio) |
-| `VALIO_MODE` | gateway | `live` calls the Valio APIs, `replay` reads `contract/fixtures/valio/` |
-| `AIMO_FROZEN_NOW` | both | an ISO time that replaces the clock in replay mode |
+| `VALIO_MODE` | both | `live` calls the Valio APIs on the real clock. `replay` (the default) reads `contract/fixtures/valio/` and freezes the clock at the recording time (`frozen_now.txt` in that folder, 14/11 at 13:29). Give both services the same value |
+| `AIMO_FROZEN_NOW` | both | optional: an ISO time with its offset that replaces the clock, in both modes |
 | `MERCHANT_URL` | harness, agent tools | default `http://localhost:8001` |
 | `HARNESS_URL` | agent tools, surface | default `http://localhost:8002` |
 | `AIMO_DATA_DIR` | gateway, scripts | where the three data files live, default `data/` |
+| `AIMO_STATE_DIR` | gateway | where quotes, orders and the audit log are written, default `state/` |

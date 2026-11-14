@@ -142,18 +142,18 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Time: one clock that can be frozen
 - Status: decided
-- What it is: everything that needs "now" asks `common/clock.py`. When `AIMO_FROZEN_NOW` is set, it answers that exact time and never moves.
-- Why: replay mode serves answers recorded on 14/11. Their deadlines only make sense if the clock says 14/11 too.
-- What it changes for us: quote expiry, approval deadlines and receipt times follow the frozen clock. The permissions themselves keep the real time, because the AP2 toolkit stamps the real time when it signs. They are valid until the end of 16/11, so this holds for the whole weekend.
+- What it is: everything that needs "now" asks `common/clock.py`. In replay mode it answers the moment the Valio answers were recorded (14/11 at 13:29) and never moves. In live mode it answers the real time. `AIMO_FROZEN_NOW` sets any other fixed time, in both modes.
+- Why: replay mode serves answers recorded on 14/11. Their deadlines only make sense if the clock says 14/11 too. The recorded order cut-off is Sunday 15/11 at 17:00: on the real clock, replay mode could not quote anything after it.
+- What it changes for us: replay mode works at any hour, on any day, with no setting. Quote expiry, approval deadlines and receipt times follow the frozen clock, so in replay mode every line of the logs carries the same time and nothing expires on its own: to show an expiry, set `AIMO_FROZEN_NOW` to a time after the deadline. The gateway and the harness must run in the same mode (`VALIO_MODE`), or their clocks disagree. The permissions themselves keep the real time, because the AP2 toolkit stamps the real time when it signs. They are valid until the end of 16/11, so this holds for the whole weekend.
 - If we change it: a ticking frozen clock (starting at the recorded time) would be one function to change.
-- Alternatives we looked at: passing the time everywhere by hand (easy to forget one place).
-- Decided in: PR #9, 14/11/2026.
+- Alternatives we looked at: passing the time everywhere by hand (easy to forget one place); keeping the real clock in replay mode unless someone sets `AIMO_FROZEN_NOW` (what we had first: the demo would have stopped quoting on Sunday at 17:00).
+- Decided in: PR #9, 14/11/2026. Replay mode freezing the clock by itself: PR #15, 14/11/2026.
 
 ## Data: local files, live calls on a shortlist, and a replay mode
 - Status: decided
 - What it is: the product file and the two small tables (delivery reliability, carbon footprint) are downloaded once and never committed. Prices and stock are asked from Valio only for a shortlist. A replay mode serves answers recorded on 14/11 with a frozen clock.
 - Why: Valio's API forbids querying the whole catalog. The order cut-off for a Monday delivery is Sunday 17:00, so a live-only demo would break.
-- What it changes for us: `VALIO_MODE=live` or `replay`. The recorded answers are a small subset saved in the repo.
+- What it changes for us: `VALIO_MODE=live` or `replay`. The recorded answers are a small subset saved in the repo. In live mode, when Valio's API is unreachable, answers with an error or takes more than 30 seconds, the gateway says so in plain words ("try again", HTTP 503) instead of crashing, and keeps "your request is wrong" (HTTP 422) for requests that really are.
 - If we change it: without replay, the demo depends on the time of day.
 - Alternatives we looked at: live only; committing the full product file (86 MB, not allowed).
 - Decided in: PR #7, 14/11/2026.
@@ -167,21 +167,48 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: recording only the five demo products (too few for a real search and for substitutes).
 - Decided in: PR #10, 14/11/2026.
 
+## Pack sizes: read in the product name, and the price per litre has the last word
+- Status: decided
+- What it is: the buyer asks for litres or kilos, Valio sells cartons, boxes and bottles. When the product file does not say how much one sales unit holds, the gateway reads it in the product's name: "5 dl", "100x2 cl", "2,5dlx12". A pack count written next to the size counts ("100x2 cl" is 2 litres), unless the product file already lists a unit of that many pieces (for "12x375g" sold by the box, 12 boxes to a carton, one box is 375 g).
+- Why: the product file counts 94% of the catalog in pieces, not in litres or kilos (16,440 products out of 17,546), so the name is the only place that gives a size. Before the pack count was read, a carton of 100 portions of 2 cl showed as 0.02 litre.
+- What it changes for us: the size on a product card is a reading of the name, and says how it was read. In a quote it is checked against Valio's own numbers (price divided by price per litre): within 2% the name is confirmed, otherwise the price wins, because Valio invoices on it. Checked on the 157 recorded products: the three that carry a pack count now match the price. On the whole catalog the rule changes about 1,100 cards and gives a size to 160 that had none. It only makes sizes bigger, never smaller.
+- If we change it: `size_per_sales_unit` in `merchant/catalog.py`, and its tests in `tests/test_merchant_robustness.py`.
+- Alternatives we looked at: the name's size alone (wrong for every multipack sold as one unit); trusting only the price per litre (not there before a quote, so a product card would show no size).
+- Decided in: PR #11, 14/11/2026 (reading the name). The pack count: PR #15, 14/11/2026.
+
 ## Substitutes: the gateway proposes, ranked in three tiers, and never breaks a free-from promise
 - Status: decided (the ranking inside a tier is open: Colette may change what counts first)
 - What it is: when stock is short, Valio's gateway takes what there is and proposes up to three replacements: `best` (same kind of product, same allergens), `better` (same kind, other allergens), `good` (a related kind, plant-based drinks for milk). Inside a tier, the substitutes Valio itself lists come first, then the cheapest per litre. The best one goes into the quote automatically. The agent may ask for another one from the list, never one the gateway did not offer.
 - Why: the agent never decides a fact, so it cannot invent a substitute. A lactose-free kitchen must never receive normal milk because it was cheaper, even if the allergen codes look the same: the data often lists milk but forgets lactose.
-- What it changes for us: a substitute must arrive on time, cover the whole missing quantity, have complete allergen data, and keep every "free from" of the original. The harness still checks allergens and asks the judge, this is a first filter on Valio's side. Most stock counts from the mock are "plenty" (9,999,999,999): the quote says "available, count not given" instead of showing that number.
+- What it changes for us: a substitute must arrive on time, cover the whole missing quantity, have complete allergen data, and keep every "free from" of the original. The harness still checks allergens and asks the judge, this is a first filter on Valio's side. Most stock counts from the mock are "plenty" (9,999,999,999): the quote says "available, count not given" instead of showing that number. Inside one quote the same stock is never promised twice: a second line for the same product, or a second shortfall covered by the same substitute, only gets what the first one left.
 - If we change it: `merchant/quotes.py` only. The related kinds of product are one line in it.
 - Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none).
 - Decided in: PR #11, 14/11/2026.
+
+## Orders: one per quote, and a repeated request gets the same order back
+- Status: decided
+- What it is: to order, the harness sends the signed permissions for one quote to Valio's gateway. The gateway checks three things in a fixed order: the quote is one it signed and has not expired, the permissions are valid for exactly this quote and this amount, and the quote has not been ordered yet. If all three pass, it creates the order and signs a receipt.
+- Why: "no signature, no order" has to be enforced by the seller, not only by the buyer's software. And a network hiccup must never create two orders.
+- What it changes for us: sending the same permission twice returns the same order, with the same receipt. A second, different permission for a quote that is already ordered is refused. A refusal lists every problem in readable sentences and creates nothing. The spend cap is checked by Valio too: an order signed by the agent above the cap is refused even if the buyer's harness were bypassed. Valio knows the manager's public key in advance (in real life, from the day the customer account is opened; in the demo, from the keys folder).
+- If we change it: `merchant/orders.py` and the harness's reading of a refusal. The gateway does not ask Valio's stock again when the order arrives: the quote's price and stock hold until it expires.
+- Alternatives we looked at: refusing any repeated request (a retry after a lost answer would look like an attack); checking stock again at order time (one more live call, and the brief asks for prices that hold).
+- Decided in: PR #13, 14/11/2026.
+
+## Running it locally: one command starts both services
+- Status: decided
+- What it is: `uv run python scripts/dev.py` starts Valio's gateway (port 8001) and the buyer's harness (port 8002), and stops both with Ctrl+C. It hands the values of `.env` to both.
+- Why: three people on macOS and Windows should not have to remember two commands and export keys by hand.
+- What it changes for us: a value typed in the terminal wins over `.env`. A service that is not in the repo yet is skipped. If one service dies, the other is stopped and the error is shown.
+- If we change it: only this script.
+- Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon).
+- Decided in: PR #13, 14/11/2026.
 
 ## Audit log: one chained file on each side
 - Status: decided
 - What it is: the buyer's harness and Valio's gateway each write one line per decision: what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited line is detected.
 - Why: the brief asks for a readable record for both the buyer and Valio.
 - What it changes for us: the chain shows tampering, it does not prevent it. The stronger proof is that each side also keeps pieces signed by the other.
-- If we change it: only `common/audit.py`.
+- If we change it: only `common/audit.py`. Until that shared file is merged, Valio's gateway chains its own lines in `merchant/audit.py`, which is the one place to switch over.
 - Alternatives we looked at: a database table; a single shared log.
 - Decided in: PR #7, 14/11/2026.
 

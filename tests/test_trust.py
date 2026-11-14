@@ -4,7 +4,7 @@ The mandate cases follow spikes/ap2/: one happy path and the attacks from the de
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -234,11 +234,17 @@ def test_receipt_signed_by_someone_else_is_refused():
 # ---------- Clock ----------
 
 
-def test_clock_is_live_unless_frozen(monkeypatch):
+def test_clock_is_real_in_live_mode_recorded_in_replay_and_frozen_on_demand(monkeypatch):
+    recorded = datetime.fromisoformat(read("valio/frozen_now.txt").strip())
     monkeypatch.delenv("AIMO_FROZEN_NOW", raising=False)
-    assert clock.now().tzinfo is not None
+    monkeypatch.setenv("VALIO_MODE", "live")
+    assert abs(clock.now() - datetime.now(UTC)) < timedelta(seconds=5)
+    monkeypatch.setenv("VALIO_MODE", "replay")
+    assert clock.now() == recorded
+    monkeypatch.delenv("VALIO_MODE")
+    assert clock.now() == recorded  # replay is the default mode
     monkeypatch.setenv("AIMO_FROZEN_NOW", "2026-11-14T13:15:00+02:00")
-    assert clock.now() == NOW
+    assert clock.now() == NOW  # an explicit time wins over the recording
     monkeypatch.setenv("AIMO_FROZEN_NOW", "2026-11-14T13:15:00")
     with pytest.raises(ValueError, match="UTC offset"):
         clock.now()
