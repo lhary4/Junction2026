@@ -158,6 +158,15 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: live only; committing the full product file (86 MB, not allowed).
 - Decided in: PR #7, 14/11/2026.
 
+## Recorded answers: 157 products, raw API answers, trimmed product records
+- Status: decided
+- What it is: `contract/fixtures/valio/` holds what Valio answered on 14/11 at 13:29 for a Monday 16/11 delivery: all lactose-free milks and plant-based drinks, plus the substitutes Valio lists for our five demo products. Prices and stock are kept exactly as the API sent them. The product records keep names, brand, origin, allergens, labels and ingredients, and drop marketing texts, pictures and instructions.
+- Why: the full records of these products weigh 1.3 MB, the limit we set for the repo is 1 MB. Keeping the raw API answers means replay mode and live mode read the same shapes.
+- What it changes for us: replay mode only knows these 157 products. A test checks that the demo facts still hold on them (464306 in stock with a Sunday 17:00 cut-off, 469363 with only 384 units). Rerunning `scripts/record_fixtures.py` replaces the recording and fails loudly if a demo fact no longer holds.
+- If we change it: a new recording changes prices or stock in the demo, so tell everyone before merging one.
+- Alternatives we looked at: recording only the five demo products (too few for a real search and for substitutes).
+- Decided in: PR #10, 14/11/2026.
+
 ## Audit log: one chained file on each side
 - Status: decided
 - What it is: the buyer's harness and Valio's gateway each write one line per decision: what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited line is detected.
