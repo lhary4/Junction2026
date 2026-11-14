@@ -35,11 +35,27 @@ const rows = (key) =>
     priceHasClaim: Boolean(row.price && row.price.claim),
   }));
 
+// A copy of a quote where the first lines carry the given stock claims (the recorded quotes all have counted stock).
+const withStock = (checkout, claims) => {
+  const copy = JSON.parse(JSON.stringify(checkout));
+  claims.forEach((claim, index) => {
+    copy.aimo.lines[copy.line_items[index].id].stock = claim;
+  });
+  return copy;
+};
+
 const out = {
   money: app.money(202000, "EUR"),
   deadline: app.dayAndTime("2026-11-15T17:00:00+02:00"),
   countdown: app.countdownText(26 * 3600 * 1000 + 14 * 60 * 1000 + 3000),
   unknownClaim: app.claimValueText({ value: null, unit: "share_delivered", source: "none", certainty: "unknown" }),
+  stockNoteCounted: app.stockNote(quote("act1").checkout),
+  stockNoteOneOfTwo: app.stockNote(withStock(quote("act3").checkout, [{ value: "not_given", unit: "ST", source: "aimo_stock_count", certainty: "declared" }])),
+  stockNoteBoth: app.stockNote(withStock(quote("act3").checkout, [
+    { value: "not_given", unit: "ST", source: "aimo_stock_count", certainty: "declared" },
+    { value: null, unit: "ST", source: "aimo_stock_count", certainty: "unknown" },
+  ])),
+  stockNoteMissing: app.stockNote(withStock(quote("act1").checkout, [null])),
   rowsAct1: rows("act1"),
   rowsAct3: rows("act3"),
   signatures: Object.fromEntries(data.quotes.map((entry) => [entry.key, app.signatureState(entry, data.audit).kind])),
@@ -106,6 +122,14 @@ def test_money_dates_and_countdown_read_well(drawn):
     assert drawn["deadline"] == "Sun 15 Nov, 17:00"  # Helsinki time, whatever the laptop's time zone
     assert drawn["countdown"] == "26 h 14 min 03 s"
     assert drawn["unknownClaim"] == "unknown"
+
+
+def test_a_quote_without_stock_counts_says_so_and_does_not_block_the_order(drawn):
+    assert drawn["stockNoteCounted"] == ""  # the recorded act 1 quote has a counted stock: no sentence
+    assert "Stock not confirmed on 1 of 2 lines: Valio gave no count." in drawn["stockNoteOneOfTwo"]
+    assert "Stock not confirmed on 2 of 2 lines" in drawn["stockNoteBoth"]  # unknown and "no count given" both count
+    assert "Stock not confirmed on 1 of 1 line:" in drawn["stockNoteMissing"]  # a missing claim is not read as available
+    assert "This does not stop the order." in drawn["stockNoteBoth"]
 
 
 def test_a_price_only_comes_from_the_signed_quote(drawn):
