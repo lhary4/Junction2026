@@ -122,7 +122,7 @@
     ]
   },
   "quote": {
-    "id": "chk_9d9ff382",
+    "id": "chk_37248083",
     "merchant": {
       "id": "valio-aimo",
       "name": "Valio Aimo",
@@ -387,7 +387,7 @@
     "continue_url": null,
     "aimo": {
       "customer": "demo-restaurant-helsinki",
-      "issued_at": "2026-11-14T19:40:16.596675+02:00",
+      "issued_at": "2026-11-14T19:52:52.949314+02:00",
       "totals_exclude_tax": true,
       "requested": [
         {
@@ -458,9 +458,16 @@
         "li-1": {
           "product_id": "463437",
           "category": "10500",
+          "brand": "Valio",
           "sales_unit": "ST",
           "base_quantity": 6.5,
           "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 0.5,
+            "unit": "KG",
+            "how": "pack size in the name (500 g) x 1 ST"
+          },
+          "temperature_condition": 4,
           "comparison_price_minor": 662,
           "comparison_unit": "KG",
           "substitute_for": null,
@@ -471,14 +478,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "declared"
           },
           "price": {
             "value": 331,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -509,6 +516,15 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
           "labels": [
             "GOODS_FROM_FINLAND_BLUE_SWAN"
           ]
@@ -516,9 +532,16 @@
         "li-2": {
           "product_id": "464194",
           "category": "10401",
+          "brand": "Valio",
           "sales_unit": "ST",
           "base_quantity": 4.0,
           "base_unit": "L",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "L",
+            "how": "pack size in the name (1 l) x 1 ST"
+          },
+          "temperature_condition": 4,
           "comparison_price_minor": 391,
           "comparison_unit": "L",
           "substitute_for": null,
@@ -529,14 +552,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "declared"
           },
           "price": {
             "value": 391,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -567,6 +590,15 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "LOW_SODIUM_SALT",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
           "labels": [
             "GOODS_FROM_FINLAND_BLUE_SWAN"
           ]
@@ -574,9 +606,16 @@
         "li-3": {
           "product_id": "476890",
           "category": "10419",
+          "brand": "Valio",
           "sales_unit": "ST",
           "base_quantity": 6.0,
           "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 2.0,
+            "unit": "KG",
+            "how": "pack size in the name (2 kg) x 1 ST"
+          },
+          "temperature_condition": 4,
           "comparison_price_minor": 653,
           "comparison_unit": "KG",
           "substitute_for": null,
@@ -587,14 +626,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "declared"
           },
           "price": {
             "value": 1306,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -625,6 +664,16 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "LOW_SODIUM_SALT",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
           "labels": [
             "GOODS_FROM_FINLAND_BLUE_SWAN"
           ]
@@ -632,9 +681,16 @@
         "li-4": {
           "product_id": "464306",
           "category": "10400",
+          "brand": "Valio",
           "sales_unit": "ST",
           "base_quantity": 8.0,
           "base_unit": "L",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "L",
+            "how": "pack size in the name (1 l) x 1 ST"
+          },
+          "temperature_condition": 4,
           "comparison_price_minor": 101,
           "comparison_unit": "L",
           "substitute_for": null,
@@ -645,14 +701,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "declared"
           },
           "price": {
             "value": 101,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -683,6 +739,17 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "LOW_FAT",
+            "LOW_SODIUM_SALT",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
           "labels": [
             "GOODS_FROM_FINLAND_BLUE_SWAN"
           ]
@@ -690,9 +757,16 @@
         "li-5": {
           "product_id": "460200",
           "category": "21370",
+          "brand": "Elovena",
           "sales_unit": "ST",
           "base_quantity": 2.0,
           "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "KG",
+            "how": "pack size in the name (1kg) x 1 ST"
+          },
+          "temperature_condition": 8,
           "comparison_price_minor": 276,
           "comparison_unit": "KG",
           "substitute_for": null,
@@ -703,14 +777,14 @@
             "value": 137.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "price": {
             "value": 276,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -742,6 +816,10 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [
+            "HIGH_FIBRE",
+            "VEGAN"
+          ],
           "labels": [
             "FINNISH_HEART_SYMBOL",
             "GOODS_FROM_FINLAND_BLUE_SWAN"
@@ -750,9 +828,16 @@
         "li-6": {
           "product_id": "467958",
           "category": "21200",
+          "brand": "VAASAN",
           "sales_unit": "ST",
           "base_quantity": 6.0,
           "base_unit": "ST",
+          "size_per_sales_unit": {
+            "value": 0.3,
+            "unit": "KG",
+            "how": "pack size in the name (300g) x 1 ST"
+          },
+          "temperature_condition": 8,
           "comparison_price_minor": 567,
           "comparison_unit": "KG",
           "substitute_for": null,
@@ -763,14 +848,14 @@
             "value": 160.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "price": {
             "value": 170,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -815,6 +900,12 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "HIGH_FIBRE"
+          ],
           "labels": [
             "FINNISH_HEART_SYMBOL",
             "MADE_IN_FINLAND_FLAG_WITH_KEY"
@@ -823,9 +914,16 @@
         "li-7": {
           "product_id": "468513",
           "category": "21591",
+          "brand": "Myrttisen",
           "sales_unit": "ST",
           "base_quantity": 2.0,
           "base_unit": "ST",
+          "size_per_sales_unit": {
+            "value": 4.5,
+            "unit": "KG",
+            "how": "pack size in the name (4500g) x 1 ST"
+          },
+          "temperature_condition": 8,
           "comparison_price_minor": 383,
           "comparison_unit": "KG",
           "substitute_for": null,
@@ -836,14 +934,14 @@
             "value": 37.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "price": {
             "value": 1722,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -887,6 +985,7 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [],
           "labels": [
             "MADE_IN_FINLAND_FLAG_WITH_KEY"
           ]
@@ -894,9 +993,16 @@
         "li-8": {
           "product_id": "468172",
           "category": "22600",
+          "brand": "Meira",
           "sales_unit": "ST",
           "base_quantity": 1.6,
           "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 0.8,
+            "unit": "KG",
+            "how": "pack size in the name (800g) x 1 ST"
+          },
+          "temperature_condition": 8,
           "comparison_price_minor": 168,
           "comparison_unit": "KG",
           "substitute_for": null,
@@ -907,14 +1013,14 @@
             "value": 2633.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "price": {
             "value": 134,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -958,14 +1064,22 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [],
           "labels": []
         },
         "li-9": {
           "product_id": "460325",
           "category": "22100",
+          "brand": "Dansukker Siro",
           "sales_unit": "BAG",
           "base_quantity": 2.0,
           "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "KG",
+            "how": "pack size in the name (1kg) x 1 BAG"
+          },
+          "temperature_condition": 8,
           "comparison_price_minor": 155,
           "comparison_unit": "KG",
           "substitute_for": null,
@@ -976,14 +1090,14 @@
             "value": "not_given",
             "unit": "BAG",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "declared"
           },
           "price": {
             "value": 155,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -1027,14 +1141,22 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [],
           "labels": []
         },
         "li-10": {
           "product_id": "466608",
           "category": "10530",
+          "brand": "Apetit",
           "sales_unit": "ST",
           "base_quantity": 10.0,
           "base_unit": "L",
+          "size_per_sales_unit": {
+            "value": 10.0,
+            "unit": "L",
+            "how": "pack size in the name (10L) x 1 ST"
+          },
+          "temperature_condition": 8,
           "comparison_price_minor": 250,
           "comparison_unit": "L",
           "substitute_for": null,
@@ -1045,14 +1167,14 @@
             "value": "not_given",
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "declared"
           },
           "price": {
             "value": 2502,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T17:40:16.596702Z",
+            "as_of": "2026-11-14T17:52:52.949359Z",
             "certainty": "measured"
           },
           "origin": {
@@ -1096,6 +1218,10 @@
             "as_of": "2026-11-14T12:52:20+02:00",
             "certainty": "estimated"
           },
+          "nutritional_claims": [
+            "VEGAN",
+            "VEGETARIAN"
+          ],
           "labels": [
             "FINNISH_HEART_SYMBOL"
           ]
@@ -1107,13 +1233,13 @@
   },
   "verdict": {
     "decision": "auto",
-    "checkout_id": "chk_9d9ff382",
-    "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
+    "checkout_id": "chk_37248083",
+    "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
     "total_minor": 18689,
     "currency": "EUR",
     "signer": "agent",
     "deadline": "2026-11-15T17:00:00+02:00",
-    "decided_at": "2026-11-14T19:40:16.934080+02:00",
+    "decided_at": "2026-11-14T19:52:53.279801+02:00",
     "rules": [
       {
         "rule_id": "quote-signature",
@@ -1174,10 +1300,10 @@
       {
         "rule_id": "spend-limit",
         "outcome": "pass",
-        "message": "186.89 EUR is within the 500.00 EUR limit.",
+        "message": "186.89 EUR is within the 1500.00 EUR limit.",
         "evidence": {
           "total_minor": 18689,
-          "limit_minor": 50000
+          "limit_minor": 150000
         }
       }
     ],
@@ -1185,10 +1311,10 @@
   },
   "authorization": {
     "status": "ordered",
-    "checkout_id": "chk_9d9ff382",
+    "checkout_id": "chk_37248083",
     "decision": "auto",
     "signed_by": "agent",
-    "order_id": "ord_5ba2a39f",
+    "order_id": "ord_ac61dee1",
     "reasons": [],
     "approval_id": null,
     "approval_url": null,
@@ -1196,24 +1322,24 @@
   },
   "approval": null,
   "order": {
-    "order_id": "ord_5ba2a39f",
+    "order_id": "ord_ac61dee1",
     "status": "accepted",
-    "checkout_id": "chk_9d9ff382",
-    "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
-    "mandate_reference": "w3Eqg31r4gY_s1DXsR6hCRWv4KfEONiSSBhJKHdMw0M",
+    "checkout_id": "chk_37248083",
+    "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
+    "mandate_reference": "Lhi2r08ejjbZHgNkR7a8np7bZn2rqCLt9Rd677EyxI4",
     "signed_by": "agent",
     "total_minor": 18689,
     "currency": "EUR",
     "delivery_date": "2026-11-16",
-    "created_at": "2026-11-14T19:40:16.951074+02:00",
-    "accepted_at": "2026-11-14T19:40:16.951074+02:00",
-    "receipt_jwt": "eyJhbGciOiAiRVMyNTYiLCAidHlwIjogIkpXVCIsICJraWQiOiAibWVyY2hhbnQifQ.eyJzdGF0dXMiOiAiU3VjY2VzcyIsICJpc3MiOiAidmFsaW8tYWltbyIsICJpYXQiOiAxNzk0Njc4MDE2LCAicmVmZXJlbmNlIjogInczRXFnMzFyNGdZX3MxRFhzUjZoQ1JXdjRLZkVPTmlTU0JoSktIZE13ME0iLCAib3JkZXJfaWQiOiAib3JkXzViYTJhMzlmIn0.T26Hz_8Tx_T1fNLHFxTXj6gCxu2dgiNxyjntWJna_WSv8kvqwVjKio3AFW7V3ujfVL7DjZFoN6hCVR3jaPjv0Q",
+    "created_at": "2026-11-14T19:52:53.297264+02:00",
+    "accepted_at": "2026-11-14T19:52:53.297264+02:00",
+    "receipt_jwt": "eyJhbGciOiAiRVMyNTYiLCAidHlwIjogIkpXVCIsICJraWQiOiAibWVyY2hhbnQifQ.eyJzdGF0dXMiOiAiU3VjY2VzcyIsICJpc3MiOiAidmFsaW8tYWltbyIsICJpYXQiOiAxNzk0Njc4NzczLCAicmVmZXJlbmNlIjogIkxoaTJyMDhlampiWkhnTmtSN2E4bnA3YlpuMnJxQ0x0OVJkNjc3RXl4STQiLCAib3JkZXJfaWQiOiAib3JkX2FjNjFkZWUxIn0.9tMq7hqc0SfCsbWy0nsBmR5K01lz6yzbx5RbzegJytK1GBV6mUP7-I3Q2d-0GbJS1xtIP_V_wYz0u0sp6YEddQ",
     "receipt": {
       "status": "Success",
       "iss": "valio-aimo",
-      "iat": 1794678016,
-      "reference": "w3Eqg31r4gY_s1DXsR6hCRWv4KfEONiSSBhJKHdMw0M",
-      "order_id": "ord_5ba2a39f"
+      "iat": 1794678773,
+      "reference": "Lhi2r08ejjbZHgNkR7a8np7bZn2rqCLt9Rd677EyxI4",
+      "order_id": "ord_ac61dee1"
     }
   },
   "attacks": [],
@@ -1223,8 +1349,8 @@
       "title": "Open mandate",
       "signer": "manager",
       "status": "done",
-      "detail": "Signed in advance by the chef: the agent may order from Valio Aimo, up to EUR 500.00 an order, until Sat 21/11 23:59.",
-      "proof": "lIh-1A20Gjvn_bzy2bMsPUBIF_-086rNa794QJFDbuo",
+      "detail": "Signed in advance by the chef: the agent may order from Valio Aimo, up to EUR 1,500.00 an order, until Mon 16/11 23:59.",
+      "proof": "GQCNWgsbfwE9DTga-iKsGAJ8uAnV27H6gj-sH1OorU0",
       "at": null
     },
     {
@@ -1233,8 +1359,8 @@
       "signer": "merchant",
       "status": "done",
       "detail": "10 lines, EUR 186.89 before tax, signed by Valio Aimo, valid until Sun 15/11 17:00.",
-      "proof": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
-      "at": "2026-11-14T19:40:16.596675+02:00"
+      "proof": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
+      "at": "2026-11-14T19:52:52.949314+02:00"
     },
     {
       "key": "verdict",
@@ -1243,7 +1369,7 @@
       "status": "done",
       "detail": "auto: all 7 rules pass, the agent may sign.",
       "proof": null,
-      "at": "2026-11-14T19:40:16.934080+02:00"
+      "at": "2026-11-14T19:52:53.279801+02:00"
     },
     {
       "key": "closed_mandates",
@@ -1251,8 +1377,8 @@
       "signer": "agent",
       "status": "done",
       "detail": "Closed by the agent's key inside the chef's open mandate, for this exact quote, EUR 186.89.",
-      "proof": "w3Eqg31r4gY_s1DXsR6hCRWv4KfEONiSSBhJKHdMw0M",
-      "at": "2026-11-14T19:40:16.934080+02:00"
+      "proof": "Lhi2r08ejjbZHgNkR7a8np7bZn2rqCLt9Rd677EyxI4",
+      "at": "2026-11-14T19:52:53.279801+02:00"
     },
     {
       "key": "merchant_verifies",
@@ -1261,7 +1387,7 @@
       "status": "done",
       "detail": "Mandate chain valid, signed by the agent inside the manager's open mandate. Signatures, merchant, spend cap, quote hash, amount and single use all pass.",
       "proof": null,
-      "at": "2026-11-14T19:40:16.950929+02:00"
+      "at": "2026-11-14T19:52:53.297117+02:00"
     },
     {
       "key": "sandbox_payment",
@@ -1269,134 +1395,134 @@
       "signer": "merchant",
       "status": "done",
       "detail": "Sandbox: EUR 186.89 booked on invoice-account:demo-restaurant-helsinki. No real money moves.",
-      "proof": "pay_24516f29",
-      "at": "2026-11-14T19:40:16.951074+02:00"
+      "proof": "pay_5f861d4c",
+      "at": "2026-11-14T19:52:53.297264+02:00"
     },
     {
       "key": "signed_receipt",
       "title": "Signed receipt",
       "signer": "merchant",
       "status": "done",
-      "detail": "Order ord_5ba2a39f accepted. The receipt is signed by Valio and points at the mandate.",
-      "proof": "EbYuVP5Aki_jU_QhQYcZzaKCwCLbrOn8clGl1bw3K4I",
-      "at": "2026-11-14T19:40:16.951074+02:00"
+      "detail": "Order ord_ac61dee1 accepted. The receipt is signed by Valio and points at the mandate.",
+      "proof": "8wJ3H-ggnVKcqD9QaYDpWMMmUrTEj3hzz2H2ZqL91ro",
+      "at": "2026-11-14T19:52:53.297264+02:00"
     }
   ],
   "audit": {
     "buyer": [
       {
         "seq": 1,
-        "at": "2026-11-14T19:40:16.934080+02:00",
+        "at": "2026-11-14T19:52:53.279801+02:00",
         "side": "buyer",
         "actor": "agent",
         "action": "authorization_requested",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
-        "what": "The agent asked to order quote chk_9d9ff382.",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
+        "what": "The agent asked to order quote chk_37248083.",
         "why": "Request: Order the dairy and dry goods for this week's menu: three dinner services, 50 covers each.",
         "rule": null,
         "prev_hash": null,
-        "hash": "5d648d331d7cc5c14eb75c11a96a1b61d3004d69885aae11b0aca8cb3b0caa18"
+        "hash": "cc3a586d66cec0e14a9fe113ff813d3efa297450f3b0cfdfdd785b2e8dab46a2"
       },
       {
         "seq": 2,
-        "at": "2026-11-14T19:40:16.934080+02:00",
+        "at": "2026-11-14T19:52:53.279801+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "quote_verified",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
         "what": "Quote signature and expiry checked.",
         "why": "Signed by valio-aimo, valid until 2026-11-15 17:00.",
         "rule": "quote-signature",
-        "prev_hash": "5d648d331d7cc5c14eb75c11a96a1b61d3004d69885aae11b0aca8cb3b0caa18",
-        "hash": "bfeaa36d4dcc8064fe33a44602d8df9d4f16eee88612ca39863b0360e2ed7450"
+        "prev_hash": "cc3a586d66cec0e14a9fe113ff813d3efa297450f3b0cfdfdd785b2e8dab46a2",
+        "hash": "4a4fcc739cdbdb156037b7575bce0b47655f84a793183e3c4b14057d91590ec2"
       },
       {
         "seq": 3,
-        "at": "2026-11-14T19:40:16.934080+02:00",
+        "at": "2026-11-14T19:52:53.279801+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "verdict",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
         "what": "Verdict auto for 186.89 EUR.",
-        "why": "186.89 EUR is within the 500.00 EUR limit.",
+        "why": "186.89 EUR is within the 1500.00 EUR limit.",
         "rule": "spend-limit",
-        "prev_hash": "bfeaa36d4dcc8064fe33a44602d8df9d4f16eee88612ca39863b0360e2ed7450",
-        "hash": "848e63491713cf3f371c768200df38bf5261d852fd4a8fcff36efb761f7eb14d"
+        "prev_hash": "4a4fcc739cdbdb156037b7575bce0b47655f84a793183e3c4b14057d91590ec2",
+        "hash": "5a4fdc08fb42c7a2158ced95968a517dd71d12b6f00d4134b8f41ee0446dd27d"
       },
       {
         "seq": 4,
-        "at": "2026-11-14T19:40:16.934080+02:00",
+        "at": "2026-11-14T19:52:53.279801+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "mandate_signed",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
         "what": "Mandate closed with the agent's key.",
         "why": "Verdict auto: the agent may sign inside the manager's open mandate.",
         "rule": null,
-        "prev_hash": "848e63491713cf3f371c768200df38bf5261d852fd4a8fcff36efb761f7eb14d",
-        "hash": "ac540fd968c8181034a0e9c0d6eed606082c5092acf5cba9272ecbf4b20acd27"
+        "prev_hash": "5a4fdc08fb42c7a2158ced95968a517dd71d12b6f00d4134b8f41ee0446dd27d",
+        "hash": "e319996e01e98429286db9ad56e15d9bdbe1afefd095be0d490ed914ffde4451"
       },
       {
         "seq": 5,
-        "at": "2026-11-14T19:40:16.934080+02:00",
+        "at": "2026-11-14T19:52:53.279801+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "order_confirmed",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
-        "what": "Order ord_5ba2a39f accepted by Valio Aimo.",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
+        "what": "Order ord_ac61dee1 accepted by Valio Aimo.",
         "why": "Receipt signed by valio-aimo, reference matches our mandate.",
         "rule": null,
-        "prev_hash": "ac540fd968c8181034a0e9c0d6eed606082c5092acf5cba9272ecbf4b20acd27",
-        "hash": "0d1ade9819afffa181e55adb9033427c56fda5abca602a9eaaac53d39e8989ab"
+        "prev_hash": "e319996e01e98429286db9ad56e15d9bdbe1afefd095be0d490ed914ffde4451",
+        "hash": "93e779ffc419ec928fd823c8e8f774807e3374351bec9c3a631bcfd5b97fdc38"
       }
     ],
     "merchant": [
       {
         "seq": 1,
-        "at": "2026-11-14T19:40:16.928628+02:00",
+        "at": "2026-11-14T19:52:53.274420+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "quote_issued",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
         "what": "Quote for 13 ST of 463437 and 4 ST of 464194 and 3 ST of 476890 and 8 ST of 464306 and 2 ST of 460200 and 6 ST of 467958 and 2 ST of 468513 and 2 ST of 468172 and 2 BAG of 460325 and 1 ST of 466608, 186.89 EUR excl. tax.",
         "why": "Asked by demo-restaurant-helsinki for delivery on 2026-11-19, valid until 2026-11-15 17:00.",
         "rule": null,
         "prev_hash": null,
-        "hash": "104b7ac6db32947f56672e897184dfc91322fefaffa2fa7ed5484d11d9fbf5bd"
+        "hash": "5b196325a3d6f49c6ebc9645cde4537bd8d494b38b3c43f155b2ccd386850111"
       },
       {
         "seq": 2,
-        "at": "2026-11-14T19:40:16.950929+02:00",
+        "at": "2026-11-14T19:52:53.297117+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "mandate_verified",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
         "what": "Mandate chain valid, signed by the agent inside the manager's open mandate.",
         "why": "Signatures, merchant, spend cap, quote hash, amount and single use all pass.",
         "rule": null,
-        "prev_hash": "104b7ac6db32947f56672e897184dfc91322fefaffa2fa7ed5484d11d9fbf5bd",
-        "hash": "751b475dd74ee9f2f83067ea0529d7bcbc97cd1ae053d681a517c53630f145e1"
+        "prev_hash": "5b196325a3d6f49c6ebc9645cde4537bd8d494b38b3c43f155b2ccd386850111",
+        "hash": "47aad3bd602e142c46c28db885b431b8f335e9312a8cbcdaad4ff76fdbe4e12d"
       },
       {
         "seq": 3,
-        "at": "2026-11-14T19:40:16.951790+02:00",
+        "at": "2026-11-14T19:52:53.297950+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "order_accepted",
-        "checkout_id": "chk_9d9ff382",
-        "checkout_hash": "PB6n46D1MB6Jg5bCcjxH6VZevXMpoRvzwMooKHSUeec",
-        "what": "Order ord_5ba2a39f accepted, receipt signed.",
+        "checkout_id": "chk_37248083",
+        "checkout_hash": "HuYvy7d36ylV9lqFXhsAWvszfIh_w_mft0kElykcIpE",
+        "what": "Order ord_ac61dee1 accepted, receipt signed.",
         "why": "Valid mandate for a quote Valio signed and that has not expired.",
         "rule": null,
-        "prev_hash": "751b475dd74ee9f2f83067ea0529d7bcbc97cd1ae053d681a517c53630f145e1",
-        "hash": "8ad0b6ca9789896bb54e420c7487cbda67c03bf54212ae8d8a76632c728c1a93"
+        "prev_hash": "47aad3bd602e142c46c28db885b431b8f335e9312a8cbcdaad4ff76fdbe4e12d",
+        "hash": "684276e524fa3fbf5d1dc7864dd032a63b40b32ebb25649d04060670436fe630"
       }
     ]
   }
