@@ -279,7 +279,7 @@ The three services allow cross-origin calls from `localhost`, so the page can re
 
 ## MCP tools (`agent_mcp/`)
 
-What the external agent sees. Seven tools, short identifiers only, never a token. `lookup_offers` is in the contract since 14/11 and still has to be added to `agent_mcp/` (what to plug: `team/adrien/notes.md`).
+What the external agent sees. Seven tools, short identifiers only, never a token. When a service refuses (out of stock, a date replay mode has no answers for), the tool fails with the service's own words, so the agent can say why.
 
 | Tool | Arguments | Returns |
 |---|---|---|
