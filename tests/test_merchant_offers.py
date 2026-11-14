@@ -1,7 +1,7 @@
 """The gateway's lookup in replay mode: the search words, then prices and availability for the brief's sentence.
 
-The clock is frozen at the recording time. The recorded cut-off is Sunday 15/11 at 17:00: on the real clock,
-every offer would turn into a late delivery after it, and these tests would fail on Monday.
+The clock is frozen at the recording time with AIMO_FROZEN_NOW, so no test reads the real time. The recorded
+cut-off is Sunday 15/11 at 17:00: past it, every offer turns into a late delivery (one test moves the clock there).
 """
 
 import unicodedata
@@ -11,7 +11,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from contract.models import OffersRequest, OffersResponse
-from merchant import catalog, offers, valio_client
+from merchant import catalog, offers, valio_api, valio_client
 from merchant.app import app
 from merchant.offers import OffersError, find_offers
 
@@ -204,3 +204,12 @@ def test_route_refuses_with_a_readable_reason():
     assert no_unit.status_code == 422 and "amount and unit go together" in no_unit.text
     assert client.get("/offers", params={"q": "milk"}).status_code == 422  # no delivery date
     assert client.get("/offers", params=BRIEF | {"colour": "blue"}).status_code == 422  # unknown parameter
+
+
+def test_route_says_when_valio_does_not_answer(monkeypatch):
+    def down(_ids, _day):
+        raise valio_api.ValioUnavailable("Valio API POST /price: HTTP 500")
+
+    monkeypatch.setattr(valio_client, "fetch", down)
+    response = TestClient(app).get("/offers", params=BRIEF)
+    assert response.status_code == 503 and response.json()["detail"] == "Valio API POST /price: HTTP 500"

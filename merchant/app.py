@@ -1,4 +1,5 @@
-"""The Valio Aimo gateway, port 8001: search, signed quotes, orders with a signed receipt, public keys, audit log.
+"""The Valio Aimo gateway, port 8001: search, lookup of prices and availability, signed quotes, orders with a
+signed receipt, public keys, audit log.
 
 Run: uv run uvicorn merchant.app:app --port 8001   (or both services at once: uv run python scripts/dev.py)
 VALIO_MODE=replay (default) serves the answers recorded on 14/11, VALIO_MODE=live calls the Valio APIs.
@@ -47,7 +48,7 @@ def lookup_offers(request: Annotated[OffersRequest, Query()]) -> OffersResponse:
     try:
         return find_offers(request)
     except OffersError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+        raise HTTPException(status_code=e.status_code, detail=str(e)) from e  # 422, or 503 when Valio is down
 
 
 @app.post("/checkouts")

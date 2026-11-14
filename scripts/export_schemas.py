@@ -17,6 +17,9 @@ OUT = ROOT / "contract" / "schemas"
 EXPORTED = [
     models.ProductCard,
     models.SearchResponse,
+    models.OffersRequest,
+    models.Offer,
+    models.OffersResponse,
     models.QuoteRequest,
     models.AimoCheckout,
     models.CheckoutResponse,

@@ -11,7 +11,7 @@ from datetime import datetime
 from common import clock
 from contract.models import Claim, Offer, OfferQuantity, OffersRequest, OffersResponse, QuoteRequest
 from merchant import catalog as catalog_module
-from merchant import quotes, valio_client
+from merchant import quotes, valio_api, valio_client
 from merchant.catalog import HELSINKI, Catalog
 from merchant.units import UnitError, to_sales_units
 
@@ -20,6 +20,14 @@ SHORTLIST = 100  # products priced per lookup: a tenth of what one Valio call ac
 
 class OffersError(ValueError):
     """The lookup cannot be answered. The message is safe to show the agent."""
+
+    status_code = 422  # something in the request has to change
+
+
+class OffersUnavailable(OffersError):
+    """Valio could not be asked for prices and stock. Nothing is wrong with the request: it can be sent again."""
+
+    status_code = 503
 
 
 def find_offers(request: OffersRequest, catalog: Catalog | None = None) -> OffersResponse:
@@ -30,6 +38,8 @@ def find_offers(request: OffersRequest, catalog: Catalog | None = None) -> Offer
         answers = valio_client.fetch(shortlist, request.delivery_date)
     except valio_client.ReplayError as e:
         raise OffersError(str(e)) from e
+    except valio_api.ValioUnavailable as e:
+        raise OffersUnavailable(str(e)) from e
     # A quote builder with no needs: only its rules for "can be ordered" and for the stock claim are used,
     # so the lookup and the signed quote can never disagree on them.
     no_needs = QuoteRequest.model_construct(customer="lookup", delivery_date=request.delivery_date, needs=[])
