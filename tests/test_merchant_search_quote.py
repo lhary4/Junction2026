@@ -175,6 +175,17 @@ def test_terminal_product_with_a_past_cut_off_is_a_late_delivery():
     assert checkout.aimo.lines["li-1"].substitute_for.product_id == "465039"
 
 
+def test_delivery_is_on_the_day_asked_when_the_product_is_ready_before():
+    """Valio's availableDate is the earliest day: ready on the 16th, asked for the 19th, it comes on the 19th."""
+    checkout = build_quote(
+        QuoteRequest(
+            customer="demo", delivery_date="2026-11-19", needs=[{"product_id": "460078", "amount": 10, "unit": "KG"}]
+        )
+    )
+    assert checkout.aimo.lines["li-1"].available_date.isoformat() == MONDAY
+    assert checkout.aimo.delivery_date.isoformat() == "2026-11-19"
+
+
 def test_unknown_product_and_other_dates_are_refused():
     with pytest.raises(QuoteError, match="not_found"):
         quote("000000", 10)

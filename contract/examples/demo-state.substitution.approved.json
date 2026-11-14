@@ -59,7 +59,7 @@
     ]
   },
   "quote": {
-    "id": "chk_ccfba919",
+    "id": "chk_951f5b0c",
     "merchant": {
       "id": "valio-aimo",
       "name": "Valio Aimo",
@@ -117,7 +117,7 @@
     "continue_url": null,
     "aimo": {
       "customer": "demo-restaurant-helsinki",
-      "issued_at": "2026-11-14T22:15:06.523362+02:00",
+      "issued_at": "2026-11-14T23:52:19.600598+02:00",
       "totals_exclude_tax": true,
       "requested": [
         {
@@ -128,7 +128,7 @@
         }
       ],
       "requested_delivery_date": "2026-11-19",
-      "delivery_date": "2026-11-16",
+      "delivery_date": "2026-11-19",
       "closing_time": "2026-11-15T17:00:00+02:00",
       "lines": {
         "li-1": {
@@ -189,14 +189,14 @@
             "value": 100.0,
             "unit": "ST",
             "source": "aimo_stock_count",
-            "as_of": "2026-11-14T20:15:06.523374Z",
+            "as_of": "2026-11-14T21:52:19.600606Z",
             "certainty": "measured"
           },
           "price": {
             "value": 547,
             "unit": "eur_minor_per_sales_unit",
             "source": "aimo_price_api",
-            "as_of": "2026-11-14T20:15:06.523374Z",
+            "as_of": "2026-11-14T21:52:19.600606Z",
             "certainty": "measured"
           },
           "origin": {
@@ -263,13 +263,13 @@
   },
   "verdict": {
     "decision": "human",
-    "checkout_id": "chk_ccfba919",
-    "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
+    "checkout_id": "chk_951f5b0c",
+    "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
     "total_minor": 11487,
     "currency": "EUR",
     "signer": null,
     "deadline": "2026-11-15T17:00:00+02:00",
-    "decided_at": "2026-11-14T22:15:07.061618+02:00",
+    "decided_at": "2026-11-14T23:52:20.117485+02:00",
     "rules": [
       {
         "rule_id": "quote-signature",
@@ -330,10 +330,10 @@
       {
         "rule_id": "delivery-on-time",
         "outcome": "pass",
-        "message": "Delivery on 2026-11-16, as requested.",
+        "message": "Delivery on 2026-11-19, as requested.",
         "evidence": {
           "requested": "2026-11-19",
-          "promised": "2026-11-16"
+          "promised": "2026-11-19"
         }
       },
       {
@@ -390,21 +390,21 @@
   },
   "authorization": {
     "status": "ordered",
-    "checkout_id": "chk_ccfba919",
+    "checkout_id": "chk_951f5b0c",
     "decision": "human",
     "signed_by": "human",
-    "order_id": "ord_f93423bb",
+    "order_id": "ord_ea8abc6c",
     "reasons": [
       "substitution-within-preferences: The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign."
     ],
-    "approval_id": "apr_5c69609a",
+    "approval_id": "apr_5d1a3ff1",
     "approval_url": null,
     "deadline": null
   },
   "approval": {
-    "approval_id": "apr_5c69609a",
-    "checkout_id": "chk_ccfba919",
-    "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
+    "approval_id": "apr_5d1a3ff1",
+    "checkout_id": "chk_951f5b0c",
+    "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
     "status": "approved",
     "total_minor": 11487,
     "currency": "EUR",
@@ -452,31 +452,33 @@
       }
     ],
     "request_text": "Order the squeaky cheese for the dessert: 10.5 kg for the three services.",
-    "requested_at": "2026-11-14T22:15:07.061618+02:00",
+    "requested_at": "2026-11-14T23:52:20.117485+02:00",
     "deadline": "2026-11-15T17:00:00+02:00",
     "decided_by": "chef",
-    "decided_at": "2026-11-14T22:15:08.249855+02:00",
-    "order_id": "ord_f93423bb"
+    "decided_at": "2026-11-14T23:52:21.535437+02:00",
+    "order_id": "ord_ea8abc6c"
   },
   "order": {
-    "order_id": "ord_f93423bb",
+    "order_id": "ord_ea8abc6c",
     "status": "accepted",
-    "checkout_id": "chk_ccfba919",
-    "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
-    "mandate_reference": "h1QepojMzAADfFnyton_TzrpLKH_HSzOb1kLCXXN2eY",
+    "checkout_id": "chk_951f5b0c",
+    "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
+    "mandate_reference": "Uep-kAVWXwou6EKqDfJlcTdrRG0rSq9BRd0whGs6Wx0",
     "signed_by": "human",
     "total_minor": 11487,
     "currency": "EUR",
-    "delivery_date": "2026-11-16",
-    "created_at": "2026-11-14T22:15:08.257627+02:00",
-    "accepted_at": "2026-11-14T22:15:08.257627+02:00",
-    "receipt_jwt": "eyJhbGciOiAiRVMyNTYiLCAidHlwIjogIkpXVCIsICJraWQiOiAibWVyY2hhbnQifQ.eyJzdGF0dXMiOiAiU3VjY2VzcyIsICJpc3MiOiAidmFsaW8tYWltbyIsICJpYXQiOiAxNzk0Njg3MzA4LCAicmVmZXJlbmNlIjogImgxUWVwb2pNekFBRGZGbnl0b25fVHpycExLSF9IU3pPYjFrTENYWE4yZVkiLCAib3JkZXJfaWQiOiAib3JkX2Y5MzQyM2JiIn0._8OrWOedMSxkb3XSKZcOHTFhZdNOVruh-3kvQGn3VOLipPmdLU81seBu2sfc8m6NtdEurdeGD88agmoB2xyK2A",
+    "delivery_date": "2026-11-19",
+    "created_at": "2026-11-14T23:52:21.540772+02:00",
+    "accepted_at": "2026-11-14T23:52:21.540772+02:00",
+    "receipt_jwt": "eyJhbGciOiAiRVMyNTYiLCAidHlwIjogIkpXVCIsICJraWQiOiAibWVyY2hhbnQifQ.eyJzdGF0dXMiOiAiU3VjY2VzcyIsICJpc3MiOiAidmFsaW8tYWltbyIsICJpYXQiOiAxNzk0NjkzMTQxLCAicmVmZXJlbmNlIjogIlVlcC1rQVZXWHdvdTZFS3FEZkpsY1RkclJHMHJTcTlCUmQwd2hHczZXeDAiLCAib3JkZXJfaWQiOiAib3JkX2VhOGFiYzZjIn0.Od5bmLPLrd1-o5u0hFflCsrY14XxF6jnRHAWlYYzIIMMTz72rdJyhUNhBvbRxZY1Ylq8g7-mOqHziOqcTbHCLw",
     "receipt": {
       "status": "Success",
       "iss": "valio-aimo",
-      "iat": 1794687308,
-      "reference": "h1QepojMzAADfFnyton_TzrpLKH_HSzOb1kLCXXN2eY",
-      "order_id": "ord_f93423bb"
+      "iat": 1794693141,
+      "reference": "Uep-kAVWXwou6EKqDfJlcTdrRG0rSq9BRd0whGs6Wx0",
+      "order_id": "ord_ea8abc6c",
+      "error": null,
+      "error_description": null
     },
     "mandate": {
       "cap_minor": null,
@@ -485,14 +487,14 @@
       "instrument": "invoice-account:demo-restaurant-helsinki"
     },
     "payment": {
-      "payment_id": "pay_acc66518",
+      "payment_id": "pay_d318c33c",
       "status": "captured",
       "amount_minor": 11487,
       "currency": "EUR",
       "instrument": "invoice-account:demo-restaurant-helsinki",
       "terms": "Invoice at 14 days (simulated)",
       "sandbox": true,
-      "captured_at": "2026-11-14T22:15:08.257627+02:00"
+      "captured_at": "2026-11-14T23:52:21.540772+02:00"
     }
   },
   "attacks": [],
@@ -503,8 +505,8 @@
       "signer": "manager",
       "status": "done",
       "detail": "Signed in advance by the chef: the agent may order from Valio Aimo, up to EUR 1,500.00 an order, until Mon 16/11 23:59.",
-      "proof": "cE1tcgxMgUsoU9L6DnGNJYJMqmnHN9F7zbdvADRtgwg",
-      "at": "2026-11-14T22:15:06.504430+02:00"
+      "proof": "63vofvo9DxUk443K6YLUTN3Q6awi1CiUFh1TyIhUyTQ",
+      "at": "2026-11-14T23:52:19.580006+02:00"
     },
     {
       "key": "signed_quote",
@@ -512,8 +514,8 @@
       "signer": "merchant",
       "status": "done",
       "detail": "1 line, EUR 114.87 before tax, signed by Valio Aimo, valid until Sun 15/11 17:00.",
-      "proof": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
-      "at": "2026-11-14T22:15:06.523362+02:00"
+      "proof": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
+      "at": "2026-11-14T23:52:19.600598+02:00"
     },
     {
       "key": "verdict",
@@ -522,7 +524,7 @@
       "status": "done",
       "detail": "human: The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
       "proof": null,
-      "at": "2026-11-14T22:15:07.061618+02:00"
+      "at": "2026-11-14T23:52:20.117485+02:00"
     },
     {
       "key": "closed_mandates",
@@ -530,8 +532,8 @@
       "signer": "manager",
       "status": "done",
       "detail": "Signed by the chef for this exact quote, EUR 114.87.",
-      "proof": "h1QepojMzAADfFnyton_TzrpLKH_HSzOb1kLCXXN2eY",
-      "at": "2026-11-14T22:15:08.249855+02:00"
+      "proof": "Uep-kAVWXwou6EKqDfJlcTdrRG0rSq9BRd0whGs6Wx0",
+      "at": "2026-11-14T23:52:21.535437+02:00"
     },
     {
       "key": "merchant_verifies",
@@ -540,7 +542,7 @@
       "status": "done",
       "detail": "Mandates valid, signed by the manager for this exact quote. Signatures, merchant, quote hash, amount and single use all pass. Amount EUR 114.87, no cap: the chef signed this exact order.",
       "proof": null,
-      "at": "2026-11-14T22:15:08.257428+02:00"
+      "at": "2026-11-14T23:52:21.540655+02:00"
     },
     {
       "key": "sandbox_payment",
@@ -548,162 +550,162 @@
       "signer": "merchant",
       "status": "done",
       "detail": "Sandbox payment: EUR 114.87 booked on invoice-account:demo-restaurant-helsinki. Invoice at 14 days (simulated). No real money moves.",
-      "proof": "pay_acc66518",
-      "at": "2026-11-14T22:15:08.257627+02:00"
+      "proof": "pay_d318c33c",
+      "at": "2026-11-14T23:52:21.540772+02:00"
     },
     {
       "key": "signed_receipt",
       "title": "Signed receipt",
       "signer": "merchant",
       "status": "done",
-      "detail": "Order ord_f93423bb accepted. The receipt is signed by Valio and points at the mandate.",
-      "proof": "h3XC4sppyrj5-lP_2Q-W345e50vaBdmW7uZ_X1s-6aA",
-      "at": "2026-11-14T22:15:08.257627+02:00"
+      "detail": "Order ord_ea8abc6c accepted. The receipt is signed by Valio and points at the mandate.",
+      "proof": "aS75NtAW8jNem8iuu2Lkz0sSCcxsXEY25q4a-d2HAf0",
+      "at": "2026-11-14T23:52:21.540772+02:00"
     }
   ],
   "audit": {
     "buyer": [
       {
         "seq": 6,
-        "at": "2026-11-14T22:15:07.061618+02:00",
+        "at": "2026-11-14T23:52:20.117485+02:00",
         "side": "buyer",
         "actor": "agent",
         "action": "authorization_requested",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
-        "what": "The agent asked to order quote chk_ccfba919.",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
+        "what": "The agent asked to order quote chk_951f5b0c.",
         "why": "Request: Order the squeaky cheese for the dessert: 10.5 kg for the three services.",
         "rule": null,
-        "prev_hash": "e5d49059b8dbc78d48aa8758aaff357fe00ba3ac0677909731ba3cdfd2d002b4",
-        "hash": "57fe219a9b4160d9c8c2ae6c4cccd4b23ce507d488c8790bfe25575190d11924"
+        "prev_hash": "e1af7c151ba4252f91011c380ee50aed8bdca392fdd2383245e5bf9a817943f6",
+        "hash": "8bfeb643e5f8d301df8f0d7b428484d68093f8b8e1d872c3ae917c0599496d42"
       },
       {
         "seq": 7,
-        "at": "2026-11-14T22:15:07.061618+02:00",
+        "at": "2026-11-14T23:52:20.117485+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "quote_verified",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
         "what": "Quote signature and expiry checked.",
         "why": "Signed by valio-aimo, valid until 2026-11-15 17:00.",
         "rule": "quote-signature",
-        "prev_hash": "57fe219a9b4160d9c8c2ae6c4cccd4b23ce507d488c8790bfe25575190d11924",
-        "hash": "28fc2e9a862d95b1bd38f6704246e831bf4fbf2a9ff2ced3a4ba0caf81cf834f"
+        "prev_hash": "8bfeb643e5f8d301df8f0d7b428484d68093f8b8e1d872c3ae917c0599496d42",
+        "hash": "0009ed7c9ee0cad281cd1e4c06a8e02895ce7f6723c0ef9c08915d8f2d78208b"
       },
       {
         "seq": 8,
-        "at": "2026-11-14T22:15:07.061618+02:00",
+        "at": "2026-11-14T23:52:20.117485+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "verdict",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
         "what": "Verdict human for 114.87 EUR.",
         "why": "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
         "rule": "substitution-within-preferences",
-        "prev_hash": "28fc2e9a862d95b1bd38f6704246e831bf4fbf2a9ff2ced3a4ba0caf81cf834f",
-        "hash": "86cf2bd2c5204833f2aa2c63aabbe1e6560bdeb1ecbdb3147232ddf6b3a81a1d"
+        "prev_hash": "0009ed7c9ee0cad281cd1e4c06a8e02895ce7f6723c0ef9c08915d8f2d78208b",
+        "hash": "c46bb2a4ec9e6a47ec58bdcdf51eb010eb7f9169b2f0cd74c101491f5f7122cf"
       },
       {
         "seq": 9,
-        "at": "2026-11-14T22:15:07.061618+02:00",
+        "at": "2026-11-14T23:52:20.117485+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "approval_requested",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
-        "what": "Approval apr_5c69609a opened for 114.87 EUR.",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
+        "what": "Approval apr_5d1a3ff1 opened for 114.87 EUR.",
         "why": "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
         "rule": "substitution-within-preferences",
-        "prev_hash": "86cf2bd2c5204833f2aa2c63aabbe1e6560bdeb1ecbdb3147232ddf6b3a81a1d",
-        "hash": "e9ea1787b020030341ecb82ff6afda95f0b9012bc9dfdcecfc77521196402ec2"
+        "prev_hash": "c46bb2a4ec9e6a47ec58bdcdf51eb010eb7f9169b2f0cd74c101491f5f7122cf",
+        "hash": "47d47832dc4be330a456792986df82042ea908fc750a09c9ce680341ddc9b027"
       },
       {
         "seq": 10,
-        "at": "2026-11-14T22:15:08.249855+02:00",
+        "at": "2026-11-14T23:52:21.535437+02:00",
         "side": "buyer",
         "actor": "human",
         "action": "mandate_signed",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
         "what": "Mandate signed by human (chef).",
-        "why": "Approved apr_5c69609a for exact quote hash cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE.",
+        "why": "Approved apr_5d1a3ff1 for exact quote hash KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU.",
         "rule": null,
-        "prev_hash": "e9ea1787b020030341ecb82ff6afda95f0b9012bc9dfdcecfc77521196402ec2",
-        "hash": "c06e5a6eb60fcf28bbb2251696e0a55507d87d7963eccbeeeb7fc0ad3c7bb94e"
+        "prev_hash": "47d47832dc4be330a456792986df82042ea908fc750a09c9ce680341ddc9b027",
+        "hash": "751ba310fec8d25cf31abbf246a6c7814198007ae741c59171a178f1b91f8d6c"
       },
       {
         "seq": 11,
-        "at": "2026-11-14T22:15:08.249855+02:00",
+        "at": "2026-11-14T23:52:21.535437+02:00",
         "side": "buyer",
         "actor": "harness",
         "action": "order_confirmed",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
-        "what": "Order ord_f93423bb accepted by Valio Aimo.",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
+        "what": "Order ord_ea8abc6c accepted by Valio Aimo.",
         "why": "Receipt signed by valio-aimo, reference matches human mandate.",
         "rule": null,
-        "prev_hash": "c06e5a6eb60fcf28bbb2251696e0a55507d87d7963eccbeeeb7fc0ad3c7bb94e",
-        "hash": "baf50db2d752b37049d516e63cbc1d06c9f6ebcd67a3590776a90fad9781c20e"
+        "prev_hash": "751ba310fec8d25cf31abbf246a6c7814198007ae741c59171a178f1b91f8d6c",
+        "hash": "3b19aa43a80724c952e10a3ca887cb0efc42b02b1d850c3ae86aac1d8cacd60e"
       }
     ],
     "merchant": [
       {
         "seq": 5,
-        "at": "2026-11-14T22:15:07.059196+02:00",
+        "at": "2026-11-14T23:52:20.115730+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "quote_issued",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
         "what": "Quote for 21 ST of 475072, 114.87 EUR excl. tax.",
         "why": "Asked by demo-restaurant-helsinki for delivery on 2026-11-19, valid until 2026-11-15 17:00.",
         "rule": null,
-        "prev_hash": "c59c98870427a8c415c60b19e7d33a1bd431fa7072fbfbaf6a203d40392830c9",
-        "hash": "e267c6fdc339b83c17ad6396b3da6e38e54bfda61d2937f6f7795e6ec9c064d1"
+        "prev_hash": "1b58cb2f038abcc5a8ca8302d6d57bb9b4c3a9d399b656abd5aa2e63f60c2a84",
+        "hash": "d0022da5f1f919b6f3fac4ef8120917d020bec8ee55da915153c000473242185"
       },
       {
         "seq": 6,
-        "at": "2026-11-14T22:15:08.257428+02:00",
+        "at": "2026-11-14T23:52:21.540655+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "mandate_verified",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
         "what": "Mandates valid, signed by the manager for this exact quote.",
         "why": "Signatures, merchant, quote hash, amount and single use all pass.",
         "rule": null,
-        "prev_hash": "e267c6fdc339b83c17ad6396b3da6e38e54bfda61d2937f6f7795e6ec9c064d1",
-        "hash": "687950f1831b21f44e5a7697c1a7092ad370602e8bb03ee199dc21e53722072f"
+        "prev_hash": "d0022da5f1f919b6f3fac4ef8120917d020bec8ee55da915153c000473242185",
+        "hash": "6e20b70215f7fee990c416658d4b243fec27f13bacb87c389b220eac5120739a"
       },
       {
         "seq": 7,
-        "at": "2026-11-14T22:15:08.258840+02:00",
+        "at": "2026-11-14T23:52:21.541775+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "payment_captured",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
-        "what": "Sandbox payment pay_acc66518: 114.87 EUR booked on invoice-account:demo-restaurant-helsinki.",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
+        "what": "Sandbox payment pay_d318c33c: 114.87 EUR booked on invoice-account:demo-restaurant-helsinki.",
         "why": "The mandates verify. Simulated account: 301.76 of 20000.00 EUR used. No real money moves.",
         "rule": null,
-        "prev_hash": "687950f1831b21f44e5a7697c1a7092ad370602e8bb03ee199dc21e53722072f",
-        "hash": "6502ca7dcf58e84fd1c299aef28b121ef945d019f534ae95eec18d6235755305"
+        "prev_hash": "6e20b70215f7fee990c416658d4b243fec27f13bacb87c389b220eac5120739a",
+        "hash": "ab2ecf15bab3489172f76efd1f1599719fab1ff5c3b3593d917b978fb41f6d57"
       },
       {
         "seq": 8,
-        "at": "2026-11-14T22:15:08.259035+02:00",
+        "at": "2026-11-14T23:52:21.541895+02:00",
         "side": "merchant",
         "actor": "merchant",
         "action": "order_accepted",
-        "checkout_id": "chk_ccfba919",
-        "checkout_hash": "cNSWrQ0XfFn5KCJj00w7HG5SBxbf6yzd18RcX9PBCUE",
-        "what": "Order ord_f93423bb accepted, receipt signed.",
+        "checkout_id": "chk_951f5b0c",
+        "checkout_hash": "KCiu3pYrlLFKkgGKqlKzT4MVwrousuSbLoJHUmpkoNU",
+        "what": "Order ord_ea8abc6c accepted, receipt signed.",
         "why": "Valid mandate for a quote Valio signed and that has not expired.",
         "rule": null,
-        "prev_hash": "6502ca7dcf58e84fd1c299aef28b121ef945d019f534ae95eec18d6235755305",
-        "hash": "646758ea68da04ec7d029e82ea8f7cfb1e53ddb419456313995230b8bb6ec0f6"
+        "prev_hash": "ab2ecf15bab3489172f76efd1f1599719fab1ff5c3b3593d917b978fb41f6d57",
+        "hash": "b1c988cef9f32deabd389b4246ffcb293511ef8824db19347cbeb77aa1d0fc70"
       }
     ]
   }

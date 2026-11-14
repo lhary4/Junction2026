@@ -147,6 +147,8 @@ class _Builder:
         total = sum(item.totals[-1].amount for item in self.line_items)
         closing = min(self.closings) if self.closings else None
         expires = min([self.now + MAX_VALIDITY] + ([closing] if closing else []))
+        # Valio's availableDate is the earliest day a product can come, not the day it comes: available on the 16th,
+        # asked for the 19th, it is delivered on the 19th. Only a product that cannot come before pushes the date later.
         dates = [line.available_date for line in self.lines.values() if line.available_date]
         return AimoCheckout(
             id=f"chk_{uuid.uuid4().hex[:8]}",
@@ -162,7 +164,7 @@ class _Builder:
                 issued_at=self.now,
                 requested=self.request.needs,
                 requested_delivery_date=self.request.delivery_date,
-                delivery_date=max(dates, default=self.request.delivery_date),
+                delivery_date=max([self.request.delivery_date, *dates]),
                 closing_time=closing,
                 lines=self.lines,
                 shortfalls=self.shortfalls,
