@@ -2,6 +2,33 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## For Léon: three things seen while running the harness against the real gateway (14/11, after PR #17)
+
+How I looked: `main` after #17, replay mode, the real `merchant.app` behind the real harness, and a stand-in judge that records its calls (there is no Gemini key on my machine). What works: acts 1 and 2, act 3 both ways (Valio's own pick 464306 goes `auto`, `"substitute_with": "468465"` goes `pending_approval`), and a quote whose price was changed outside the token is denied with a clear reason. A fourth point, the lock of the audit log, is in the next section.
+
+**1. The judge never changes a verdict, and a coffee milk goes through on `auto`. To decide together: it is a product choice.**
+
+- Measured: a quote for 500 L of 469363 with `"substitute_with": "463380"` (Arla Cafè milk), then `POST /authorize`. Answer: `ordered`, signed by the agent, EUR 1,259.72, judge called 0 times.
+- Why: `_is_pre_accepted` in `harness/rules.py` accepts any substitute of the same category with the same `contains` list, before the judge is asked. 463380 is in category 10400 and contains milk, like the original.
+- What it contradicts: the demo policy says "No flavoured milk and no coffee creamers", and `TECH-CHOICES.md` says the judge sends this product to a human at 23%. In the five quotes I tried, the judge was only called for the oat drink 468465, which `allergen-unchanged-on-substitution` already sends to a human.
+- Where it comes from: the `pre_accepted` rule of the contract (PR #7), not your code.
+- Proposal: pre-accept only what Valio picked. The signed quote carries `aimo.requested[].substitute_with`: when it is filled, the agent picked the substitute, so ask the judge. About five lines in `harness/rules.py`. The default act 3 stays `auto` with no network, the coffee milk goes to the judge, and 464201 picked by the agent lets the judge say yes (0.96 in your L1 test).
+- The other way, with no code: `"pre_accepted": "none"` in the policy. Every substitute then goes to the judge, so the `auto` of act 3 depends on Gemini answering on stage.
+- Not measured: what the judge answers on what the harness really sends. `rules.py` builds the two cards from the quote, which has no brand and no nutritional claims, and the `labels` it adds are dropped by `_structured_product` in `harness/judge.py` (it reads `nutritional_claims`). Your L1 scores were measured on the full product cards. One difference the judge will see: 469363 has `free_from: ["ML"]`, while 464306 and 464201 have an empty `free_from` (their lactose-free claim is only a nutritional claim). If the judge needs the claims, I can add `nutritional_claims` to `LineClaims` and `SubstituteFor` in a small contract PR: tell me.
+
+**2. The approval deadline is later than the quote's expiry. One line to change.**
+
+- `evaluate` sets `deadline = checkout.aimo.closing_time or checkout.expires_at`. The gateway signs `expires_at` as the earlier of the cut-off and 24 hours after the quote. In replay mode the quote expires on 15/11 at 13:29:07 and the card says 15/11 at 17:00.
+- Measured with `AIMO_FROZEN_NOW=2026-11-15T15:00:00+02:00`: the approval is still `pending`, Approve answers HTTP 403 `quote expired at 2026-11-15T13:29:07+02:00`, and the approval stays `pending`.
+- Proposal: `deadline = checkout.expires_at`. It is never later than the cut-off, and the four verdict examples still come out the same (the two times are equal in them).
+- Until then, to show "the human lets it expire", freeze the clock after 17:00, for example `2026-11-15T17:05:00+02:00`.
+
+**3. A network failure gives a bare HTTP 500, or a wrong `denied`. Unlikely on one laptop: limits to know, not to fix tonight.**
+
+- Gateway not reachable: `POST /authorize` answers HTTP 500 "Internal Server Error", because `httpx` errors are not caught in `harness/app.py`. The agent has nothing to tell the buyer. An HTTP 502 with a readable `detail` would be enough.
+- Answer lost after the gateway accepted the order: on the retry the harness signs a new mandate, the gateway refuses it (`quote chk_... was already ordered as ord_... with another mandate`), and the harness stores `denied` while Valio holds an accepted order. The gateway gives the same order back only when the same mandate comes back. Fix on your side: keep the `Authorization` you sent and send it again on a retry.
+- The `checkout` object next to the token with a field missing: HTTP 500, because the `ValidationError` of `AimoCheckout.model_validate(raw_checkout)` in `_verify_quote_token` is not caught. A changed price in that object is handled well: denied, `quote-signature`.
+
 ## The gateway's log uses `common/audit.py`, and `dev.py --fresh` (14/11, PR #18)
 
 For everyone: `uv run python scripts/dev.py --fresh` empties the local state (quotes, orders, approvals, both audit logs), then starts both services. Use it before a rehearsal or the demo. Why: in replay mode the clock is frozen at the recording time, so an approval left pending never reaches its cut-off and stays on the approval page. It removes nothing while a service still answers on 8001 or 8002, and says so: the harness keeps its approvals in memory and would write the old ones back.
