@@ -167,6 +167,15 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: recording only the five demo products (too few for a real search and for substitutes).
 - Decided in: PR #10, 14/11/2026.
 
+## Substitutes: the gateway proposes, ranked in three tiers, and never breaks a free-from promise
+- Status: decided (the ranking inside a tier is open: Colette may change what counts first)
+- What it is: when stock is short, Valio's gateway takes what there is and proposes up to three replacements: `best` (same kind of product, same allergens), `better` (same kind, other allergens), `good` (a related kind, plant-based drinks for milk). Inside a tier, the substitutes Valio itself lists come first, then the cheapest per litre. The best one goes into the quote automatically. The agent may ask for another one from the list, never one the gateway did not offer.
+- Why: the agent never decides a fact, so it cannot invent a substitute. A lactose-free kitchen must never receive normal milk because it was cheaper, even if the allergen codes look the same: the data often lists milk but forgets lactose.
+- What it changes for us: a substitute must arrive on time, cover the whole missing quantity, have complete allergen data, and keep every "free from" of the original. The harness still checks allergens and asks the judge, this is a first filter on Valio's side. Most stock counts from the mock are "plenty" (9,999,999,999): the quote says "available, count not given" instead of showing that number.
+- If we change it: `merchant/quotes.py` only. The related kinds of product are one line in it.
+- Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none).
+- Decided in: PR #11, 14/11/2026.
+
 ## Audit log: one chained file on each side
 - Status: decided
 - What it is: the buyer's harness and Valio's gateway each write one line per decision: what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited line is detected.
