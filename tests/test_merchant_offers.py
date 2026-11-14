@@ -5,7 +5,7 @@ cut-off is Sunday 15/11 at 17:00: past it, every offer turns into a late deliver
 """
 
 import unicodedata
-from datetime import datetime
+from datetime import date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -39,7 +39,8 @@ def by_id(response: OffersResponse) -> dict:
 
 def test_hyphens_punctuation_and_case_do_not_count():
     found = catalog.load().matches("lactose free milk")
-    assert len(found) == 34
+    # 34 milk drinks of the first recording, and one cheese of the restaurant's ("... cheese from cow's milk").
+    assert len(found) == 35 and len(catalog.for_delivery(date(2026, 11, 16)).matches("lactose free milk")) == 34
     for query in ("lactose-free milk", "Lactose-Free MILK!", "milk, lactose free"):
         assert catalog.load().matches(query) == found
     assert "469386" in found  # "5 x Arla Lactose- and fatfree milkdrink 1 L Suomi ESL"
@@ -199,7 +200,7 @@ def test_route_refuses_with_a_readable_reason():
     client = TestClient(app)
     other_date = client.get("/offers", params=BRIEF | {"delivery_date": "2026-11-17"})
     assert other_date.status_code == 422
-    assert other_date.json()["detail"] == "replay mode only has answers for delivery on 2026-11-16"
+    assert other_date.json()["detail"] == "replay mode only has answers for delivery on 2026-11-16 or 2026-11-19"
     no_unit = client.get("/offers", params={"q": "milk", "delivery_date": MONDAY, "amount": 5})
     assert no_unit.status_code == 422 and "amount and unit go together" in no_unit.text
     assert client.get("/offers", params={"q": "milk"}).status_code == 422  # no delivery date

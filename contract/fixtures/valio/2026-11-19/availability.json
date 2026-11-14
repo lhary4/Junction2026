@@ -1,0 +1,573 @@
+{
+ "timeNow": "2026-11-14T22:19:22+0200",
+ "requestedDate": "2026-11-19T00:00:00+0200",
+ "products": [
+  {
+   "productId": "460078",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "460195",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "460200",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 137.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "460325",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "BAG"
+    }
+   ]
+  },
+  {
+   "productId": "460395",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "460518",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "460727",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "460810",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "460837",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 76.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "461009",
+   "closingTime": "2026-11-12T12:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "461921",
+   "closingTime": "2026-11-12T12:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "463437",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "464194",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "464306",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "465607",
+   "closingTime": "2026-11-12T15:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "PAK"
+    }
+   ]
+  },
+  {
+   "productId": "465815",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "466608",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "467958",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 160.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "468015",
+   "closingTime": "2026-11-12T15:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KI"
+    }
+   ]
+  },
+  {
+   "productId": "468172",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 2633.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "468513",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 37.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "469037",
+   "closingTime": "2026-11-12T15:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "469044",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "469869",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "470293",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "470438",
+   "closingTime": "2026-11-11T13:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "470467",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "470545",
+   "closingTime": "2026-11-11T13:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "470623",
+   "closingTime": "2026-11-11T13:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KI"
+    }
+   ]
+  },
+  {
+   "productId": "471304",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "471420",
+   "closingTime": "2026-11-12T12:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KI"
+    }
+   ]
+  },
+  {
+   "productId": "472256",
+   "closingTime": "2026-11-12T15:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KI"
+    }
+   ]
+  },
+  {
+   "productId": "472730",
+   "closingTime": "2026-11-11T13:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "473656",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 100.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "473714",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "474404",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 41.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "474678",
+   "closingTime": "2026-11-11T13:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KI"
+    }
+   ]
+  },
+  {
+   "productId": "474700",
+   "salesBlock": false,
+   "scheduleLines": []
+  },
+  {
+   "productId": "474880",
+   "closingTime": "2026-11-11T13:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "475072",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 100.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "475151",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 15.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "475381",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 6.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "475397",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 14.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  },
+  {
+   "productId": "475742",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 36.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "475871",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 0.0,
+     "salesUnit": "KG"
+    }
+   ]
+  },
+  {
+   "productId": "476101",
+   "closingTime": "2026-11-11T13:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Terminal",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "KI"
+    }
+   ]
+  },
+  {
+   "productId": "476890",
+   "closingTime": "2026-11-15T17:00:00+0200",
+   "salesBlock": false,
+   "logisticModel": "Stock",
+   "scheduleLines": [
+    {
+     "salesBlock": false,
+     "availableAmount": 9999999999.0,
+     "availableDate": "2026-11-16",
+     "salesUnit": "ST"
+    }
+   ]
+  }
+ ]
+}

@@ -31,7 +31,7 @@ class OffersUnavailable(OffersError):
 
 
 def find_offers(request: OffersRequest, catalog: Catalog | None = None) -> OffersResponse:
-    catalog = catalog or catalog_module.load()
+    catalog = catalog or catalog_module.for_delivery(request.delivery_date)
     matched = catalog.matches(request.q)
     shortlist = matched[:SHORTLIST]
     try:

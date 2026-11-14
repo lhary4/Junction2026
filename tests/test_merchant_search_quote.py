@@ -35,7 +35,9 @@ def quote(product_id, amount, unit="L", **extra):
 
 def test_search_returns_cards_with_reliability_and_carbon():
     cards = catalog.load().search("lactose free milk", 50)
-    assert cards and {c.category for c in cards} == {"10400"}
+    # Milk drinks, and one cheese "from cow's milk" that came with the restaurant's recording: a search keeps every
+    # category, and it reads every recording.
+    assert cards and {c.category for c in cards} == {"10400", "10640"}
     milk = next(c for c in cards if c.id == "464306")
     assert milk.carbon_footprint.certainty == "estimated" and milk.carbon_footprint.value is not None
     assert milk.delivery_reliability.source in ("aimo_delivery_history", "none")

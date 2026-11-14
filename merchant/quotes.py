@@ -93,7 +93,7 @@ class Offer:
 
 
 def build_quote(request: QuoteRequest, catalog: Catalog | None = None) -> AimoCheckout:
-    catalog = catalog or catalog_module.load()
+    catalog = catalog or catalog_module.for_delivery(request.delivery_date)
     now = clock.now().astimezone(HELSINKI)
     known = [n.product_id for n in request.needs if catalog.raw(n.product_id)]
     try:

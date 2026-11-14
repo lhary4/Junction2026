@@ -1,10 +1,16 @@
 """Record real Valio Aimo answers for replay mode, while the Monday cut-off is still open.
 
-Run: uv run python scripts/record_fixtures.py
-Needs the data files (scripts/fetch_data.py) and VALIO_AIMO_API_KEY. Writes contract/fixtures/valio/:
-products.json (trimmed records, one per line), availability.json and price.json (the raw API answers),
-delivery-reliability.csv and carbon-footprint.csv (the matching rows), request.json and frozen_now.txt.
-Then checks the facts the demo script depends on, and exits with an error if one fails.
+Run: uv run python scripts/record_fixtures.py                the first recording: the milk case, delivery on 16/11
+     uv run python scripts/record_fixtures.py restaurant     the restaurant's menu, delivery on 19/11
+
+Needs the data files (scripts/fetch_data.py) and VALIO_AIMO_API_KEY. The first recording writes
+contract/fixtures/valio/: products.json (trimmed records, one per line), availability.json and price.json (the raw API
+answers), delivery-reliability.csv and carbon-footprint.csv (the matching rows), request.json and frozen_now.txt.
+Then it checks the facts the demo script depends on, and exits with an error if one fails.
+
+The restaurant recording is a second one, for another delivery date. It goes in its own sub-folder, named after that
+date, with the same files (recorded_at.txt in place of frozen_now.txt): the first recording is not touched, because
+the tests and the frozen clock of replay mode stand on it. Replay mode reads both (merchant/catalog.py).
 """
 
 import csv
@@ -28,6 +34,11 @@ DEMO_PRODUCTS = ("463380", "464201", "464306", "464320", "469363")  # the produc
 SYNKKA_KEPT = ("gtin", "countriesOfOrigin", "names", "brand", "classifications", "keyIngredients", "ingredients")
 MAX_BYTES = 1_000_000
 HELSINKI = ZoneInfo("Europe/Helsinki")
+
+RESTAURANT_CASE = ROOT / "scenarios" / "restaurant-case" / "order.json"
+# The menu products the demo replaces. Every product of their category is recorded with them, so that replay mode
+# ranks the same candidates as live mode did.
+SUBSTITUTED = ("474880",)  # the squeaky cheese of the dessert
 
 
 def shortlist(products: dict[str, dict]) -> list[str]:
@@ -70,6 +81,50 @@ def demo_problems(availability: dict) -> list[str]:
     return problems
 
 
+def restaurant_shortlist(products: dict[str, dict]) -> tuple[str, list[str]]:
+    """The delivery date the restaurant asks for, and what to record: its menu, and the candidates to replace a product."""
+    case = json.loads(RESTAURANT_CASE.read_text(encoding="utf-8"))
+    ids = {line["product"]["product_id"] for line in case["lines"]}
+    for replaced in SUBSTITUTED:
+        category = products[replaced]["category"]
+        ids.update(p["id"] for p in products.values() if p["category"] == category and str(p.get("deleted")) != "True")
+        ids.update(s["substituteProduct"] for s in products[replaced].get("substitutions") or [])
+    return case["requested_delivery_date"], sorted(ids & set(products))
+
+
+def record_restaurant():
+    """The second recording. It never writes outside its own sub-folder."""
+    data = valio_api.data_dir()
+    products = {p["id"]: p for p in json.loads((data / "products.json").read_bytes())}
+    requested_date, ids = restaurant_shortlist(products)
+    recorded_at = datetime.now(HELSINKI).replace(microsecond=0)
+    print(f"recording {len(ids)} products for {requested_date} at {recorded_at.isoformat()}")
+    availability = valio_api.availability(ids, requested_date)
+    price = valio_api.price(ids, requested_date)
+
+    out = OUT / requested_date
+    out.mkdir(parents=True, exist_ok=True)
+    records = ",\n".join(json.dumps(trim(products[i]), ensure_ascii=False) for i in ids)
+    files = {
+        "products.json": f"[\n{records}\n]\n",
+        "availability.json": json.dumps(availability, indent=1, ensure_ascii=False) + "\n",
+        "price.json": json.dumps(price, indent=1, ensure_ascii=False) + "\n",
+        "delivery-reliability.csv": matching_rows(data / "delivery-reliability.csv", set(ids)),
+        "carbon-footprint.csv": matching_rows(data / "carbon-footprint.csv", set(ids)),
+        "request.json": json.dumps({"customer": "demo", "requestedDate": requested_date, "products": ids}) + "\n",
+        "recorded_at.txt": recorded_at.isoformat() + "\n",
+    }
+    for name, text in files.items():
+        (out / name).write_text(text, encoding="utf-8")
+
+    size = sum(f.stat().st_size for f in OUT.rglob("*") if f.is_file())
+    print(f"wrote {out.relative_to(ROOT)}: all recordings together are {size / 1e6:.2f} MB")
+    if size > MAX_BYTES:
+        print(f"DEMO CHECK FAILED: fixtures are {size} bytes, the limit is {MAX_BYTES}")
+        sys.exit(1)
+    print("recorded. The demo facts are checked by the tests: run uv run pytest")
+
+
 def write(name: str, text: str):
     (OUT / name).write_text(text, encoding="utf-8")
 
@@ -105,4 +160,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    if sys.argv[1:] == ["restaurant"]:
+        record_restaurant()
+    else:
+        main()

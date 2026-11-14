@@ -65,6 +65,13 @@ def services(tmp_path, monkeypatch):
             yield Driver(MILK, gateway=gateway, harness=harness), harness
 
 
+@pytest.fixture
+def restaurant(services):
+    """The real scenarios of the demo, on the answers recorded for the restaurant's menu (delivery on 19/11)."""
+    driver, harness = services
+    return Driver(gateway=driver.gateway, harness=harness), harness
+
+
 def steps_of(state: DemoState) -> dict:
     return {step.key: step for step in state.steps}
 
@@ -196,6 +203,47 @@ def test_a_quote_under_the_cap_is_never_attacked(services):
     assert stopped.value.status_code == 500
     assert driver.state().scenario.status == "idle"
     assert [event.action for event in audit.events()] == ["quote_issued"]
+
+
+# ---------- The demo itself, in replay mode: what the video is recorded on ----------
+
+
+def test_replay_button_1_the_normal_order_is_signed_by_the_agent(restaurant):
+    driver, _ = restaurant
+    state = driver.run("normal-order")
+    assert state.scenario.status == "done" and state.verdict.decision == "auto"
+    assert (len(state.quote.line_items), state.order.total_minor, state.order.signed_by) == (10, 18689, "agent")
+    assert state.quote.aimo.shortfalls == [] and state.order.payment.amount_minor == 18689
+    # The answers keep the time Valio really gave them, later than the frozen clock of replay mode.
+    assert state.quote.aimo.lines["li-1"].price.as_of.isoformat() == "2026-11-14T22:19:22+02:00"
+
+
+def test_replay_button_2_the_squeaky_cheese_is_replaced_and_the_chef_signs(restaurant):
+    driver, harness = restaurant
+    state = driver.run("substitution")
+    assert state.scenario.status == "waiting_for_human" and state.verdict.decision == "human"
+    (shortfall,) = state.quote.aimo.shortfalls
+    assert (shortfall.product_id, shortfall.reason) == ("474880", "late_delivery")
+    # The gateway's own pick, with no cheddar cream before it: the closest name of the category.
+    assert [(a.product_id, a.tier, a.chosen) for a in state.quote.aimo.alternatives] == [("475072", "best", True)]
+    assert (state.quote.line_items[0].item.id, state.quote.total_minor()) == ("475072", 11487)
+
+    decision = {"decision": "approve", "decided_by": "chef"}
+    assert harness.post(f"/approvals/{state.approval.approval_id}/decision", json=decision).status_code == 200
+    state = driver.state()
+    assert state.scenario.status == "done" and state.order.signed_by == "human"
+    assert {step.status for step in state.steps} == {"done"}
+
+
+def test_replay_button_3_the_three_bad_mandates_are_refused(restaurant):
+    driver, _ = restaurant
+    state = driver.run("attack")
+    assert state.scenario.status == "refused" and state.quote.total_minor() == 178315
+    assert [attack.status for attack in state.attacks] == ["refused"] * 3
+    assert state.attacks[0].problems == [
+        "The amount, EUR 1,783.15, is above the EUR 1,500.00 the agent may sign alone."
+    ]
+    assert "EUR 186.89" in state.attacks[2].title
 
 
 def test_routes_run_state_reset_and_errors(services):

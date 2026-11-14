@@ -2,6 +2,30 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## A11: the menu in the replay recording (14/11, 22:25)
+
+**The three buttons now run in replay mode**, which is the mode the video is recorded in. Before this, a run in replay answered HTTP 502: the menu's products were not among the recorded answers, and the restaurant asks for delivery on 19/11 where the recording was for 16/11.
+
+- **A second recording**, in `contract/fixtures/valio/2026-11-19/`: 47 products, asked on 14/11 at 22:19:22 for delivery on 19/11. The 22 products of the menu, and the 25 other products of the squeaky cheese's category, so that replay ranks the candidates live ranked. `uv run python scripts/record_fixtures.py restaurant` records it again.
+- **The first recording is untouched**: 157 products, 13:29:07, the frozen clock. A test holds it.
+- **A quote reads the recording of its delivery date, and only that one.** I first put the two recordings together, and nine tests of the milk case failed for a good reason: a Greek cheese "from cow's milk" joined the lactose-free milks, with no price for 16/11, shown as "not found". A search, which has no date, reads both.
+- **The clock stays at 13:29 for everything in replay.** Each price keeps the time Valio really gave it: a restaurant quote is issued "at 13:29" with facts "as of 22:19".
+- **Size**: the two recordings are 0.90 MB together, the limit is 1 MB.
+
+**Checked.**
+
+| Button, replay mode | In the tests, real gateway and harness | On the page in Chrome, three real processes |
+|---|---|---|
+| 1 Normal order | `done`, 10 lines, EUR 186.89, `auto` | seven steps lit, "valid until Sun 15 Nov, 13:29" |
+| 2 Substitution | `waiting_for_human`, 475072 the only alternative, then `done` once approved | judge 0.64, "Approve and sign", then "Signed by chef, Sat 14 Nov, 13:29" and the sandbox payment |
+| 3 Attack | `refused`, EUR 1,783.15, three refusals | "No order was placed", the three sentences in plain words |
+
+**To know before recording the video.**
+
+- Every time on screen is 13:29 in replay: the quote, the signature, the receipt. That is the frozen clock, and the page shows it as it is.
+- The judge is not recorded. In replay the harness still asks Gemini, so button 2 needs the network and `GEMINI_API_KEY`. Without them the judge fails closed and the verdict is still `human`. For Colette: in that case the judge's answers carry `probability: null`, and the page turns that into "0%" on the two bars, which reads as a score the judge never gave.
+- The quote is valid until Sunday 15/11 at 13:29 in replay (24 hours after the frozen clock), where live says 17:00 (the cut-off).
+
 ## Refusals in plain words, and the hash of step 1 (14/11, 22:20)
 
 **What Valio answers when it refuses is now written to be read on the page.** The words of the AP2 SDK are translated in `trust/mandates.py`. Amounts are in euros, a quote is named by its id, and a problem the code does not know is passed on unchanged.
