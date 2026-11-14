@@ -205,6 +205,15 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none); the cheapest of the tier first (what we had until the live run on the restaurant menu); a frozen version as a related kind (the frozen squeaky cheese sits in a category with ice cubes and coffee, so the category says nothing).
 - Decided in: PR #11, 14/11/2026. Name before price: PR #27, 14/11/2026.
 
+## Delivery date: the day the buyer asked, unless a product cannot come before
+- Status: decided
+- What it is: a quote says the goods arrive on the day the buyer asked for. Only when one product cannot be ready by then does the quote move to that product's first possible day, and the harness then sends it to a human or refuses it (late delivery).
+- Why: Valio's availability answer gives `availableDate`, the earliest day a product can come, not the day it will come. The mock answers 16/11 whatever date is asked. Taking that day as the delivery made a quote asked for Thursday 19/11 say "delivery Monday 16/11", and the harness wrote "Delivery on 2026-11-16, as requested".
+- What it changes for us: the quote, the order and the page show 19/11 for the restaurant. Each line still keeps Valio's own earliest day (`available_date`). The order cut-off stays the one Valio gives (Sunday 15/11 17:00): it is the cut-off for its earliest day, so it may be earlier than needed for a later delivery, never later. The demo examples were recorded again in live mode: only the dates changed.
+- If we change it: one line in `merchant/quotes.py`, then record the demo examples again (`scripts/record_demo_states.py`).
+- Alternatives we looked at: keeping Valio's earliest day (wrong day on the page and in the chat); moving the cut-off later by the same number of days (that would be a fact Valio never gave).
+- Decided in: PR to come, 14/11/2026.
+
 ## Orders: one per quote, and a repeated request gets the same order back
 - Status: decided
 - What it is: to order, the harness sends the signed permissions for one quote to Valio's gateway. The gateway checks three things in a fixed order: the quote is one it signed and has not expired, the permissions are valid for exactly this quote and this amount, and the quote has not been ordered yet. If all three pass, it creates the order and signs a receipt.
