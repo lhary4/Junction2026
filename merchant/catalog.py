@@ -162,22 +162,45 @@ def lactose_free(card: ProductCard) -> bool:
 
 
 def size_per_sales_unit(product: dict) -> SizePerSalesUnit:
-    """Litres or kilos in one sales unit, from the product file alone. Quotes cross-check it with the price API."""
-    per_sales_unit = {u["unitId"]: u["sizeInBaseUnits"] for u in product.get("units") or []}.get(product["salesUnit"])
+    """Litres or kilos in one sales unit, from the product file alone. Quotes cross-check it with the price API.
+
+    When the base unit is a piece, the size is read in the English name: "5 dl", "100x2 cl", "2,5dlx12". A pack
+    count written next to the size is applied, unless one of the product's units already has that count: for
+    "12x375g" sold by the box with 12 boxes to a carton, one box is 375 g.
+    """
+    units = {u["unitId"]: u["sizeInBaseUnits"] for u in product.get("units") or []}
+    per_sales_unit = units.get(product["salesUnit"])
     if product["baseUnit"] in NAME_SIZES and per_sales_unit:
         return SizePerSalesUnit(
             value=per_sales_unit,
             unit=product["baseUnit"],
             how=f"{per_sales_unit:g} {product['baseUnit']} per {product['salesUnit']} in the product file",
         )
+    name = names(product).get("en", "")
     for unit, sizes in NAME_SIZES.items():
-        pattern = rf"(\d+(?:[.,]\d+)?)\s*({'|'.join(sizes)})\b"
-        match = re.search(pattern, names(product).get("en", ""), re.IGNORECASE)
+        match = re.search(_name_size_pattern(sizes), name, re.IGNORECASE)
         if match and per_sales_unit:
-            size = float(match.group(1).replace(",", ".")) * sizes[match.group(2).lower()] * per_sales_unit
-            how = f"pack size in the name ({match.group(0)}) x {per_sales_unit:g} {product['baseUnit']}"
+            count = int(match["before"] or match["after"] or 1)
+            if count in units.values():
+                count = 1  # the units table already counts these packs
+            size = count * float(match["number"].replace(",", ".")) * sizes[match["unit"].lower()] * per_sales_unit
+            written = name[match.start("number") : match.end("unit")]
+            packs = f"{count} x {written}" if count > 1 else written
+            how = f"pack size in the name ({packs}) x {per_sales_unit:g} {product['baseUnit']}"
             return SizePerSalesUnit(value=round(size, 3), unit=unit, how=how)
     return SizePerSalesUnit(how="no pack size in the name")
+
+
+def _name_size_pattern(sizes: dict[str, float]) -> str:
+    """A size in a name, with the pack count written right before it ("100x2 cl") or right after it ("2,5dlx12").
+
+    The unit may be glued to an "x12", but not to another letter or digit ("2 layers" is not 2 litres). A number
+    after the "x" that is itself a measure ("2gx15mm") is not a pack count.
+    """
+    unit = "|".join(sizes)
+    before = r"(?:(?<![\d.,])(?P<before>\d+)\s*x\s*)?"
+    after = r"(?:\s*x\s*(?P<after>\d+)(?![\d.,]|\s*(?:mm|cm|m|ml|cl|dl|l|g|kg)\b))?"
+    return rf"{before}(?P<number>\d+(?:[.,]\d+)?)\s*(?P<unit>{unit})(?=x\s*\d|[^a-z\d]|$){after}"
 
 
 def _synkka(product: dict) -> dict:

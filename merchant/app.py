@@ -34,7 +34,7 @@ def create_checkout(request: QuoteRequest) -> CheckoutResponse:
     try:
         checkout = build_quote(request)
     except QuoteError as e:
-        raise HTTPException(status_code=422, detail=str(e)) from e
+        raise HTTPException(status_code=e.status_code, detail=str(e)) from e  # 422, or 503 when Valio is down
     response = CheckoutResponse(
         checkout_id=checkout.id, checkout_jwt=sign_checkout(checkout, private_key("merchant")), checkout=checkout
     )
