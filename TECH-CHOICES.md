@@ -259,12 +259,27 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Demo format: a 2-minute video on a portal page with scenario buttons
 - Status: decided
-- What it is: what we hand in is a video of 2 minutes at most, not a live demo. It is recorded on one page that looks like a Valio Aimo customer portal for one restaurant. A panel on the left has one button per scenario: a normal order, a substitution, an attack. A click runs the real flow. The right side shows the seven steps of the authorization (the AP2 trail) and who signed each one. A small service, the demo driver, plays the buying agent: it sends the same requests an MCP agent would send, and gives the page everything it shows as one piece of data (the demo state).
+- What it is: what we hand in is a video of 2 minutes at most, not a live demo. It is recorded on one page that looks like a Valio Aimo customer portal for one restaurant. There is one button per scenario: a normal order, a substitution, an attack. A click runs the real flow. The page shows the seven steps of the authorization (the AP2 trail) and who signed each one. How the page is laid out is the next entry. A small service, the demo driver, plays the buying agent: it sends the same requests an MCP agent would send, and gives the page everything it shows as one piece of data (the demo state).
 - Why: Junction asks for a video, strictly 2 minutes. A scripted driver makes every take the same, where a live assistant took about 2 minutes for one round in our only test. One piece of data for the page lets the page be built on example files before the services are wired.
 - What it changes for us: the demo runs on the restaurant case (`scenarios/restaurant-case/`), not on the milk example of the brief. The page carries a banner "Concept mock-up, Junction 2026, synthetic data", because the video is public and the challenge data must not be shown as real Valio data. The video is recorded in replay mode, so the menu's products must be in the recorded answers.
 - If we change it: a live pitch would use the same page and the same buttons. Showing a real assistant instead of the driver needs the MCP live mode.
 - Alternatives we looked at: Claude Desktop on screen (too slow, and a chat is what the brief says this is not); an automation tool showing its steps (n8n: one more tool, and the trail already shows the real steps); the four milk acts of the first plan.
 - Decided in: PR #23, 14/11/2026.
+
+## Demo page: the chef's order in three steps, with a replay of recorded runs
+- Status: trying it
+- What it is: `surface/static/portal.html` is the page of the video. The chef goes through three steps, like a checkout: the recipes, the stock (what is needed, what the last count found, what is missing), then the order, sent by one button. The seven signing steps sit at the top and light up one by one. A side panel shows the exchange with the buying agent as a conversation. The scenario buttons are in a dark strip at the bottom, drawn so that nobody takes them for part of the customer's page.
+- Why: the first screen showed products as shop cards and did not show how an order comes to exist. A kitchen thinks in recipes and stock, so the page starts there, and the order is the last step.
+- What it changes for us:
+  - The page reads three sources. The demo driver gives the demo state. The harness gives the spend limit and takes the chef's signature. The kitchen's recipes, stock count and bookings are three small files in `surface/static/kitchen/`.
+  - The kitchen files are synthetic: they stand in for the restaurant's own system, which Valio told us we may mock. They are written so that what is missing is exactly what each recorded scenario orders, and a test checks it.
+  - When the demo driver does not answer, the page replays the runs recorded in `contract/examples/demo-state.*.json`. The strip at the bottom says which mode is on. The video can be recorded this way if a service fails.
+  - The chef cannot change a line on the page yet: a scenario always sends its own lines.
+  - The look follows the Valio Aimo web shop: its colours and its logo. Its two fonts are commercial and we have no licence, so the page ships the closest free fonts (Sofia Sans Extra Condensed and Figtree, under the SIL Open Font License) and no internet is needed.
+  - The conversation is not a chat with a model. It shows what each step reports. The chef signs with a button on the page, never in the conversation.
+- If we change it: only `surface/` changes. If the demo state changes shape, this page changes with it. If the scenarios order other lines, the kitchen files must follow, and the test says so.
+- Alternatives we looked at: product cards as in the shop (too big, and it is not a shop); a free chat with the agent (slow, and approval must not happen in a chat); the three-zone screen of the first plan, with the buttons on the left (the buttons looked like part of the product).
+- Decided in: PR for the branch `feat/surface-portal-v1`, 14/11/2026.
 
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).

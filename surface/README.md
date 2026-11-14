@@ -4,6 +4,35 @@ The trusted surface. The agent searches and asks; a person approves **here**, on
 
 Three files in `surface/static/`, no framework, no build step, no internet needed: `index.html`, `app.js`, `style.css`.
 
+## The kitchen order page (working demo)
+
+`surface/static/portal.html` is the stage of the demo: the chef's order page inside a Valio Aimo customer portal, for the restaurant of `scenarios/restaurant-case/`. Serve the repo as below and open <http://localhost:8003/surface/static/portal.html>.
+
+What the chef does, like a checkout:
+
+1. **Recipes**: the recipes on the menu. Choosing one shows what goes into it.
+2. **Stock**: every ingredient with what is needed, what the last count found and what is missing.
+3. **Order**: "Agent order" sends the missing lines. The page then shows the quote signed by Valio (prices, Valio's stock), the verdict, the card where the chef signs when the verdict is `human`, the receipt, or the refused attacks.
+
+Always on screen: the seven signing steps at the top (they light up one by one, with who signed), the services with their covers from bookings and planning, a small menu and the conversation with the buying agent. The strip at the bottom is for the team only: scenario buttons and Reset.
+
+Where the data comes from:
+
+| Source | What | Calls |
+|---|---|---|
+| Demo driver, port 8003 | the demo state: quote, verdict, approval, order, attacks, the seven steps | `GET /state`, `POST /scenarios/{id}/run`, `POST /reset` |
+| Harness, port 8002 | the spend limit, the chef's signature | `GET /policy`, `POST /approvals/{id}/decision` |
+| Kitchen (synthetic) | recipes, stock count, bookings | `kitchen/recipes.json`, `kitchen/stock.<scenario>.json`, `kitchen/bookings.json` |
+
+- **Replay**: when the demo driver does not answer, the page replays the runs recorded on 14/11 (`contract/examples/demo-state.*.json`). `?replay=1` forces it. The strip at the bottom says which mode is on.
+- **Other addresses**: `?driver=http://host:port&harness=http://host:port`.
+- **Port**: the demo driver will use 8003. Once it runs, open the page through the harness instead (`http://localhost:8002/portal.html`), or serve the repo on another port.
+- The page never works out a fact of Valio's. Prices, Valio's stock, totals, verdicts and signatures come from the demo state. The kitchen files already hold `need`, `in_stock` and `to_order`.
+- The kitchen files are written so that what is missing is exactly what each recorded scenario asks Valio for. They are synthetic and say so.
+- Fonts and their licences: `surface/static/fonts/README.md`.
+
+This page has its own files (`portal.html`, `portal.css`, `portal.js`) and does not use `app.js` or `style.css`.
+
 ## Run it (mock mode)
 
 From the root of the repo:

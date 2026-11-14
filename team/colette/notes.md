@@ -2,6 +2,19 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## C5: the kitchen order page, V1 of the front end
+
+- `surface/static/portal.html`: three steps for the chef (recipes, stock, order), the seven signing steps at the top, the agent's conversation on the side, demo buttons in a strip of their own. How to open it and where its data comes from: `surface/README.md`.
+- Tested on 14/11 in headless Chrome, the three scenarios end to end, in replay mode and against a stand-in for the demo driver that follows `docs/contract.md`. **Not tested against the real driver**: it does not exist yet (step A8).
+- The kitchen's recipes, stock count and bookings are synthetic files in `surface/static/kitchen/`.
+
+Questions for Adrien (demo driver):
+- Can `POST /scenarios/{id}/run` take the lines to order? Today a scenario always sends its own lines, so the chef cannot add or change a line on the page ("one piece is missing, add it"). The stock table is read-only for that reason.
+- Should recipes, stock and bookings come from the driver (in `DemoState`) instead of the page's own files? Then the stock count and the request can never disagree.
+- An approval the chef rejects: no recorded example. In replay the Reject button says so.
+- Product photos: the product file only gives media ids (`synkkaData.medias[].id`), no link.
+- When the driver takes port 8003, the page is opened through the harness on 8002. Does the harness serve `portal.html` and the `kitchen/` folder as they are?
+
 ## C2: the page in mock mode
 
 - Done: `surface/static/` shows the three areas from `contract/examples/`. How to run it and one link per screen: `surface/README.md`.
