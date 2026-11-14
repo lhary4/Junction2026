@@ -316,6 +316,14 @@ def _tier(original: ProductCard, candidate: ProductCard, listed: bool) -> tuple[
     return "good", f"related category {candidate.category}, contains {contains}{source}"
 
 
+def summary(checkout: AimoCheckout) -> str:
+    """One readable line for the audit log, e.g. '1000 ST of 464306, 1010.00 EUR excl. tax'."""
+    lines = " and ".join(
+        f"{line.quantity} {checkout.aimo.lines[line.id].sales_unit} of {line.item.id}" for line in checkout.line_items
+    )
+    return f"{lines}, {checkout.total_minor() / 100:.2f} {checkout.currency} excl. tax"
+
+
 def _totals(amount: int) -> list[Total]:
     return [Total(type="subtotal", amount=amount), Total(type="total", amount=amount)]
 

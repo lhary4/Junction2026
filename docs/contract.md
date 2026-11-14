@@ -99,6 +99,20 @@ A judge answer keeps what we asked and what came back, because the model returns
 
 The spend cap is carried by the open payment mandate (`AmountRange`), so the gateway itself refuses an agent-signed order above the cap.
 
+### The order
+
+`POST /checkouts/{id}/complete` takes the `Authorization` and checks, in this order: the quote exists, is still the one Valio signed and has not expired; the mandates verify against it (`trust.verify_mandates`); the quote has not been ordered yet.
+
+| Case | Answer |
+|---|---|
+| Everything passes | HTTP 200 with the `Order`, status `accepted`, and a receipt signed by Valio. The receipt's `reference` is the order's `mandate_reference` |
+| The same mandate is sent again | HTTP 200 with the same `Order`. A retry after a lost answer never orders twice |
+| Another mandate for a quote that is already ordered | HTTP 403 |
+| Expired quote, mandate for another quote or amount, agent mandate above the cap, wrong key | HTTP 403 |
+| Unknown quote id | HTTP 404 |
+
+A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `order_accepted`, `order_replayed`, `order_refused`.
+
 ## Routes
 
 Valio gateway, port 8001 (`merchant/`):
@@ -170,3 +184,4 @@ verify_receipt(receipt_jwt: str, merchant_jwks) -> dict
 | `MERCHANT_URL` | harness, agent tools | default `http://localhost:8001` |
 | `HARNESS_URL` | agent tools, surface | default `http://localhost:8002` |
 | `AIMO_DATA_DIR` | gateway, scripts | where the three data files live, default `data/` |
+| `AIMO_STATE_DIR` | gateway | where quotes, orders and the audit log are written, default `state/` |
