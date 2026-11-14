@@ -1,9 +1,10 @@
-"""Start the three services for local work: the Valio gateway on 8001, the harness on 8002 and the demo driver on 8003.
+"""Start the four services for local work: the Valio gateway on 8001, the harness on 8002, the demo driver on 8003 and
+the kitchen page with its chat on 8004.
 
 Run: uv run python scripts/dev.py            add --reload to restart a service when its code changes
                                              add --fresh to empty the local state first
 Stop them all with Ctrl+C. Works the same on macOS, Linux and Windows.
-The demo page is then on http://localhost:8002/portal.html, served by the harness.
+The demo page is then on http://localhost:8004/, served with its chat (Gemini) by surface/assistant.py.
 
 The variables in .env are handed to every service. A variable already set in your terminal wins over .env.
 A service whose code is not in the repo yet is skipped.
@@ -27,6 +28,7 @@ SERVICES = (
     ("gateway", "merchant.app:app", 8001),
     ("harness", "harness.app:app", 8002),
     ("driver", "scenarios.run:app", 8003),  # plays the buying agent for the demo page, keeps nothing on disk
+    ("assistant", "surface.assistant:app", 8004),  # serves the kitchen page and answers its chat, keeps nothing on disk
 )
 STATE_FOLDERS = ("merchant", "buyer")  # what the gateway and the harness write, under the state folder
 STOP_TIMEOUT_SECONDS = 10
