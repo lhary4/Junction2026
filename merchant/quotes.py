@@ -31,7 +31,7 @@ from contract.models import (
     SubstituteFor,
 )
 from merchant import catalog as catalog_module
-from merchant import valio_client
+from merchant import valio_api, valio_client
 from merchant.catalog import HELSINKI, Catalog, lactose_free
 from merchant.units import UnitError, to_sales_units
 from trust.keys import MERCHANT_ID
@@ -46,6 +46,14 @@ TIERS = ("best", "better", "good")
 
 class QuoteError(ValueError):
     """The request cannot become a quote. The message is safe to show the agent."""
+
+    status_code = 422  # something in the request has to change
+
+
+class QuoteUnavailable(QuoteError):
+    """Valio could not be asked for prices and stock. Nothing is wrong with the request: it can be sent again."""
+
+    status_code = 503
 
 
 @dataclass(frozen=True)
@@ -74,11 +82,13 @@ def build_quote(request: QuoteRequest, catalog: Catalog | None = None) -> AimoCh
     known = [n.product_id for n in request.needs if catalog.raw(n.product_id)]
     try:
         answers = valio_client.fetch(known, request.delivery_date)
+        builder = _Builder(request, catalog, answers, now)
+        for need in request.needs:
+            builder.add(need)  # ranking substitutes asks Valio again
     except valio_client.ReplayError as e:
         raise QuoteError(str(e)) from e
-    builder = _Builder(request, catalog, answers, now)
-    for need in request.needs:
-        builder.add(need)
+    except valio_api.ValioUnavailable as e:
+        raise QuoteUnavailable(str(e)) from e
     return builder.checkout()
 
 
@@ -90,6 +100,7 @@ class _Builder:
         self.shortfalls: list[Shortfall] = []
         self.alternatives: list[Alternative] = []
         self.closings: list[datetime] = []
+        self.taken: dict[str, int] = {}  # sales units already on a line of this quote, by product id
 
     def add(self, need: Need):
         if not self.catalog.raw(need.product_id):
@@ -104,7 +115,8 @@ class _Builder:
             conversion = to_sales_units(need.amount, need.unit, offer.card.size_per_sales_unit, offer.price)
         except UnitError as e:
             raise QuoteError(f"{need.product_id}: {e}") from e
-        quantity = conversion.quantity if offer.stock is None else min(conversion.quantity, math.floor(offer.stock))
+        left = self._left(offer)
+        quantity = conversion.quantity if left is None else min(conversion.quantity, math.floor(left))
         if quantity > 0:
             self._line(offer, quantity, round(quantity * conversion.size, 3), need.unit)
         covered = quantity * conversion.size
@@ -212,6 +224,11 @@ class _Builder:
         )
         if offer.closing_time:
             self.closings.append(offer.closing_time)
+        self.taken[card.id] = self.taken.get(card.id, 0) + quantity
+
+    def _left(self, offer: Offer) -> float | None:
+        """Sales units still free once the lines already in this quote are served. None: Valio gives no count."""
+        return None if offer.stock is None else offer.stock - self.taken.get(offer.card.id, 0)
 
     def _stock_claim(self, offer: Offer) -> Claim:
         unit, as_of = offer.card.sales_unit, self.answers.as_of
@@ -302,7 +319,8 @@ class _Builder:
             needed = to_sales_units(missing, unit, card.size_per_sales_unit, offer.price).quantity
         except UnitError:
             return False
-        return offer.stock is None or offer.stock >= needed
+        left = self._left(offer)
+        return left is None or left >= needed
 
 
 def _tier(original: ProductCard, candidate: ProductCard, listed: bool) -> tuple[str, str]:
