@@ -26,7 +26,7 @@ Results, numbers and open questions for the others. Newest first.
 - The judge is not recorded. In replay the harness still asks Gemini, so button 2 needs the network and `GEMINI_API_KEY`. Without them the judge fails closed and the verdict is still `human`. For Colette: in that case the judge's answers carry `probability: null`, and the page turns that into "0%" on the two bars, which reads as a score the judge never gave.
 - The quote is valid until Sunday 15/11 at 13:29 in replay (24 hours after the frozen clock), where live says 17:00 (the cut-off).
 
-## Refusals in plain words, and the hash of step 1 (14/11, 22:15)
+## Refusals in plain words, and the hash of step 1 (14/11, 22:20)
 
 **What Valio answers when it refuses is now written to be read on the page.** The words of the AP2 SDK are translated in `trust/mandates.py`. Amounts are in euros, a quote is named by its id, and a problem the code does not know is passed on unchanged.
 
