@@ -2,6 +2,7 @@
 
 Run: uv run python scripts/record_fixtures.py                the first recording: the milk case, delivery on 16/11
      uv run python scripts/record_fixtures.py restaurant     the restaurant's menu, delivery on 19/11
+     uv run python scripts/record_fixtures.py restaurant-add  adds the greener alternatives to that recording
 
 Needs the data files (scripts/fetch_data.py) and VALIO_AIMO_API_KEY. The first recording writes
 contract/fixtures/valio/: products.json (trimmed records, one per line), availability.json and price.json (the raw API
@@ -25,6 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from merchant import valio_api
+from merchant.footprint import ECO_PAIRS
 
 OUT = ROOT / "contract" / "fixtures" / "valio"
 REQUESTED_DATE = "2026-11-16"  # the Monday of the demo
@@ -89,7 +91,48 @@ def restaurant_shortlist(products: dict[str, dict]) -> tuple[str, list[str]]:
         category = products[replaced]["category"]
         ids.update(p["id"] for p in products.values() if p["category"] == category and str(p.get("deleted")) != "True")
         ids.update(s["substituteProduct"] for s in products[replaced].get("substitutions") or [])
+    ids.update(pair.alternative for pair in ECO_PAIRS)
     return case["requested_delivery_date"], sorted(ids & set(products))
+
+
+def add_to_restaurant(new_ids: list[str]):
+    """Add a few products to the restaurant recording without asking Valio again about the others.
+
+    The products already recorded keep their answers, so the recorded demo runs stay true. Used for the greener
+    alternatives of merchant/footprint.py.
+    """
+    data = valio_api.data_dir()
+    products = {p["id"]: p for p in json.loads((data / "products.json").read_bytes())}
+    requested_date = json.loads(RESTAURANT_CASE.read_text(encoding="utf-8"))["requested_delivery_date"]
+    out = OUT / requested_date
+    request = json.loads((out / "request.json").read_text(encoding="utf-8"))
+    new_ids = sorted(set(new_ids) - set(request["products"]))
+    if not new_ids:
+        print("nothing to add: every product is already recorded")
+        return
+    print(f"adding {', '.join(new_ids)} to {out.relative_to(ROOT)}")
+    availability = valio_api.availability(new_ids, requested_date)
+    price = valio_api.price(new_ids, requested_date)
+
+    ids = sorted(set(request["products"]) | set(new_ids))
+    recorded = {p["id"]: p for p in json.loads((out / "products.json").read_bytes())}
+    recorded |= {i: trim(products[i]) for i in new_ids}
+    old_availability = json.loads((out / "availability.json").read_text(encoding="utf-8"))
+    old_availability["products"] += availability["products"]
+    old_price = json.loads((out / "price.json").read_text(encoding="utf-8"))
+    old_price["products"] += price["products"]
+    records = ",\n".join(json.dumps(recorded[i], ensure_ascii=False) for i in ids)
+    files = {
+        "products.json": f"[\n{records}\n]\n",
+        "availability.json": json.dumps(old_availability, indent=1, ensure_ascii=False) + "\n",
+        "price.json": json.dumps(old_price, indent=1, ensure_ascii=False) + "\n",
+        "delivery-reliability.csv": matching_rows(data / "delivery-reliability.csv", set(ids)),
+        "carbon-footprint.csv": matching_rows(data / "carbon-footprint.csv", set(ids)),
+        "request.json": json.dumps({**request, "products": ids}) + "\n",
+    }
+    for name, text in files.items():
+        (out / name).write_text(text, encoding="utf-8")
+    print("added. Run uv run pytest")
 
 
 def record_restaurant():
@@ -162,5 +205,7 @@ def main():
 if __name__ == "__main__":
     if sys.argv[1:] == ["restaurant"]:
         record_restaurant()
+    elif sys.argv[1:2] == ["restaurant-add"]:
+        add_to_restaurant(sys.argv[2:] or [pair.alternative for pair in ECO_PAIRS])
     else:
         main()

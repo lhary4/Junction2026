@@ -218,6 +218,30 @@ def test_replay_button_1_the_normal_order_is_signed_by_the_agent(restaurant):
     assert state.quote.aimo.lines["li-1"].price.as_of.isoformat() == "2026-11-14T22:19:22+02:00"
 
 
+def test_replay_button_1_with_the_greener_swap_orders_the_lines_of_the_page(restaurant):
+    """The chef swapped the butter for the margarine on the page: the agent orders the page's lines, not the scenario's."""
+    driver, _ = restaurant
+    lines = [{"product_id": p, "amount": a, "unit": u} for p, a, u in SCENARIOS[0].needs]
+    lines[0] = {"product_id": "461904", "amount": 6.45, "unit": "KG"}  # was the butter, 463437
+    footprint = driver.footprint([Need(**line) for line in lines])
+    assert footprint["alternatives"] == [] and footprint["unknown"] == []
+
+    state = driver.run("normal-order", [Need(**line) for line in lines])
+    assert state.scenario.status == "done" and state.verdict.decision == "auto" and state.order.signed_by == "agent"
+    titles = [item.item.title for item in state.quote.line_items]
+    assert any("margarine" in title for title in titles) and not any("butter" in title for title in titles)
+    assert state.request.lines[0].product_id == "461904"
+
+
+def test_page_routes_footprint_and_run_with_lines(restaurant):
+    driver, _ = restaurant
+    page = TestClient(create_app(driver))
+    lines = [{"product_id": "463437", "amount": 6.45, "unit": "KG", "name": "Butter", "dish": "Main, Dessert"}]
+    answer = page.post("/footprint", json={"lines": lines})
+    assert answer.status_code == 200 and answer.json()["alternatives"][0]["alternative"]["id"] == "461904"
+    assert page.post("/footprint", json={"lines": [{"product_id": "463437", "amount": 1, "unit": "BOX"}]}).status_code == 422
+
+
 def test_replay_button_2_the_squeaky_cheese_is_replaced_and_the_chef_signs(restaurant):
     driver, harness = restaurant
     state = driver.run("substitution")

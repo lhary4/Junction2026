@@ -202,6 +202,51 @@ class QuoteRequest(ContractModel):
     allow_alternatives: bool = True
 
 
+# ---------- Carbon footprint: POST /footprint ----------
+
+
+class FootprintRequest(ContractModel):
+    """The lines of an order the kitchen is about to send, in its own units. `substitute_with` is not read here."""
+
+    needs: list[Need] = Field(min_length=1, max_length=100)
+
+
+class LineFootprint(ContractModel):
+    product_id: str
+    name: str
+    amount: float
+    unit: BuyerUnit
+    kg: float | None = None  # the amount in kilos, null when the gateway cannot tell
+    factor: Claim  # kg CO2e per kg of product: the average of its product group
+    kg_co2e: float | None = None  # kg x factor, null when either is unknown
+
+
+class EcoAlternative(ContractModel):
+    """A greener product for one line of the order, the same amount in kilos."""
+
+    product_id: str  # the product in the order
+    name: str
+    amount: float
+    unit: BuyerUnit
+    alternative: ProductCard
+    kg_co2e_before: float
+    kg_co2e_after: float
+    saving_kg_co2e: float
+    saving_share: float  # 0.4 means 40 % less
+    why: str  # why it does the same job in the dish, in a chef's words
+
+
+class FootprintResponse(ContractModel):
+    as_of: AwareDatetime
+    binding: Literal[False] = False  # an estimate: never part of the signed quote
+    method: str
+    total_kg_co2e: float  # the lines whose footprint is known
+    unknown: list[str] = []  # product ids left out of the total
+    lines: list[LineFootprint]
+    review_every_days: int  # how often the buyer's agent should ask for alternatives
+    alternatives: list[EcoAlternative] = []
+
+
 # ---------- The signed quote: AimoCheckout ----------
 
 
