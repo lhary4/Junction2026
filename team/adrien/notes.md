@@ -2,7 +2,55 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## After PR #21 (Léon's harness hardening): what is closed, what is left (14/11, evening)
+
+How I looked: `main` at `12bded1`, replay mode, the real `merchant.app` behind the real harness, and the real Gemini judge this time (about 70 calls, under one cent). `uv run pytest` gives 189 passed. The sections below this one describe the harness before PR #21.
+
+**Closed.**
+
+- Finding 1, the judge that was never asked. The shortcut now opens only for the gateway's own top pick, when the signed quote says the catalog lists it as a replacement and no origin, label or dietary claim is lost. A substitute named by the agent (`substitute_with`) always goes to the judge. Replayed: the coffee milk 463380 for 469363 gets 0.17 and goes to a human. Before, it was ordered on `auto` with no judge call.
+- The cards the judge reads. The harness now fetches brand, nutritional claims and pack size from `GET /products/search`. So I drop the two things I had offered: nutritional claims in the quote (a contract PR), and writing `ML` in `free_from` for a product that is lactose free by its claim (a gateway PR). Replayed: 464201 named by the agent gets 0.94 and is ordered on `auto`. It got 0.37 when I measured the judge on the quote's cards this afternoon.
+- Finding 2, the deadline. The approval card closes when the quote expires (15/11 at 13:29:07 in replay).
+- Finding 3, network failures, and the lock of the audit log. Fixed in the code and covered by Léon's new tests. I did not replay them. My own lock in `merchant/audit.py` is now redundant: I leave it until after the demo, it costs nothing.
+
+**Act 3 through the real pieces** (600 L of 469363, 384 in stock). The two scores are `within_preferences` and `same_use`. `auto` needs both at 0.85 or more.
+
+| Substitute | Chosen by | Who answers | Verdict |
+|---|---|---|---|
+| 464306 Valio Eila semi skimmed, chilled | the gateway | the shortcut, judge not asked | `auto`, ordered |
+| 464306, the same product | the agent | judge, 0.75 and 0.72 | `human` |
+| 464201 Valio semi skimmed UHT | the agent | judge, 0.94 and 0.97 | `auto`, ordered |
+| 463380 Arla Cafè milk | the agent | judge, 0.17 and 0.51 | `human` (at 600 L it is also over the EUR 1,500 limit) |
+| 468465 Oddlygood oat drink | the agent | allergen rule, and judge, 0.09 and 0.69 | `human` |
+
+**The 61 labelled pairs with the judge as it is now.** One call per pair, with the gateway's full product card on both sides, which is what the harness ends up with. For the pairs outside the demo order, the first line of the policy text (it names the order) is replaced by the pair's own use.
+
+- 57 of 61 agree with the label (56 this afternoon).
+- No `ask` or `no` pair on `auto`: 0 of 50. The highest of them is at 0.31, far from 0.85. All 17 `no` pairs are under the floor.
+- 7 of the 11 `ok` pairs on `auto` (6 this afternoon). The four sent to a human for nothing: 464306 to 465039 (0.74), 463380 to 464768 (0.14), 471323 to 465250 (0.39), 467286 to 474934 (0.16).
+- 27 of the 33 `ask` pairs are under the floor too. So the floor does not tell `ask` from `no`. Do not turn it into a refusal (I raised that idea in the section below): it would refuse most of the cases Colette wants a human to see.
+
+**Still open 1, for Colette and Léon: the default act 3 goes against one line of the policy text.**
+
+- Valio's own pick for the UHT milk 469363 is the chilled milk 464306 (`temperature_condition` 4 against 8 in the product data).
+- The policy text sends "a UHT or shelf-stable product replaced by a chilled one" to a human. The judge agrees when it is asked: 0.72 through the running harness (Léon's notes say 0.61, same verdict). The shortcut orders it on `auto`, because the catalog lists it.
+- Three ways. Keep it as it is. Or add one sentence to the policy text, "a replacement listed in Valio's catalog is accepted without asking", so the text and the product agree, then run the 61 pairs again (one minute). Or set `"pre_accepted": "none"`: act 3 becomes `human`, unless the agent asks for 464201, which passes at 0.94.
+- My pick is the sentence. Nothing has to change in the gateway.
+
+**Still open 2: the narrowed shortcut can still accept two `ask` pairs.** Read from the catalog, not replayed. Of the 61 pairs, 7 pass the new conditions if the gateway picks them itself (listed in the catalog, same category, same allergens, nothing lost). 5 are `ok`, and for 3 of those the shortcut is what gets them through, since the judge alone asks a human. 2 are `ask`: 469079 to 462718 (a cooking yoghurt for a table yoghurt) and 472312 to 469498 (a brioche bun for a potato bun). It was 24 of 50 before PR #21.
+
+**Two sentences to correct in `TECH-CHOICES.md`.** They are in Léon's entries, so I did not touch them.
+
+- "the quote's own 15-minute expiry" and "a quote expires in 15 minutes", in the entry "Buyer harness". The gateway's quotes are valid for 24 hours at most, or until the cut-off (`MAX_VALIDITY` in `merchant/quotes.py`).
+- "storage temperature" in the list of facts sent to the judge, in the entry "Models". `_structured_product` in `harness/judge.py` does not pass `temperature_condition`. Either add it, and the judge can see the UHT to chilled case by itself, or drop the two words.
+
+**Two things in the gateway that the harness now relies on.** The shortcut reads the exact words "listed as a substitute in the catalog" in the `why` of the chosen alternative (`_tier` in `merchant/quotes.py`). The judge's cards come from `GET /products/search?q=<product name>&limit=20`, where the harness keeps the card with the right id. Both are held by `test_real_gateway_act3_coffee_milk_calls_judge_and_deadline_matches_quote_expiry` in `tests/test_harness_service.py`, which runs the real gateway: it fails if I reword the sentence, or if the search stops returning these products for their own name. Outside that test, a missed search is silent: the judge gets a thinner card, the scores drop and a human is asked.
+
+The picture of all this, for the three of us: the page "Substitution Decision Map" (ask me for the link, it is private until I share it).
+
 ## For Léon: three things seen while running the harness against the real gateway (14/11, after PR #17)
+
+Status on 14/11, evening: all three are fixed by PR #21, and so is the lock of the audit log. See the section above.
 
 How I looked: `main` after #17, replay mode, the real `merchant.app` behind the real harness, and a stand-in judge that records its calls (there is no Gemini key on my machine). What works: acts 1 and 2, act 3 both ways (Valio's own pick 464306 goes `auto`, `"substitute_with": "468465"` goes `pending_approval`), and a quote whose price was changed outside the token is denied with a clear reason. A fourth point, the lock of the audit log, is in the next section.
 

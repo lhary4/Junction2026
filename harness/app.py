@@ -251,37 +251,6 @@ def create_app(
             raise HTTPException(status_code=502, detail="gateway response missing checkout_jwt")
         return token, body.get("checkout")
 
-    def _fetch_product_cards(client: httpx.Client, checkout: AimoCheckout) -> dict[str, dict[str, Any]]:
-        """Fetch structured catalog metadata (`nutritional_claims`, `brand`, `labels`, `size_per_sales_unit`)
-        for any original or substitute products on a substitution quote.
-
-        Best-effort enrichment: if `/products/search` is unavailable (e.g. a minimal test stub),
-        returns `{}` and `evaluate()` still enforces all signed quote fields cleanly.
-        """
-        targets: dict[str, str] = {}
-        titles = {item.id: item.item.title for item in checkout.line_items}
-        for lid, lc in checkout.aimo.lines.items():
-            if lc.substitute_for is not None:
-                targets[lc.substitute_for.product_id] = lc.substitute_for.name
-                targets[lc.product_id] = titles.get(lid, "")
-
-        cards: dict[str, dict[str, Any]] = {}
-        for pid, name in targets.items():
-            if not name or len(name.strip()) < 2:
-                continue
-            try:
-                resp = client.get("/products/search", params={"q": name, "limit": 20})
-                if resp.status_code != 200:
-                    continue
-                payload = resp.json()
-                for card in payload.get("products") or []:
-                    if isinstance(card, dict) and str(card.get("id")) == pid:
-                        cards[pid] = card
-                        break
-            except (httpx.HTTPError, ValueError):
-                continue
-        return cards
-
     def _submit_mandate_and_verify_receipt(
         client: httpx.Client,
         checkout_id: str,
@@ -409,12 +378,6 @@ def create_app(
                     now=now,
                 )
 
-            product_cards = (
-                _fetch_product_cards(client, checkout)
-                if sig_rule.outcome == "pass" and any(lc.substitute_for is not None for lc in checkout.aimo.lines.values())
-                else None
-            )
-
             verdict = evaluate(
                 policy,
                 checkout,
@@ -422,7 +385,6 @@ def create_app(
                 sig_rule,
                 judge=active_judge,
                 checkout_hash=digest,
-                product_cards=product_cards,
             )
             # Align checkout_id with requested id if an untrusted quote had a different id
             if verdict.checkout_id != request.checkout_id:

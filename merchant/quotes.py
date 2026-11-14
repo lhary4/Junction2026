@@ -195,13 +195,27 @@ class _Builder:
         self.lines[line_id] = LineClaims(
             product_id=card.id,
             category=card.category,
+            brand=card.brand,
             sales_unit=card.sales_unit,
             base_quantity=base_quantity,
             base_unit=unit,
+            size_per_sales_unit=card.size_per_sales_unit,
+            temperature_condition=card.temperature_condition,
             comparison_price_minor=offer.comparison_price_minor,
             comparison_unit=offer.price["comparisonUnit"],
             substitute_for=SubstituteFor(
-                product_id=replaces.id, name=replaces.name, category=replaces.category, allergens=replaces.allergens
+                product_id=replaces.id,
+                name=replaces.name,
+                category=replaces.category,
+                allergens=replaces.allergens,
+                brand=replaces.brand,
+                sales_unit=replaces.sales_unit,
+                base_unit=replaces.base_unit,
+                size_per_sales_unit=replaces.size_per_sales_unit,
+                temperature_condition=replaces.temperature_condition,
+                nutritional_claims=replaces.nutritional_claims,
+                labels=replaces.labels,
+                origin=replaces.origin,
             )
             if replaces
             else None,
@@ -220,6 +234,7 @@ class _Builder:
             allergens=card.allergens,
             delivery_reliability=card.delivery_reliability,
             carbon_footprint=card.carbon_footprint,
+            nutritional_claims=card.nutritional_claims,
             labels=card.labels,
         )
         if offer.closing_time:
@@ -259,15 +274,15 @@ class _Builder:
         original = self.catalog.card(need.product_id)
         options = self._rank(original, missing, need.unit)
         shown = [ranked[0] for ranked in options.values() if ranked]  # the first of each tier
-        if need.substitute_with and need.substitute_with not in {offer.card.id for _, offer, _ in shown}:
+        if need.substitute_with and need.substitute_with not in {offer.card.id for _, offer, _, _ in shown}:
             asked = [o for ranked in options.values() for o in ranked if o[1].card.id == need.substitute_with]
             if not asked:
-                offered = ", ".join(offer.card.id for _, offer, _ in shown) or "none"
+                offered = ", ".join(offer.card.id for _, offer, _, _ in shown) or "none"
                 raise QuoteError(f"{need.substitute_with} cannot replace {need.product_id} (offered: {offered})")
             shown.append(asked[0])
         best = shown[0][1].card.id if shown and shown[0][0] == "best" else None
         chosen_id = need.substitute_with or (best if self.request.allow_alternatives else None)
-        for tier, offer, why in shown:
+        for tier, offer, why, is_listed in shown:
             chosen = offer.card.id == chosen_id
             self.alternatives.append(
                 Alternative(
@@ -278,13 +293,14 @@ class _Builder:
                     comparison_unit=offer.price["comparisonUnit"],
                     why=why,
                     chosen=chosen,
+                    catalog_listed=is_listed,
                 )
             )
             if chosen:
                 conversion = to_sales_units(missing, need.unit, offer.card.size_per_sales_unit, offer.price)
                 self._line(offer, conversion.quantity, conversion.base_quantity, need.unit, replaces=original)
 
-    def _rank(self, original: ProductCard, missing: float, unit: str) -> dict[str, list[tuple[str, Offer, str]]]:
+    def _rank(self, original: ProductCard, missing: float, unit: str) -> dict[str, list[tuple[str, Offer, str, bool]]]:
         """Every acceptable substitute, by tier, best first in each tier."""
         listed = self.catalog.listed_substitutes(original.id)
         related = RELATED_CATEGORIES.get(original.category, ())
@@ -296,15 +312,17 @@ class _Builder:
             and (product["category"] == original.category or product["category"] in related or pid in listed)
         ]
         answers = valio_client.fetch(candidates, self.request.delivery_date)
-        by_tier: dict[str, list[tuple[tuple, Offer, str]]] = {tier: [] for tier in TIERS}
+        by_tier: dict[str, list[tuple[tuple, Offer, str, bool]]] = {tier: [] for tier in TIERS}
         for pid in candidates:
             offer, _ = self._offer(pid, answers)
             if offer is None or not self._acceptable(original, offer, missing, unit):
                 continue
-            tier, why = _tier(original, offer.card, pid in listed)
-            by_tier[tier].append(((pid not in listed, offer.comparison_price_minor, pid), offer, why))
+            is_listed = pid in listed
+            tier, why = _tier(original, offer.card, is_listed)
+            by_tier[tier].append(((not is_listed, offer.comparison_price_minor, pid), offer, why, is_listed))
         return {
-            tier: [(tier, o, why) for _, o, why in sorted(found, key=lambda f: f[0])] for tier, found in by_tier.items()
+            tier: [(tier, o, why, is_listed) for _, o, why, is_listed in sorted(found, key=lambda f: f[0])]
+            for tier, found in by_tier.items()
         }
 
     def _acceptable(self, original: ProductCard, offer: Offer, missing: float, unit: str) -> bool:

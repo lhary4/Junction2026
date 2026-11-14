@@ -340,10 +340,10 @@ def _build_original_card(
     orig: SubstituteFor,
     product_cards: Mapping[str, Mapping[str, Any]] | None,
 ) -> dict[str, Any]:
-    """Build structured facts for the replaced product; signed quote fields always win over catalog metadata."""
+    """Build structured facts for the replaced product from the ES256-signed quote (`SubstituteFor` + partial line)."""
     card: dict[str, Any] = dict(product_cards.get(orig.product_id, {})) if product_cards else {}
     # If partial stock put the original product on its own line (like `li-1` in Act 3),
-    # pull its signed `origin`, `labels`, `sales_unit`, and `base_unit` directly from the quote!
+    # merge its signed line facts first, then overlay `SubstituteFor`'s signed facts.
     orig_line = next(
         (lc for lc in checkout.aimo.lines.values() if lc.product_id == orig.product_id and lc.substitute_for is None),
         None,
@@ -353,15 +353,31 @@ def _build_original_card(
         card["labels"] = list(orig_line.labels)
         card["sales_unit"] = orig_line.sales_unit
         card["base_unit"] = orig_line.base_unit
-        signed_claims = getattr(orig_line, "nutritional_claims", None)
-        if signed_claims is not None:
-            card["nutritional_claims"] = list(signed_claims)
+        if orig_line.brand is not None:
+            card["brand"] = orig_line.brand
+        if orig_line.size_per_sales_unit is not None:
+            card["size_per_sales_unit"] = orig_line.size_per_sales_unit.model_dump(mode="json")
+        if orig_line.temperature_condition is not None:
+            card["temperature_condition"] = orig_line.temperature_condition
+        if orig_line.nutritional_claims:
+            card["nutritional_claims"] = list(orig_line.nutritional_claims)
 
-    # Support `labels` / `nutritional_claims` directly on `SubstituteFor` if added to the contract later.
-    for attr in ("labels", "nutritional_claims", "brand", "origin"):
-        val = getattr(orig, attr, None)
-        if val is not None:
-            card[attr] = list(val) if isinstance(val, list) else val
+    if orig.brand is not None:
+        card["brand"] = orig.brand
+    if orig.sales_unit is not None:
+        card["sales_unit"] = orig.sales_unit
+    if orig.base_unit is not None:
+        card["base_unit"] = orig.base_unit
+    if orig.size_per_sales_unit is not None:
+        card["size_per_sales_unit"] = orig.size_per_sales_unit.model_dump(mode="json")
+    if orig.temperature_condition is not None:
+        card["temperature_condition"] = orig.temperature_condition
+    if orig.origin is not None:
+        card["origin"] = orig.origin.model_dump(mode="json")
+    if orig.labels:
+        card["labels"] = list(orig.labels)
+    if orig.nutritional_claims:
+        card["nutritional_claims"] = list(orig.nutritional_claims)
 
     card["id"] = orig.product_id
     card["name"] = orig.name
@@ -376,19 +392,25 @@ def _build_candidate_card(
     titles: dict[str, str],
     product_cards: Mapping[str, Mapping[str, Any]] | None,
 ) -> dict[str, Any]:
-    """Build structured facts for the substitute product; signed quote fields always win over catalog metadata."""
+    """Build structured facts for the substitute product directly from the ES256-signed `LineClaims`."""
     card: dict[str, Any] = dict(product_cards.get(lc.product_id, {})) if product_cards else {}
     card["id"] = lc.product_id
     card["name"] = titles.get(lid) or str(card.get("name") or "")
     card["category"] = lc.category
+    if lc.brand is not None:
+        card["brand"] = lc.brand
     card["allergens"] = lc.allergens.model_dump(mode="json")
     card["origin"] = lc.origin.model_dump(mode="json")
     card["labels"] = list(lc.labels)
     card["sales_unit"] = lc.sales_unit
     card["base_unit"] = lc.base_unit
-    signed_claims = getattr(lc, "nutritional_claims", None)
-    if signed_claims is not None:
-        card["nutritional_claims"] = list(signed_claims)
+    if lc.size_per_sales_unit is not None:
+        card["size_per_sales_unit"] = lc.size_per_sales_unit.model_dump(mode="json")
+    if lc.temperature_condition is not None:
+        card["temperature_condition"] = lc.temperature_condition
+    card["nutritional_claims"] = list(lc.nutritional_claims) if lc.nutritional_claims else list(
+        card.get("nutritional_claims") or []
+    )
     return card
 
 
@@ -415,7 +437,7 @@ def _is_pre_accepted(
     So pre-acceptance additionally requires:
     1. The agent did NOT override Valio's default choice with `substitute_with`.
     2. In the signed `alternatives` list, Valio marked this product `tier == "best"` AND
-       explicitly `"listed as a substitute in the catalog"` (not a cheapest-in-category guess).
+       `catalog_listed == True` (not a cheapest-in-category guess).
     3. No known origin, sustainability/quality label, non-lactose free-from allergen, or
        key dietary/plainness claim of the original product is lost.
     """
@@ -437,16 +459,17 @@ def _is_pre_accepted(
     ):
         return False
 
-    # 2) Require Valio's signed `alternatives` entry to be a catalog-listed `best` substitute.
-    alts_for_orig = [a for a in checkout.aimo.alternatives if a.for_product_id == orig.product_id]
-    if alts_for_orig:
-        chosen_alt = next((a for a in alts_for_orig if a.product_id == lc.product_id and a.chosen), None)
-        if (
-            chosen_alt is None
-            or chosen_alt.tier != "best"
-            or "listed as a substitute in the catalog" not in chosen_alt.why
-        ):
-            return False
+    # 2) Require Valio's signed `alternatives` entry to carry `tier == "best"` and `catalog_listed == True`.
+    chosen_alt = next(
+        (
+            a
+            for a in checkout.aimo.alternatives
+            if a.for_product_id == orig.product_id and a.product_id == lc.product_id and a.chosen
+        ),
+        None,
+    )
+    if chosen_alt is None or chosen_alt.tier != "best" or not chosen_alt.catalog_listed:
+        return False
 
     # 3) Never pre-accept if non-lactose `free_from` promises, origin, labels, or key dietary claims are lost.
     if (set(orig.allergens.free_from) - {"ML"}) - set(lc.allergens.free_from):
