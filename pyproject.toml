@@ -25,4 +25,4 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 120
-extend-exclude = ["spikes"]
+extend-exclude = ["spikes", "*.md"]  # ruff must never rewrite code blocks in our docs

@@ -1,0 +1,8 @@
+{
+  "kty": "EC",
+  "kid": "merchant",
+  "crv": "P-256",
+  "x": "z-GejiTpSrrWF3neGIKXEPetZ_yZHk25R4hmTYJ-QT8",
+  "y": "tUsIaG3w45-9DBc3PxrltXwzjkRhEgaMs0Aa6ysunaA",
+  "d": "k23zEls6CEDA0BhGn3aJQEAnFHaemK5fz275Jxwr4b8"
+}

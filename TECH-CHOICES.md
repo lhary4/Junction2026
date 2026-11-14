@@ -131,6 +131,24 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: accepting unknown fields like the AP2 SDK does.
 - Decided in: PR #8, 14/11/2026.
 
+## Trust library: one small package signs and checks everything
+- Status: decided
+- What it is: `trust/` is the only code that talks to the AP2 toolkit. The gateway and the harness call a handful of functions: sign or check a quote, give the agent its permissions, close them for one quote, check them, sign or check a receipt.
+- Why: if the toolkit changes, one folder changes. Nobody else has to learn it.
+- What it changes for us: each permission is tied to one quote three ways: addressed to Valio, carrying the quote's id, and carrying the quote's fingerprint. A permission cannot be reused for another quote or another seller. Valio also checks that the amount promised is exactly the quote's total, because the toolkit alone would accept a smaller one. When a human approves, the manager's key signs the order directly, with no permission from the agent involved. When a quote fails, the error says which rule it breaks (bad signature or expired), so the harness can report the right reason.
+- If we change it: the gateway's order check and the harness's signer change with it.
+- Alternatives we looked at: calling the toolkit directly from the gateway and the harness (two copies of the same tricky code).
+- Decided in: PR #9, 14/11/2026.
+
+## Time: one clock that can be frozen
+- Status: decided
+- What it is: everything that needs "now" asks `common/clock.py`. When `AIMO_FROZEN_NOW` is set, it answers that exact time and never moves.
+- Why: replay mode serves answers recorded on 14/11. Their deadlines only make sense if the clock says 14/11 too.
+- What it changes for us: quote expiry, approval deadlines and receipt times follow the frozen clock. The permissions themselves keep the real time, because the AP2 toolkit stamps the real time when it signs. They are valid until the end of 16/11, so this holds for the whole weekend.
+- If we change it: a ticking frozen clock (starting at the recorded time) would be one function to change.
+- Alternatives we looked at: passing the time everywhere by hand (easy to forget one place).
+- Decided in: PR #9, 14/11/2026.
+
 ## Data: local files, live calls on a shortlist, and a replay mode
 - Status: decided
 - What it is: the product file and the two small tables (delivery reliability, carbon footprint) are downloaded once and never committed. Prices and stock are asked from Valio only for a shortlist. A replay mode serves answers recorded on 14/11 with a frozen clock.
