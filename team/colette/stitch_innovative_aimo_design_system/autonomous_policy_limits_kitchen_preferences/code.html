@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_dashboard" name="shell-type"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "surface-container-highest": "#d6e3fe", "surface-bright": "#ffffff", "primary-container": "#0a2540", "surface-variant": "#d6e3fe", "surface-container-high": "#dde5f0", "status-success-bg": "#d1fae5", "on-secondary": "#ffffff", "on-tertiary-fixed-variant": "#005137", "surface-container-lowest": "#ffffff", "on-primary-container": "#7fa7e5", "nordic-frost-lime": "#c0e021", "agent-untrusted-bg": "#f3e8ff", "primary-fixed-dim": "#a7c8ff", "primary-fixed": "#d5e3ff", "tertiary-fixed": "#85f8c4", "secondary-fixed-dim": "#6cd3f7", "surface": "#f6f8fb", "on-tertiary-fixed": "#002114", "on-surface": "#0e1c2f", "inverse-primary": "#a7c8ff", "tertiary-fixed-dim": "#68dba9", "surface-container": "#e7eeff", "inverse-on-surface": "#ebf1ff", "tertiary-container": "#00442d", "on-error-container": "#93000a", "surface-container-low": "#f0f4f9", "status-warning": "#d97706", "status-warning-bg": "#fef3c7", "agent-untrusted": "#7c3aed", "on-primary-fixed": "#001c3b", "tertiary": "#002c1c", "on-secondary-fixed": "#001f28", "error": "#ba1a1a", "on-secondary-fixed-variant": "#004e61", "on-primary": "#ffffff", "outline-variant": "#cbd5e1", "on-surface-variant": "#434750", "background": "#f9f9ff", "inverse-surface": "#243145", "outline": "#94a3b8", "secondary": "#006780", "secondary-container": "#76dcff", "error-container": "#ffdad6", "status-error": "#dc2626", "secondary-fixed": "#b7eaff", "on-tertiary-container": "#42b989", "on-secondary-container": "#006077", "primary": "#00254d", "on-background": "#0e1c2f", "on-tertiary": "#ffffff", "surface-tint": "#345f99", "on-error": "#ffffff", "status-error-bg": "#fee2e2", "on-primary-fixed-variant": "#174780", "surface-dim": "#cddbf5" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "space-xs": "0.25rem", "gutter": "1rem", "gutter-desktop": "1.5rem", "space-md": "1rem", "space-sm": "0.5rem", "space-lg": "1.5rem", "space-xl": "2rem", "margin-desktop": "2rem", "margin": "1rem" }, "fontFamily": { "display-lg": [ "Inter" ], "label-caps": [ "Inter" ], "body-base": [ "Inter" ], "body-sm": [ "Inter" ], "mono-token": [ "JetBrains Mono" ], "mono-sm": [ "JetBrains Mono" ], "metric-lg": [ "Inter" ], "body-bold": [ "Inter" ], "title-sm": [ "Inter" ], "display-lg-mobile": [ "Inter" ], "headline-md": [ "Inter" ] }, "fontSize": { "display-lg": [ "36px", { "lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700" } ], "label-caps": [ "11px", { "lineHeight": "16px", "letterSpacing": "0.06em", "fontWeight": "700" } ], "body-base": [ "14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "400" } ], "body-sm": [ "12px", { "lineHeight": "16px", "letterSpacing": "0", "fontWeight": "400" } ], "mono-token": [ "12px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ], "mono-sm": [ "10px", { "lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "500" } ], "metric-lg": [ "28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "body-bold": [ "14px", { "lineHeight": "20px", "letterSpacing": "0", "fontWeight": "600" } ], "title-sm": [ "16px", { "lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "display-lg-mobile": [ "28px", { "lineHeight": "34px", "letterSpacing": "-0.02em", "fontWeight": "700" } ], "headline-md": [ "22px", { "lineHeight": "30px", "letterSpacing": "-0.015em", "fontWeight": "600" } ] } } } };</script></head><body class="bg-surface font-body-base text-body-base text-on-surface antialiased"><aside class="fixed left-0 top-0 h-full w-64 bg-surface-bright shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between"><div class="flex flex-col"><div class="h-20 px-gutter-desktop flex items-center gap-space-sm bg-surface-bright"><img alt="Valio Aimo Agent Logo" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrA871IC8GMSZtsi6yUlA0FTq9GLm2tPevqyxwWYiyRComT2HDTtEq_edn6dhPjWmTWgYa9SCFWNHeOrma9a5R-QPkvQGUWO-gnrIi_zAu2PPk7mGvoE4GzJhZMmoYTnZrVb8tj44_U7JUjNlUuAxrU7nps_7fryV4eaMh05HbK443zWm-WY0_c4kJslSJjieV4ordSxUofNxcVSX6ACIwMtvbTwDNRaOye7zgodNU2rSg"/><div class="flex flex-col"><span class="font-title-sm text-title-sm text-primary tracking-tight leading-tight">Valio Aimo</span><span class="font-label-caps text-label-caps text-secondary uppercase">Autonomous Core</span></div></div><div class="px-gutter pt-space-md pb-space-sm"><div class="p-space-sm rounded-lg bg-surface-container-low"><div class="flex items-center justify-between"><span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Active Location</span><span class="material-symbols-outlined text-[16px] text-secondary">storefront</span></div><div class="mt-1 font-body-bold text-body-sm text-on-surface truncate">Helsinki Central Kitchen</div><div class="font-mono-sm text-mono-sm text-on-surface-variant truncate">Nordic Hotels Oy · K-04</div></div></div><div class="px-gutter py-space-xs"><div class="px-space-sm py-space-xs rounded bg-surface-container-low flex items-center justify-between"><div class="flex items-center gap-1.5"><span class="h-2 w-2 rounded-full bg-[#059669] animate-pulse"></span><span class="font-mono-token text-mono-token text-on-surface">Agent Mesh</span></div><span class="font-label-caps text-label-caps text-[#059669] bg-status-success-bg px-1.5 py-0.5 rounded font-bold">VERIFIED</span></div></div><nav class="flex flex-col gap-1 px-gutter mt-space-md" data-active-classes="bg-primary text-on-primary font-body-bold shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg text-on-surface-variant font-body-base text-body-base hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="pending-approvals" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">verified_user</span><span>Pending Approvals</span></div><span class="px-1.5 py-0.5 rounded-full bg-status-warning-bg text-status-warning font-mono-token text-mono-token font-bold">1</span></a><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg text-on-surface-variant font-body-base text-body-base hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="active-orders-shipments" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">local_shipping</span><span>Orders &amp; Logistics</span></div></a><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg text-on-surface-variant font-body-base text-body-base hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="autonomous-policy-limits" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">tune</span><span>Policy &amp; Quotas</span></div></a><a class="flex items-center justify-between px-space-md py-space-sm rounded-lg text-on-surface-variant font-body-base text-body-base hover:bg-surface-container-high hover:text-on-surface transition-all" data-path="tamper-evident-audit-trail" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">history_toggle_off</span><span>Audit Trail</span></div></a></nav></div><div class="p-gutter"><div class="p-space-sm rounded-xl bg-surface-container-low flex flex-col gap-space-xs"><div class="flex items-center justify-between"><span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Autonomous Limit</span><span class="font-mono-token text-mono-token font-bold text-primary">52.5%</span></div><div class="w-full h-1.5 bg-surface-container-high rounded-full overflow-hidden"><div class="h-full bg-secondary rounded-full" style="width: 52.5%"></div></div><div class="flex items-center justify-between font-mono-sm text-mono-sm text-on-surface-variant"><span>€1,050 used</span><span>€2,000 cap</span></div></div></div></aside><div class="pl-64"><header class="fixed top-0 left-64 right-0 h-20 bg-surface-bright/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40"><div class="h-20 w-full px-gutter-desktop flex items-center justify-between"><div class="flex items-center gap-space-lg"><div class="hidden xl:flex items-center gap-space-sm py-1.5 px-space-md rounded-lg bg-surface-container-low"><span class="material-symbols-outlined text-[18px] text-secondary">domain</span><div class="flex flex-col"><span class="font-label-caps text-label-caps uppercase text-on-surface-variant leading-none">Unit Domain</span><span class="font-body-bold text-body-sm text-on-surface leading-tight">Nordic Hotels Oy — Central Kitchen Helsinki</span></div></div><div class="flex items-center gap-space-sm py-1 px-space-md rounded-full bg-status-success-bg/80"><span class="h-2 w-2 rounded-full bg-[#059669] animate-ping"></span><span class="font-mono-token text-mono-token text-[#005137] font-semibold">AI Purchasing Agent: Active &amp; Verified</span></div></div><div class="flex items-center gap-space-lg"><div class="hidden md:flex items-center gap-space-md px-space-md py-1.5 bg-surface-container-low rounded-lg"><div class="flex flex-col text-right"><span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Daily Quota</span><span class="font-mono-token text-mono-token font-bold text-primary">€1,050.00 <span class="text-on-surface-variant font-normal">/ €2,000</span></span></div><div class="h-7 w-px bg-outline-variant"></div><div class="flex flex-col"><span class="font-label-caps text-label-caps uppercase text-on-surface-variant">State</span><span class="font-label-caps text-label-caps text-[#059669] font-bold">DETERMINISTIC</span></div></div><div class="flex items-center gap-space-sm"><button class="relative p-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">notifications</span><span class="absolute top-1.5 right-1.5 h-2 w-2 bg-error rounded-full"></span></button><button class="p-space-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors" type="button"><span class="material-symbols-outlined text-[22px]">shield_lock</span></button></div><div class="h-8 w-px bg-outline-variant"></div><div class="flex items-center gap-space-md"><div class="flex flex-col text-right"><span class="font-body-bold text-body-sm text-on-surface leading-tight">Elsa Andersson</span><span class="font-label-caps text-label-caps text-on-surface-variant uppercase tracking-wider leading-none">Executive Chef &amp; Operations</span></div><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-surface-variant" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBUp4AcCCv2rrRMWIaU0eJ0GhqcotxaBNKKGHTlJ-tBGfvo91nrlpNnM6mqH88T77Zs8YGLss2ct-OeAQdBJUEjfGm2OZmp1ibJDVBuqw854x5FJ_SwVTUHXw7Bu_RDqZwANlRozQnyNyxD0YcqRe-VRsmDpqioxZljELrIINCigCU40rS9x9Ga0zOj9LGwDSlGp_1f40wjFQiFFJLxhfaOjHla8zQMo5fCrhGmcZF1"/></div></div></div></header><main class="w-full pt-20 bg-surface min-h-screen"><div class="flex flex-col w-full">
+<!-- Macro Page Layout Grid -->
+<div class="p-margin-desktop space-y-space-xl max-w-[1600px] mx-auto w-full">
+<!-- Top Breadcrumb & Executive Header Bar -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-md">
+<div class="space-y-space-xs">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-mono-sm text-mono-sm uppercase tracking-wider">
+<span>Valio Aimo</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span>Autonomous Core</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-bold">Policy &amp; Quotas</span>
+</div>
+<div class="flex flex-wrap items-center gap-space-md pt-1">
+<h1 class="font-display-lg text-display-lg text-primary tracking-tight">Autonomous Policy &amp; Limits</h1>
+<div class="flex items-center gap-space-xs px-2.5 py-1 rounded-full bg-status-success-bg text-on-tertiary-fixed-variant font-mono-token text-mono-token font-bold">
+<span class="material-symbols-outlined text-[16px] text-tertiary-container" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span>Policy Engine v2.4 · DETERMINISTIC ACTIVE</span>
+</div>
+</div>
+<div class="flex items-center gap-space-sm font-mono-sm text-mono-sm text-on-surface-variant">
+<span>Compiled: <strong class="text-on-surface font-semibold">2025-05-14T08:12:04Z</strong></span>
+<span>·</span>
+<span>Sha256: <span class="bg-surface-container-high px-1.5 py-0.5 rounded text-primary font-mono-token text-mono-sm">9f8e4b...c382a1</span></span>
+<span>·</span>
+<span class="text-secondary font-medium">Node: Helsinki-K04-Core</span>
+</div>
+</div>
+<!-- Header Action Buttons -->
+<div class="flex flex-wrap items-center gap-space-sm">
+<button class="px-space-md py-2.5 rounded-lg bg-surface-container-low text-primary font-body-bold text-body-sm hover:bg-surface-container-high transition-all flex items-center gap-space-xs shadow-sm" id="exportPolicyBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">code</span>
+<span>Export Schema JSON</span>
+</button>
+<button class="px-space-md py-2.5 rounded-lg bg-surface-container text-secondary font-body-bold text-body-sm hover:bg-surface-container-highest transition-all flex items-center gap-space-xs shadow-sm" id="scrollToSimBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+<span>Open Sandbox Simulator</span>
+</button>
+<button class="px-space-lg py-2.5 rounded-lg bg-primary text-on-primary font-body-bold text-body-sm hover:bg-primary-container transition-all flex items-center gap-space-xs shadow-md" id="savePolicyTopBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">save</span>
+<span>Publish &amp; Sign Policy</span>
+</button>
+</div>
+</div>
+<!-- Active High-Level Quota & Engine Telemetry Ticker (4 Metrics Bento) -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-space-md">
+<!-- Card 1: Daily Autonomous Cap -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Daily Auto Limit</span>
+<span class="p-1 rounded bg-surface-container text-secondary material-symbols-outlined text-[18px]">event_repeat</span>
+</div>
+<div class="mt-space-md">
+<div class="font-metric-lg text-metric-lg text-primary tracking-tight" id="metricDailyVal">€2,000.00</div>
+<div class="mt-space-xs flex items-center justify-between text-body-sm text-on-surface-variant">
+<span>Used today: <strong class="text-on-surface">€1,050.00</strong></span>
+<span class="font-mono-token text-mono-token text-secondary font-bold">52.5%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-secondary rounded-full" style="width: 52.5%"></div>
+</div>
+</div>
+</div>
+<!-- Card 2: Single Order Ceiling -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Per-Order Hard Ceiling</span>
+<span class="p-1 rounded bg-surface-container text-primary material-symbols-outlined text-[18px]">shopping_cart_checkout</span>
+</div>
+<div class="mt-space-md">
+<div class="font-metric-lg text-metric-lg text-primary tracking-tight" id="metricSingleVal">€1,500.00</div>
+<p class="mt-space-xs text-body-sm text-on-surface-variant">Exceeding triggers human sign-off</p>
+<div class="mt-2 flex items-center gap-1.5 text-on-tertiary-fixed-variant font-mono-sm text-mono-sm font-semibold">
+<span class="material-symbols-outlined text-[14px]">shield</span>
+<span>Deterministic idempotency guard</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Monthly Allocation Meter -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Monthly Fleet Quota</span>
+<span class="p-1 rounded bg-surface-container text-tertiary-container material-symbols-outlined text-[18px]">calendar_view_month</span>
+</div>
+<div class="mt-space-md">
+<div class="flex items-baseline gap-1 font-metric-lg text-metric-lg text-primary">
+<span>€24,350</span>
+<span class="text-body-sm text-on-surface-variant font-normal">/ €40,000</span>
+</div>
+<div class="mt-space-xs flex items-center justify-between text-body-sm text-on-surface-variant">
+<span>Spent: May 2025</span>
+<span class="font-mono-token text-mono-token text-primary font-bold">60.8%</span>
+</div>
+<div class="w-full h-1.5 bg-surface-container-high rounded-full mt-2 overflow-hidden">
+<div class="h-full bg-primary rounded-full" style="width: 60.8%"></div>
+</div>
+</div>
+</div>
+<!-- Card 4: Safety Invariants Policy -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant">Safety &amp; Compliance</span>
+<span class="p-1 rounded bg-status-error-bg text-status-error material-symbols-outlined text-[18px]">gpp_maybe</span>
+</div>
+<div class="mt-space-md">
+<div class="flex items-center gap-space-xs font-title-sm text-title-sm text-on-surface font-bold">
+<span class="h-2.5 w-2.5 rounded-full bg-status-error"></span>
+<span>4 Allergen Invariants</span>
+</div>
+<p class="mt-space-xs text-body-sm text-on-surface-variant">Hard Deny blocks overrides</p>
+<div class="mt-2 text-mono-sm text-mono-sm text-on-surface-variant font-medium">
+            Next audit sync in: <span class="font-bold text-primary">14h 22m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Configuration Workspace (Two-Column Asymmetric Grid) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-space-lg items-start">
+<!-- Left Column: Core Policy Rules Engine (7 Columns) -->
+<div class="xl:col-span-7 space-y-space-lg">
+<!-- Section 1: Spend Quotas & Autonomous Limits -->
+<div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-sm space-y-space-lg">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[22px]">account_balance_wallet</span>
+<h2 class="font-title-sm text-title-sm text-primary uppercase tracking-tight">1. Spend Thresholds &amp; Quotas</h2>
+</div>
+<p class="text-body-sm text-on-surface-variant">Defines deterministic micro-settlement ceilings before autonomous execution routes to human sign-off.</p>
+</div>
+<span class="px-2 py-0.5 rounded text-mono-sm font-mono-token bg-surface-container text-secondary font-bold">REST /v1/account</span>
+</div>
+<div class="space-y-space-lg pt-space-xs">
+<!-- Daily Autonomous Limit Controller -->
+<div class="p-space-md rounded-lg bg-surface-container-low space-y-space-sm">
+<div class="flex items-center justify-between">
+<div>
+<label class="font-body-bold text-body-sm text-on-surface" for="dailySlider">Daily Autonomous Ceiling</label>
+<p class="text-body-sm text-on-surface-variant">Total automated orders cleared per 24-hour rolling window.</p>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-lowest px-3 py-1.5 rounded-lg shadow-sm">
+<span class="font-mono-token text-mono-token text-on-surface-variant">€</span>
+<input class="w-24 text-right font-mono-token text-mono-token font-bold text-primary bg-transparent focus:outline-none" id="dailyInput" max="10000" min="500" step="50" type="number" value="2000"/>
+</div>
+</div>
+<input class="w-full accent-primary h-2 bg-surface-container-high rounded-lg cursor-pointer" id="dailySlider" max="10000" min="500" step="100" type="range" value="2000"/>
+<div class="flex justify-between font-mono-sm text-mono-sm text-on-surface-variant">
+<span>Min: €500.00</span>
+<span>Current Policy: €2,000.00</span>
+<span>Max: €10,000.00</span>
+</div>
+</div>
+<!-- Single Order Ceiling Controller -->
+<div class="p-space-md rounded-lg bg-surface-container-low space-y-space-sm">
+<div class="flex items-center justify-between">
+<div>
+<label class="font-body-bold text-body-sm text-on-surface" for="singleOrderInput">Single Order Autonomous Cap</label>
+<p class="text-body-sm text-on-surface-variant">Individual orders exceeding this cap are routed to Elsa Andersson.</p>
+</div>
+<div class="flex items-center gap-1 bg-surface-container-lowest px-3 py-1.5 rounded-lg shadow-sm">
+<span class="font-mono-token text-mono-token text-on-surface-variant">€</span>
+<input class="w-24 text-right font-mono-token text-mono-token font-bold text-primary bg-transparent focus:outline-none" id="singleOrderInput" max="5000" min="200" step="50" type="number" value="1500"/>
+</div>
+</div>
+<input class="w-full accent-primary h-2 bg-surface-container-high rounded-lg cursor-pointer" id="singleOrderSlider" max="5000" min="200" step="50" type="range" value="1500"/>
+</div>
+<!-- Fallback Overrun Action Option Group -->
+<div class="pt-space-xs space-y-space-xs">
+<span class="font-body-bold text-body-sm text-on-surface">Fallback Action on Threshold Overrun:</span>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+<label class="flex items-start gap-space-sm p-space-md rounded-lg bg-surface-container-low cursor-pointer transition-colors hover:bg-surface-container">
+<input checked="" class="mt-1 accent-primary" name="thresholdFallback" type="radio" value="approval"/>
+<div>
+<span class="font-body-bold text-body-sm text-on-surface block">Route to Kitchen Approval Queue</span>
+<span class="text-body-sm text-on-surface-variant block mt-0.5">Places quote in 5-minute hold pending executive swipe sign-off.</span>
+</div>
+</label>
+<label class="flex items-start gap-space-sm p-space-md rounded-lg bg-surface-container-low cursor-pointer transition-colors hover:bg-surface-container">
+<input class="mt-1 accent-primary" name="thresholdFallback" type="radio" value="deny"/>
+<div>
+<span class="font-body-bold text-body-sm text-status-error block">Hard Reject / Fail Fast</span>
+<span class="text-body-sm text-on-surface-variant block mt-0.5">Immediate 403 Forbidden payload returned to agent client.</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 2: Category Permissions & Catalog Whitelisting -->
+<div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-sm space-y-space-lg">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[22px]">category</span>
+<h2 class="font-title-sm text-title-sm text-primary uppercase tracking-tight">2. Category Access &amp; Catalog Bounds</h2>
+</div>
+<p class="text-body-sm text-on-surface-variant">Scope agent authority to pre-cleared food supply categories and commercial tiers.</p>
+</div>
+<span class="px-2 py-0.5 rounded text-mono-sm font-mono-token bg-status-success-bg text-on-tertiary-fixed-variant font-bold">4 ALLOWED · 3 RESTRICTED</span>
+</div>
+<!-- Permitted Categories Grid -->
+<div class="space-y-space-sm">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Permitted Categories (Autonomous Clearance Active)</span>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+<!-- Item: Dairy -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary-container text-[20px]">local_drink</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Dairy (Valio Core)</div>
+<div class="font-mono-sm text-mono-sm text-on-surface-variant">Tier-1 Contract · Cap €1,500</div>
+</div>
+</div>
+<input checked="" class="accent-primary h-4 w-4 rounded cursor-pointer" type="checkbox"/>
+</div>
+<!-- Item: Fresh Produce -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary-container text-[20px]">nutrition</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Fresh Produce &amp; Greens</div>
+<div class="font-mono-sm text-mono-sm text-on-surface-variant">Daily Deliveries · Cap €800</div>
+</div>
+</div>
+<input checked="" class="accent-primary h-4 w-4 rounded cursor-pointer" type="checkbox"/>
+</div>
+<!-- Item: Dry Goods -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary-container text-[20px]">kitchen</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Dry Goods &amp; Grains</div>
+<div class="font-mono-sm text-mono-sm text-on-surface-variant">Bulk Storage · Cap €1,000</div>
+</div>
+</div>
+<input checked="" class="accent-primary h-4 w-4 rounded cursor-pointer" type="checkbox"/>
+</div>
+<!-- Item: Bakery & Flours -->
+<div class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary-container text-[20px]">bakery_dining</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Artisan Bakery &amp; Flours</div>
+<div class="font-mono-sm text-mono-sm text-on-surface-variant">Daily Morning · Cap €450</div>
+</div>
+</div>
+<input checked="" class="accent-primary h-4 w-4 rounded cursor-pointer" type="checkbox"/>
+</div>
+</div>
+</div>
+<!-- Restricted / Locked Categories requiring explicit kitchen signoff -->
+<div class="space-y-space-sm pt-space-xs">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Restricted Categories (Always Requires Manual Approval)</span>
+<div class="space-y-2">
+<div class="p-space-sm rounded-lg bg-status-warning-bg/40 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-status-warning text-[20px]">set_meal</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Frozen Seafood &amp; Premium Fish</div>
+<div class="text-body-sm text-on-surface-variant">Requires cold-chain temperature verification &amp; manual chef review.</div>
+</div>
+</div>
+<span class="font-mono-token text-mono-sm px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-bold">MANUAL_REVIEW</span>
+</div>
+<div class="p-space-sm rounded-lg bg-status-warning-bg/40 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-status-warning text-[20px]">wine_bar</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">High-Value Wines &amp; Specialty Spirits</div>
+<div class="text-body-sm text-on-surface-variant">High-theft category. Regulated excise duty compliance required.</div>
+</div>
+</div>
+<span class="font-mono-token text-mono-sm px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-bold">MANUAL_REVIEW</span>
+</div>
+<div class="p-space-sm rounded-lg bg-status-warning-bg/40 flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-status-warning text-[20px]">cleaning_services</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Industrial Cleaning Chemicals &amp; Sanitizers</div>
+<div class="text-body-sm text-on-surface-variant">Hazardous material regulation; managed via facilities account.</div>
+</div>
+</div>
+<span class="font-mono-token text-mono-sm px-2 py-0.5 rounded bg-status-warning-bg text-status-warning font-bold">MANUAL_REVIEW</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Allergen & Safety Guardrails (Zero-Tolerance Deterministic Hard Deny) -->
+<div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-sm space-y-space-md">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-status-error text-[22px]">health_and_safety</span>
+<h2 class="font-title-sm text-title-sm text-primary uppercase tracking-tight">3. Allergen &amp; Safety Guardrails</h2>
+</div>
+<p class="text-body-sm text-on-surface-variant">Inviolable deterministic safety rules evaluated at compiler time prior to invoice creation.</p>
+</div>
+<span class="px-2 py-0.5 rounded text-mono-sm font-mono-token bg-status-error-bg text-status-error font-bold">ZERO TOLERANCE</span>
+</div>
+<!-- Hard Deny Warning Callout Banner -->
+<div class="p-space-md rounded-lg bg-status-error-bg/60 flex items-start gap-space-sm">
+<span class="material-symbols-outlined text-status-error text-[20px] shrink-0 mt-0.5">dangerous</span>
+<div class="space-y-0.5">
+<span class="font-body-bold text-body-sm text-status-error">Hard Deny Enforcement Rule:</span>
+<p class="text-body-sm text-on-surface-variant">Orders matching restricted allergen profiles cannot be overridden by human sign-off. Requests fail instantly with <code class="font-mono-token text-mono-sm bg-surface-container-lowest px-1.5 py-0.5 rounded text-primary">ERR_DETERMINISTIC_ALLERGEN_BLOCK</code> at <code class="font-mono-token text-mono-sm">/v1/orders/validate</code>.</p>
+</div>
+</div>
+<!-- Blocked Allergens Interactive Pill Cloud -->
+<div class="space-y-space-xs pt-space-xs">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Active Blacklisted Allergens</span>
+<div class="flex flex-wrap gap-2" id="allergenPillGroup">
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-status-error-bg text-status-error font-mono-token text-mono-token font-bold">
+<span class="material-symbols-outlined text-[16px]">block</span>
+<span>Peanuts &amp; Derivatives</span>
+<button class="ml-1 text-on-surface-variant hover:text-status-error" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-status-error-bg text-status-error font-mono-token text-mono-token font-bold">
+<span class="material-symbols-outlined text-[16px]">block</span>
+<span>Tree Nuts (Almond, Walnut, Hazelnut)</span>
+<button class="ml-1 text-on-surface-variant hover:text-status-error" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-status-error-bg text-status-error font-mono-token text-mono-token font-bold">
+<span class="material-symbols-outlined text-[16px]">block</span>
+<span>Sesame Seeds</span>
+<button class="ml-1 text-on-surface-variant hover:text-status-error" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-status-error-bg text-status-error font-mono-token text-mono-token font-bold">
+<span class="material-symbols-outlined text-[16px]">block</span>
+<span>Crustaceans &amp; Shellfish Extracts</span>
+<button class="ml-1 text-on-surface-variant hover:text-status-error" type="button"><span class="material-symbols-outlined text-[14px]">close</span></button>
+</span>
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container text-secondary font-body-bold text-body-sm hover:bg-surface-container-high transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+<span>Add Allergen Filter</span>
+</button>
+</div>
+</div>
+<!-- Sustainability & Organic Certification Toggles -->
+<div class="pt-space-xs space-y-space-xs">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Certification Scoring Directives</span>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-space-sm">
+<label class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container text-[18px]">eco</span>
+<div>
+<span class="font-body-bold text-body-sm text-on-surface block">Prioritize Luomu Organic</span>
+<span class="text-mono-sm text-mono-sm text-on-surface-variant">Finnish Certified Bio standard</span>
+</div>
+</div>
+<input checked="" class="accent-primary h-4 w-4 rounded" type="checkbox"/>
+</label>
+<label class="p-space-sm rounded-lg bg-surface-container-low flex items-center justify-between cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[18px]">co2</span>
+<div>
+<span class="font-body-bold text-body-sm text-on-surface block">Valio Carbon-Neutral Dairy</span>
+<span class="text-mono-sm text-mono-sm text-on-surface-variant">Prefer Carbo® Farm Milk SKUs</span>
+</div>
+</div>
+<input checked="" class="accent-primary h-4 w-4 rounded" type="checkbox"/>
+</label>
+</div>
+</div>
+</div>
+<!-- Section 4: Smart Substitution & Brand Tolerance Rules -->
+<div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-sm space-y-space-lg">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[22px]">swap_horizontal_circle</span>
+<h2 class="font-title-sm text-title-sm text-primary uppercase tracking-tight">4. Autonomous Substitution Rules</h2>
+</div>
+<p class="text-body-sm text-on-surface-variant">Define machine autonomy when requested SKUs encounter stockouts at Valio central depots.</p>
+</div>
+<div class="flex items-center gap-2">
+<span class="font-body-bold text-body-sm text-on-surface">Auto-Substitutions:</span>
+<input checked="" class="accent-primary h-5 w-5 rounded cursor-pointer" id="autoSubToggle" type="checkbox"/>
+</div>
+</div>
+<div class="space-y-space-md">
+<!-- Max Price Variance Slider -->
+<div class="p-space-md rounded-lg bg-surface-container-low space-y-space-xs">
+<div class="flex items-center justify-between">
+<div>
+<span class="font-body-bold text-body-sm text-on-surface">Maximum Substitution Price Variance</span>
+<p class="text-body-sm text-on-surface-variant">Substitutions costing above original SKU price by more than this limit fail to approval.</p>
+</div>
+<span class="font-mono-token text-mono-token font-bold text-primary px-3 py-1 rounded bg-surface-container-lowest shadow-sm" id="varianceVal">+10.0%</span>
+</div>
+<input class="w-full accent-primary h-2 bg-surface-container-high rounded-lg cursor-pointer" id="varianceSlider" max="25" min="0" step="0.5" type="range" value="10"/>
+<div class="flex justify-between font-mono-sm text-mono-sm text-on-surface-variant">
+<span>0% (Strict Price Match)</span>
+<span>Default: +10%</span>
+<span>Max: +25%</span>
+</div>
+</div>
+<!-- Brand Affinity Radios -->
+<div class="p-space-md rounded-lg bg-surface-container-low space-y-space-xs">
+<span class="font-body-bold text-body-sm text-on-surface">Brand Affinity Routing</span>
+<div class="space-y-2 pt-1">
+<label class="flex items-center gap-space-sm cursor-pointer">
+<input checked="" class="accent-primary" name="brandPref" type="radio" value="valio_only"/>
+<span class="text-body-sm text-on-surface"><strong>Strict Valio / Valio Aimo Own-Brand:</strong> Refuse third-party swaps even if cheaper.</span>
+</label>
+<label class="flex items-center gap-space-sm cursor-pointer">
+<input class="accent-primary" name="brandPref" type="radio" value="any_verified"/>
+<span class="text-body-sm text-on-surface"><strong>Tier-1 Certified Nordic Partners:</strong> Allow verified wholesale equivalents (e.g., Arla Pro, Myllyn Paras).</span>
+</label>
+</div>
+</div>
+<!-- Pack Size Flexibility -->
+<div class="flex items-center justify-between p-space-sm rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-secondary text-[20px]">scale</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Pack Size Tolerance (±20% Volume Equivalent)</div>
+<div class="text-body-sm text-on-surface-variant">Allows substituting 10 × 1L cartons when 10L bag-in-box is depleted.</div>
+</div>
+</div>
+<input checked="" class="accent-primary h-4 w-4 rounded cursor-pointer" type="checkbox"/>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Interactive Sandbox & Delegated Credentials (5 Columns) -->
+<div class="xl:col-span-5 space-y-space-lg">
+<!-- Section 6: Real-time Policy Sandbox / Dry-Run Tester -->
+<div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-md space-y-space-md" id="sandboxCard">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[22px]">play_circle</span>
+<h2 class="font-title-sm text-title-sm text-primary uppercase tracking-tight">Policy Sandbox &amp; Dry-Run Tester</h2>
+</div>
+<p class="text-body-sm text-on-surface-variant">Simulate purchasing intents against active policy compiler rules before deploying.</p>
+</div>
+<span class="px-2 py-0.5 rounded text-mono-sm font-mono-token bg-surface-container text-primary font-bold">DRY RUN</span>
+</div>
+<!-- Sample Test Scenario Pills -->
+<div class="space-y-space-xs">
+<span class="font-label-caps text-label-caps uppercase text-on-surface-variant tracking-wider">Quick Preset Scenarios</span>
+<div class="flex flex-wrap gap-2">
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-mono-sm text-mono-sm text-left transition-colors flex items-center gap-1.5 shadow-sm" id="scenario1Btn" type="button">
+<span class="h-2 w-2 rounded-full bg-status-warning"></span>
+<span>Scenario A: 1,000L Whole Milk (€2,100)</span>
+</button>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-mono-sm text-mono-sm text-left transition-colors flex items-center gap-1.5 shadow-sm" id="scenario2Btn" type="button">
+<span class="h-2 w-2 rounded-full bg-[#059669]"></span>
+<span>Scenario B: 50kg Butter (€350)</span>
+</button>
+<button class="px-2.5 py-1.5 rounded-lg bg-surface-container-low hover:bg-surface-container text-on-surface font-mono-sm text-mono-sm text-left transition-colors flex items-center gap-1.5 shadow-sm" id="scenario3Btn" type="button">
+<span class="h-2 w-2 rounded-full bg-status-error"></span>
+<span>Scenario C: Roasted Peanut Oil 5L</span>
+</button>
+</div>
+</div>
+<!-- Interactive Test Intent Input Form -->
+<div class="space-y-space-sm pt-space-xs">
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant" for="intentSkuInput">Test Product SKU / Description</label>
+<input class="w-full px-space-md py-2 rounded-lg bg-surface-container-low text-body-sm font-mono-token text-on-surface focus:outline-none focus:bg-surface-container transition-all" id="intentSkuInput" type="text" value="Valio Luomu Täysmaito 10L Bag-in-Box"/>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant" for="intentCategorySelect">Category</label>
+<select class="w-full px-space-md py-2 rounded-lg bg-surface-container-low text-body-sm font-mono-token text-on-surface focus:outline-none cursor-pointer" id="intentCategorySelect">
+<option value="dairy">Dairy (Valio Core)</option>
+<option value="produce">Fresh Produce</option>
+<option value="seafood">Frozen Seafood (Restricted)</option>
+<option value="dry_goods">Dry Goods</option>
+</select>
+</div>
+<div class="space-y-1">
+<label class="font-label-caps text-label-caps uppercase text-on-surface-variant" for="intentPriceInput">Simulated Total (€)</label>
+<input class="w-full px-space-md py-2 rounded-lg bg-surface-container-low text-body-sm font-mono-token text-on-surface focus:outline-none" id="intentPriceInput" type="number" value="2100"/>
+</div>
+</div>
+<button class="w-full mt-2 py-2.5 rounded-lg bg-secondary text-on-secondary font-body-bold text-body-sm hover:bg-secondary-container hover:text-on-secondary-container transition-all flex items-center justify-center gap-space-xs shadow-sm" id="runSimulatorBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">bolt</span>
+<span>Execute Dry-Run Simulation</span>
+</button>
+</div>
+<!-- Simulation Diagnostic Output Terminal -->
+<div class="p-space-md rounded-lg bg-primary-container text-on-surface font-mono-sm text-mono-sm space-y-space-sm">
+<div class="flex items-center justify-between text-on-primary-container">
+<div class="flex items-center gap-1.5">
+<span class="h-2 w-2 rounded-full bg-nordic-frost-lime animate-pulse"></span>
+<span class="font-bold tracking-wider">EVALUATION CONSOLE</span>
+</div>
+<span class="text-mono-sm" id="evalTimestamp">08:14:02.109Z</span>
+</div>
+<!-- Deterministic Result Card inside Terminal -->
+<div class="p-space-sm rounded bg-surface-container-lowest/10 space-y-2" id="simResultContainer">
+<div class="flex items-center justify-between">
+<span class="text-on-primary-container">Policy Engine Verdict:</span>
+<span class="px-2 py-0.5 rounded font-mono-token text-mono-token font-bold bg-status-warning-bg text-status-warning flex items-center gap-1" id="verdictBadge">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+<span>REQUIRES_APPROVAL</span>
+</span>
+</div>
+<div class="text-on-primary-container text-mono-sm space-y-1 pt-1">
+<div>[CHECK 1: ALLERGEN_INVARIANTS] -&gt; <span class="text-status-success-bg font-bold">PASSED (Clean)</span></div>
+<div>[CHECK 2: CATEGORY_PERMISSIONS] -&gt; <span class="text-status-success-bg font-bold">PASSED (Dairy Whitelisted)</span></div>
+<div>[CHECK 3: SINGLE_ORDER_CAP] -&gt; <span class="text-status-warning font-bold">FAILED (€2,100 &gt; €1,500)</span></div>
+<div>[CHECK 4: DAILY_QUOTA_DELTA] -&gt; <span class="text-status-warning font-bold">EXCEEDED (+€100 over €2,000 cap)</span></div>
+</div>
+<div class="text-body-sm text-surface-container pt-1" id="verdictExplanation">
+                Order cleared safety and category boundaries, but exceeds €1,500 order cap. Route created to Pending Approvals queue for Elsa Andersson (5m TTL).
+              </div>
+</div>
+</div>
+</div>
+<!-- Section 5: Authorized Agent Credentials & Delegated Authority -->
+<div class="p-space-xl rounded-xl bg-surface-container-lowest shadow-sm space-y-space-md">
+<div class="flex items-start justify-between">
+<div class="space-y-1">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[22px]">smart_toy</span>
+<h2 class="font-title-sm text-title-sm text-primary uppercase tracking-tight">5. Authorized Agent Credentials</h2>
+</div>
+<p class="text-body-sm text-on-surface-variant">Cryptographic tokens with delegated autonomous procurement mandates.</p>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container text-primary font-body-bold text-body-sm hover:bg-surface-container-high transition-colors flex items-center gap-1" id="issueTokenBtn" type="button">
+<span class="material-symbols-outlined text-[16px]">add_moderator</span>
+<span>Issue Token</span>
+</button>
+</div>
+<!-- Connected Agent 1: Primary Ops -->
+<div class="p-space-md rounded-lg bg-surface-container-low space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container text-[20px]">verified_user</span>
+<div>
+<div class="font-mono-token text-mono-token font-bold text-primary">agt_hotelchain_01</div>
+<div class="text-body-sm text-on-surface-variant">Kitchen Ops Helsinki Hub · Full Autonomous (&lt; €2,000)</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-status-success-bg text-[#059669] font-mono-token text-mono-sm font-bold">ACTIVE</span>
+</div>
+<div class="flex flex-wrap items-center justify-between text-mono-sm text-mono-sm text-on-surface-variant pt-2">
+<span>Token: <span class="font-mono-token font-bold text-on-surface">valio_aimo_live_k48a...9x</span></span>
+<span>Rate Limit: 60 req/min</span>
+<button class="text-status-error hover:underline font-semibold" type="button">Revoke</button>
+</div>
+</div>
+<!-- Connected Agent 2: Pastry Sub-Agent -->
+<div class="p-space-md rounded-lg bg-surface-container-low space-y-space-xs">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">smart_toy</span>
+<div>
+<div class="font-mono-token text-mono-token font-bold text-primary">agt_pastry_kitchen</div>
+<div class="text-body-sm text-on-surface-variant">Pastry Sub-Agent · Dairy &amp; Dry-Goods only (Max €500)</div>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-status-success-bg text-[#059669] font-mono-token text-mono-sm font-bold">ACTIVE</span>
+</div>
+<div class="flex flex-wrap items-center justify-between text-mono-sm text-mono-sm text-on-surface-variant pt-2">
+<span>Token: <span class="font-mono-token font-bold text-on-surface">valio_aimo_live_p12b...3f</span></span>
+<span>Rate Limit: 30 req/min</span>
+<button class="text-status-error hover:underline font-semibold" type="button">Revoke</button>
+</div>
+</div>
+<!-- Untrusted Agent Callout Guard Zone -->
+<div class="p-space-md rounded-lg bg-agent-untrusted-bg border-l-4 border-agent-untrusted space-y-1">
+<div class="flex items-center justify-between">
+<span class="font-label-caps text-label-caps uppercase text-agent-untrusted tracking-wider">AGENT REASONING BOUNDARY · UNVERIFIED PROSE</span>
+<span class="material-symbols-outlined text-agent-untrusted text-[16px]">psychology</span>
+</div>
+<p class="text-body-sm text-on-surface">
+              Autonomous agents can construct arbitrary purchase reasoning, but will never bypass hard deterministic invariants. LLM hallucinated discounts or allergen dismissals are intercepted and rejected at the compiler level.
+            </p>
+</div>
+</div>
+<!-- Section 7: Audit Integrity & Idempotency Key Manifest -->
+<div class="p-space-lg rounded-xl bg-surface-container-low space-y-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">history_toggle_off</span>
+<span class="font-body-bold text-body-sm text-primary">Cryptographic Audit Chain</span>
+</div>
+<a class="font-mono-sm text-mono-sm text-secondary hover:underline flex items-center gap-1 font-bold" href="#">
+<span>Inspect Hash Ledger</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</a>
+</div>
+<div class="p-space-sm rounded bg-surface-container-lowest font-mono-sm text-mono-sm text-on-surface-variant space-y-1">
+<div class="flex justify-between">
+<span>Current Epoch Block:</span>
+<span class="font-bold text-primary">#481,209</span>
+</div>
+<div class="flex justify-between">
+<span>State Root Hash:</span>
+<span class="text-on-surface truncate max-w-[200px]">0x3e18cfb70e8...491a</span>
+</div>
+<div class="flex justify-between">
+<span>Last Verification:</span>
+<span class="text-[#059669] font-bold">Deterministic Match</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom Sticky-Bar / Action Dock on Desktop -->
+<div class="p-space-md rounded-xl bg-surface-container-lowest shadow-md flex flex-col sm:flex-row items-center justify-between gap-space-md">
+<div class="flex items-center gap-space-md">
+<span class="material-symbols-outlined text-secondary text-[24px]">verified</span>
+<div>
+<div class="font-body-bold text-body-sm text-on-surface">Configuration is synchronized across all active agent workers.</div>
+<div class="text-mono-sm text-mono-sm text-on-surface-variant">Changes take effect immediately on next /v1/orders/validate handshake.</div>
+</div>
+</div>
+<div class="flex items-center gap-space-sm w-full sm:w-auto">
+<button class="w-full sm:w-auto px-space-md py-2.5 rounded-lg bg-surface-container-low text-on-surface font-body-bold text-body-sm hover:bg-surface-container transition-colors" id="discardChangesBtn" type="button">
+          Reset to Factory Baseline
+        </button>
+<button class="w-full sm:w-auto px-space-lg py-2.5 rounded-lg bg-primary text-on-primary font-body-bold text-body-sm hover:bg-primary-container transition-all flex items-center justify-center gap-space-xs shadow-md" id="savePolicyDockBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">verified</span>
+<span>Save &amp; Compile Policy</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Notification Toast Modal Container (Dynamic) -->
+<div class="fixed bottom-6 right-6 hidden z-50 p-space-md rounded-xl bg-primary text-on-primary shadow-xl max-w-md flex items-start gap-space-sm transition-all duration-300 transform translate-y-2" id="toastNotification">
+<span class="material-symbols-outlined text-nordic-frost-lime text-[24px]">check_circle</span>
+<div class="space-y-0.5">
+<div class="font-body-bold text-body-sm text-on-primary">Policy Successfully Compiled</div>
+<p class="text-body-sm text-surface-container font-mono-sm">New SHA256 checksum broadcasted to Helsinki Kitchen Agents.</p>
+</div>
+</div>
+</div>
+<script>
+  (function initPolicyController() {
+    // Navigation active state synchronization in sidebar shell
+    const navItems = document.querySelectorAll('aside nav a[data-path]');
+    navItems.forEach(item => {
+      if (item.getAttribute('data-path') === 'autonomous-policy-limits') {
+        item.classList.add('bg-primary', 'text-on-primary', 'font-body-bold', 'shadow-sm');
+        item.classList.remove('text-on-surface-variant');
+      } else {
+        item.classList.remove('bg-primary', 'text-on-primary', 'font-body-bold', 'shadow-sm');
+        item.classList.add('text-on-surface-variant');
+      }
+    });
+
+    // Spend Threshold Inputs Synchronization
+    const dailySlider = document.getElementById('dailySlider');
+    const dailyInput = document.getElementById('dailyInput');
+    const metricDailyVal = document.getElementById('metricDailyVal');
+
+    const singleOrderSlider = document.getElementById('singleOrderSlider');
+    const singleOrderInput = document.getElementById('singleOrderInput');
+    const metricSingleVal = document.getElementById('metricSingleVal');
+
+    const varianceSlider = document.getElementById('varianceSlider');
+    const varianceVal = document.getElementById('varianceVal');
+
+    function formatEuro(val) {
+      return '€' + Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    if (dailySlider && dailyInput && metricDailyVal) {
+      dailySlider.addEventListener('input', (e) => {
+        dailyInput.value = e.target.value;
+        metricDailyVal.textContent = formatEuro(e.target.value);
+      });
+      dailyInput.addEventListener('input', (e) => {
+        dailySlider.value = e.target.value;
+        metricDailyVal.textContent = formatEuro(e.target.value || 0);
+      });
+    }
+
+    if (singleOrderSlider && singleOrderInput && metricSingleVal) {
+      singleOrderSlider.addEventListener('input', (e) => {
+        singleOrderInput.value = e.target.value;
+        metricSingleVal.textContent = formatEuro(e.target.value);
+      });
+      singleOrderInput.addEventListener('input', (e) => {
+        singleOrderSlider.value = e.target.value;
+        metricSingleVal.textContent = formatEuro(e.target.value || 0);
+      });
+    }
+
+    if (varianceSlider && varianceVal) {
+      varianceSlider.addEventListener('input', (e) => {
+        varianceVal.textContent = '+' + Number(e.target.value).toFixed(1) + '%';
+      });
+    }
+
+    // Scroll to simulator
+    const scrollToSimBtn = document.getElementById('scrollToSimBtn');
+    const sandboxCard = document.getElementById('sandboxCard');
+    if (scrollToSimBtn && sandboxCard) {
+      scrollToSimBtn.addEventListener('click', () => {
+        sandboxCard.scrollIntoView({ behavior: 'smooth' });
+      });
+    }
+
+    // Interactive Simulator Logic
+    const skuInput = document.getElementById('intentSkuInput');
+    const catSelect = document.getElementById('intentCategorySelect');
+    const priceInput = document.getElementById('intentPriceInput');
+    const runSimBtn = document.getElementById('runSimulatorBtn');
+    const verdictBadge = document.getElementById('verdictBadge');
+    const verdictExplanation = document.getElementById('verdictExplanation');
+    const evalTimestamp = document.getElementById('evalTimestamp');
+
+    const scenario1Btn = document.getElementById('scenario1Btn');
+    const scenario2Btn = document.getElementById('scenario2Btn');
+    const scenario3Btn = document.getElementById('scenario3Btn');
+
+    function runEvaluation() {
+      const now = new Date().toISOString().substring(11, 23) + 'Z';
+      evalTimestamp.textContent = now;
+
+      const sku = (skuInput.value || '').toLowerCase();
+      const cat = catSelect.value;
+      const price = parseFloat(priceInput.value) || 0;
+      const dailyCap = parseFloat(dailyInput.value) || 2000;
+      const singleCap = parseFloat(singleOrderInput.value) || 1500;
+
+      // 1. Allergen Check (Peanuts, nuts, sesame, crustaceans)
+      const allergenTriggers = ['peanut', 'maapähkinä', 'almond', 'mante', 'sesame', 'crustacean', 'rapu'];
+      const hasAllergen = allergenTriggers.some(trigger => sku.includes(trigger));
+
+      if (hasAllergen) {
+        verdictBadge.className = 'px-2 py-0.5 rounded font-mono-token text-mono-token font-bold bg-status-error-bg text-status-error flex items-center gap-1';
+        verdictBadge.innerHTML = '<span class="material-symbols-outlined text-[14px]">block</span><span>HARD DENY</span>';
+        verdictExplanation.innerHTML = '<strong class="text-status-error">CRITICAL ALLERGEN VIOLATION:</strong> SKU triggers blocked allergen rule [Peanuts/Tree Nuts]. Refused outright without possibility of human bypass.';
+        return;
+      }
+
+      // 2. Category Check
+      if (cat === 'seafood') {
+        verdictBadge.className = 'px-2 py-0.5 rounded font-mono-token text-mono-token font-bold bg-status-warning-bg text-status-warning flex items-center gap-1';
+        verdictBadge.innerHTML = '<span class="material-symbols-outlined text-[14px]">warning</span><span>REQUIRES_APPROVAL</span>';
+        verdictExplanation.innerHTML = '<strong class="text-status-warning">RESTRICTED CATEGORY:</strong> Frozen Seafood & Fish requires manual temperature audit. Dispatched to Chef Elsa Andersson.';
+        return;
+      }
+
+      // 3. Threshold check
+      if (price > singleCap || price > dailyCap) {
+        verdictBadge.className = 'px-2 py-0.5 rounded font-mono-token text-mono-token font-bold bg-status-warning-bg text-status-warning flex items-center gap-1';
+        verdictBadge.innerHTML = '<span class="material-symbols-outlined text-[14px]">warning</span><span>REQUIRES_APPROVAL</span>';
+        verdictExplanation.innerHTML = 'Policy Check: Single Order (€' + price.toFixed(2) + ') exceeds autonomous ceiling (€' + singleCap.toFixed(2) + '). Placed in Pending Approvals queue with 5m TTL.';
+        return;
+      }
+
+      // Passed All Autonomous Checks
+      verdictBadge.className = 'px-2 py-0.5 rounded font-mono-token text-mono-token font-bold bg-status-success-bg text-[#059669] flex items-center gap-1';
+      verdictBadge.innerHTML = '<span class="material-symbols-outlined text-[14px]">check_circle</span><span>AUTONOMOUS PASS</span>';
+      verdictExplanation.innerHTML = 'Cleared all invariant checks. Order executes deterministically to Valio SAP ERP in &lt; 200ms with token signature.';
+    }
+
+    if (runSimBtn) {
+      runSimBtn.addEventListener('click', runEvaluation);
+    }
+
+    if (scenario1Btn) {
+      scenario1Btn.addEventListener('click', () => {
+        skuInput.value = 'Valio Täysmaito 10L Box (100 units = 1000L)';
+        catSelect.value = 'dairy';
+        priceInput.value = 2100;
+        runEvaluation();
+      });
+    }
+
+    if (scenario2Btn) {
+      scenario2Btn.addEventListener('click', () => {
+        skuInput.value = 'Valio Voi Normaalisuolainen 500g (100 units = 50kg)';
+        catSelect.value = 'dairy';
+        priceInput.value = 350;
+        runEvaluation();
+      });
+    }
+
+    if (scenario3Btn) {
+      scenario3Btn.addEventListener('click', () => {
+        skuInput.value = 'Cold-Pressed Roasted Peanut Oil 5L Gastronomy';
+        catSelect.value = 'dry_goods';
+        priceInput.value = 45;
+        runEvaluation();
+      });
+    }
+
+    // Save Policy Notification Toast
+    function showToast() {
+      const toast = document.getElementById('toastNotification');
+      if (toast) {
+        toast.classList.remove('hidden');
+        toast.classList.remove('translate-y-2');
+        setTimeout(() => {
+          toast.classList.add('translate-y-2');
+          toast.classList.add('hidden');
+        }, 3500);
+      }
+    }
+
+    const saveTop = document.getElementById('savePolicyTopBtn');
+    const saveDock = document.getElementById('savePolicyDockBtn');
+    if (saveTop) saveTop.addEventListener('click', showToast);
+    if (saveDock) saveDock.addEventListener('click', showToast);
+
+    // Export Schema Action
+    const exportBtn = document.getElementById('exportPolicyBtn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', () => {
+        const schema = {
+          account_id: "acct_nordic_hotels_k04",
+          policy_version: "2.4.0",
+          compiled_at: new Date().toISOString(),
+          daily_autonomous_limit_eur: parseFloat(dailyInput.value) || 2000,
+          single_order_cap_eur: parseFloat(singleOrderInput.value) || 1500,
+          fallback_action: "APPROVAL_QUEUE",
+          blacklisted_allergens: ["peanuts", "tree_nuts", "sesame", "crustaceans"],
+          substitution_variance_pct: parseFloat(varianceSlider.value) || 10,
+          hash_signature: "sha256_9f8e4b7c12aa89c382a1e0"
+        };
+        const blob = new Blob([JSON.stringify(schema, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'valio_aimo_policy_v2.4.json';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+  })();
+</script></main></div></body></html>
