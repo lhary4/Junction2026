@@ -1,10 +1,11 @@
 """MCP server for the external buying agent, on the real services.
 
-Exposes the seven tools of docs/contract.md. `get_kitchen` reads the restaurant's own data, the files the
+Exposes the nine tools of docs/contract.md. `get_kitchen` reads the restaurant's own data, the files the
 kitchen page reads (surface/static/kitchen/: recipes, bookings, stock count). Every other tool calls a running service,
 so every fact comes from the gateway or the harness, never from this file:
 - search, offers and orders: the Valio gateway (MERCHANT_URL, default http://localhost:8001)
-- authorization status: the buyer's harness (HARNESS_URL, default http://localhost:8002)
+- authorization status, pending approvals and the buyer's policy: the buyer's harness (HARNESS_URL, default
+  http://localhost:8002)
 - quotes and authorizations: the demo driver (DRIVER_URL, default http://localhost:8003), which forwards them to the
   gateway and the harness, and shows the order on the kitchen page as the "Chat order"
 
@@ -15,6 +16,8 @@ Run:  uv run python agent_mcp/server.py                         stdio, for Claud
       uv run python agent_mcp/server.py --http abc.trycloudflare.com   the same, reachable through that tunnel host
 
 The agent never sees a token: quotes come back as a readable summary, orders without their receipt token.
+Every tool answers twice: a short Markdown summary the agent can show as it is, then every field as JSON (sources,
+certainties, timestamps), so nothing the summary leaves out is lost.
 """
 
 from __future__ import annotations
@@ -22,17 +25,21 @@ from __future__ import annotations
 import json
 import os
 import sys
+from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict
+from zoneinfo import ZoneInfo
 
 import httpx
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
+from mcp_types import CallToolResult, TextContent
 
 KITCHEN_DIR = Path(__file__).resolve().parent.parent / "surface" / "static" / "kitchen"  # the page's kitchen data
 HTTP_PORT = 8005
 ANSWER_TIMEOUT_SECONDS = 60  # a quote asks Valio twice, an authorization may ask the judge
+HELSINKI = ZoneInfo("Europe/Helsinki")  # the restaurant's time: cut-offs read in it
 
 SERVER_INSTRUCTIONS = (
     "You are an external wholesale buying agent connected to Valio Aimo and the buyer's guardrail harness. "
@@ -57,7 +64,13 @@ SERVER_INSTRUCTIONS = (
     "new items and `add_to` set to that quote's `checkout_id`, then `authorize_checkout` on the new quote. It has every "
     "line, and the earlier quote's pending approval is withdrawn: there is one order to sign, never two. If the earlier "
     "quote is already ordered, the tool says so: quote the new items alone and say it is a second order.\n"
-    "7. Keep answers short: what was ordered, the total, who signed, the order id."
+    "7. For what the agent may do alone (spending limit, blocked allergens, substitutions, why the chef must sign), "
+    "call `get_policy`. For what is waiting for the chef, call `list_pending_approvals`.\n"
+    "8. Every tool answers with a Markdown summary first, then the full JSON. Build your answer from the summary and "
+    "keep it short: a table of the lines (product, quantity, price per kg or litre, line total), then the total "
+    "excluding tax, the delivery day, who signs (the agent within its mandate, or the chef), and for a pending approval "
+    "the reasons, the cut-off and the approval link. Write dates with the weekday (Thu 19 Nov) and times in Helsinki "
+    "time, as the summary does. Say 'indicative' for `lookup_offers` prices."
 )
 
 server = MCPServer("valio-aimo", instructions=SERVER_INSTRUCTIONS)
@@ -108,6 +121,138 @@ def harness(method: str, path: str, **kwargs: Any) -> Any:
 
 def driver(method: str, path: str, **kwargs: Any) -> Any:
     return _call(method, _url("DRIVER_URL", "http://localhost:8003"), path, **kwargs)
+
+
+# ---------- Readable answers ----------
+
+
+def _answer(markdown: str, data: Any) -> CallToolResult:
+    """A tool's answer: the Markdown summary first, for the chat, then every field as JSON, for the facts."""
+    return CallToolResult(content=[TextContent(text=markdown), TextContent(text=json.dumps(data, ensure_ascii=False))])
+
+
+def _number(value: float | str | None) -> str:
+    """2500, 0.205, 666,666,666: no float noise (0.20500000000000002), thousands separated. Words stay words."""
+    if value is None:
+        return "unknown"
+    if isinstance(value, str):
+        return value.replace("_", " ")
+    if float(value).is_integer():
+        return f"{int(value):,}"
+    return f"{value:,.3f}".rstrip("0").rstrip(".")
+
+
+def _eur(minor: int | None) -> str:
+    return "unknown" if minor is None else f"{minor / 100:,.2f} EUR"
+
+
+def _day(value: str | None) -> str:
+    """'2026-11-19' -> 'Thu 19 Nov': the weekday makes a wrong date visible."""
+    return date.fromisoformat(value[:10]).strftime("%a %d %b") if value else "unknown"
+
+
+def _time(value: str | None) -> str:
+    """Any ISO time, UTC or not -> 'Sun 15 Nov 17:00 (Helsinki)'."""
+    if not value:
+        return "unknown"
+    return datetime.fromisoformat(value).astimezone(HELSINKI).strftime("%a %d %b %H:%M (Helsinki)")
+
+
+def _cell(value: Any) -> str:
+    return str(value).replace("|", "/").replace("\n", " ")
+
+
+def _table(headers: list[str], rows: list[list[Any]]) -> str:
+    lines = ["| " + " | ".join(headers) + " |", "|" + "---|" * len(headers)]
+    return "\n".join(lines + ["| " + " | ".join(_cell(v) for v in row) + " |" for row in rows])
+
+
+def _allergens(allergens: dict[str, Any]) -> str:
+    """Missing data says so: unknown is never read as allergen-free."""
+    if allergens.get("data") == "missing":
+        return "unknown (no data)"
+    found = ", ".join(allergens.get("contains") or []) or "none declared"
+    return found if allergens.get("data") == "complete" else f"{found} ({allergens.get('data')} data)"
+
+
+def _fact(fact: dict[str, Any] | None, scale: float = 1, suffix: str = "") -> str:
+    """A sourced value with its certainty: '98.8% (measured)', or 'unknown'."""
+    if not fact or fact.get("value") is None or fact.get("certainty") == "unknown":
+        return "unknown"
+    value = fact["value"]
+    shown = _number(round(value * scale, 3)) if isinstance(value, (int, float)) else str(value)
+    return f"{shown}{suffix} ({fact['certainty']})"
+
+
+def _pack(card: dict[str, Any]) -> str:
+    size = card.get("size_per_sales_unit") or {}
+    if size.get("value") is None or (size["value"] == 1 and size["unit"] == card["sales_unit"]):
+        return card["sales_unit"]
+    return f"{_number(size['value'])} {size['unit']} per {card['sales_unit']}"
+
+
+def _status_markdown(status: dict[str, Any]) -> str:
+    """An AuthorizationStatus in words: what happened, who signs, and what the human must do."""
+    checkout_id, state = status["checkout_id"], status["status"]
+    reasons = "\n".join(f"- {reason}" for reason in status.get("reasons") or [])
+    if state == "ordered":
+        who = "by the agent, within its mandate" if status.get("signed_by") == "agent" else "by the chef"
+        text = f"**Ordered**: order `{status['order_id']}` for quote `{checkout_id}`, signed {who}."
+        return text + (f"\n\nWhy the chef signed:\n{reasons}" if status.get("signed_by") == "human" and reasons else "")
+    if state == "pending_approval":
+        return (
+            f"**Waiting for the chef's signature**: quote `{checkout_id}`, nothing is ordered yet.\n\n"
+            f"Why:\n{reasons}\n\n"
+            f"- Sign before: {_time(status.get('deadline'))}\n"
+            f"- Approve or reject on the page: {status.get('approval_url')}"
+        )
+    words = {
+        "denied": "**Denied** by the buyer's rules: nothing is signed, nothing is ordered.",
+        "rejected": "**Rejected by the chef**: nothing is ordered.",
+        "expired": "**Expired**: no answer before the cut-off, nothing is ordered.",
+    }
+    return f"{words.get(state, f'**{state}**')} Quote `{checkout_id}`." + (f"\n\nWhy:\n{reasons}" if reasons else "")
+
+
+def _quote_markdown(summary: dict[str, Any]) -> str:
+    rows = []
+    for line in summary["lines"]:
+        name = f"{line['product_id']} {line['title']}"
+        if line.get("substitute_for"):
+            name += f" (substitute for {line['substitute_for']['product_id']})"
+        quantity = f"{line['quantity_sales_units']} {line['sales_unit']}"
+        if line["sales_unit"] != line["base_unit"]:
+            quantity += f" ({_number(line['base_quantity'])} {line['base_unit']})"
+        rows.append(
+            [
+                name,
+                quantity,
+                f"{line['comparison_price_eur']:.2f} EUR/{line['comparison_unit']}",
+                f"{line['line_total_eur']:,.2f} EUR",
+                _allergens(line["allergens"]),
+            ]
+        )
+    parts = [
+        f"**Quote `{summary['checkout_id']}`**, signed by {summary['merchant']['name']}, prices excluding tax",
+        _table(["Product", "Quantity", "Price", "Line total", "Allergens"], rows),
+        (
+            f"**Total: {summary['total_eur']:,.2f} {summary['currency']} excl. tax** · delivery "
+            f"{_day(summary['delivery_date'])} · order before {_time(summary['closing_time'])}"
+        ),
+    ]
+    for short in summary["shortfalls"]:
+        covers = [
+            line["product_id"]
+            for line in summary["lines"]
+            if (line.get("substitute_for") or {}).get("product_id") == short["product_id"]
+        ]
+        parts.append(
+            f"Short: {_number(short['missing_base_quantity'])} {short['base_unit']} of {short['product_id']} "
+            f"({_number(short['reason'])}), "
+            + (f"covered by {', '.join(covers)}." if covers else "not covered: nothing replaces it.")
+        )
+    parts.append("Nothing is ordered yet: `authorize_checkout` sends it to the buyer's rules.")
+    return "\n\n".join(parts)
 
 
 def _summarize_checkout(checkout_id: str, checkout: dict[str, Any]) -> dict[str, Any]:
@@ -191,7 +336,7 @@ def _kitchen_file(name: str) -> dict[str, Any]:
 
 
 @server.tool()
-def get_kitchen() -> dict[str, Any]:
+def get_kitchen() -> CallToolResult:
     """The restaurant's own kitchen data: the menu's recipes, the bookings of the coming services, and the stock count.
 
     Call it for any question about the menu, recipes, bookings, stock, or what the kitchen needs to order.
@@ -199,6 +344,36 @@ def get_kitchen() -> dict[str, Any]:
     ready to pass as `needs` to `request_quote`, with `needed_by` (the first service) as `delivery_date`.
     Never recompute or round these quantities yourself.
     """
+    kitchen = _kitchen()
+    stock = kitchen["stock"]
+    services = "; ".join(
+        f"{_day(s['date'])} {s['meal']}: {s['booked']} booked, {s['projected']} projected" for s in kitchen["services"]
+    )
+    short = [line for line in stock["lines"] if line["to_order"] > 0]
+    parts = [
+        f"**{kitchen['restaurant']}**, {kitchen['covers_per_service']} covers per service",
+        f"Services: {services}",
+        _table(["Course", "Dish"], [[r["course"], r["dish"]] for r in kitchen["recipes"]]),
+        f"Stock counted on {_day(stock['counted_at'])} ({stock['counted_by']}), for {stock['for_services']} services.",
+    ]
+    if short:
+        rows = [
+            [
+                f"{line['product_id']} {line['name']}",
+                *(f"{_number(line[k])} {line['unit']}" for k in ("need", "in_stock", "to_order")),
+            ]
+            for line in short
+        ]
+        parts += [
+            f"**To order for {_day(kitchen['needed_by'])}**:",
+            _table(["Product", "Need", "In stock", "To order"], rows),
+        ]
+    else:
+        parts.append("Nothing to order: the stock covers every service.")
+    return _answer("\n\n".join(parts), kitchen)
+
+
+def _kitchen() -> dict[str, Any]:
     recipes = _kitchen_file("recipes.json")
     bookings = _kitchen_file("bookings.json")
     stock = _kitchen_file("stock.normal-order.json")
@@ -238,7 +413,7 @@ def get_kitchen() -> dict[str, Any]:
 
 
 @server.tool()
-def search_products(query: str, limit: int = 5) -> dict[str, Any]:
+def search_products(query: str, limit: int = 5) -> CallToolResult:
     """Search the Valio Aimo catalog and return matching product cards without prices.
 
     Every word of `query` must be in the product name: use one or two words, in English (for example 'mozzarella',
@@ -247,7 +422,24 @@ def search_products(query: str, limit: int = 5) -> dict[str, Any]:
     source and certainty (`measured`, `declared`, `estimated`, or `unknown`).
     Prices and live stock are NOT in product cards: never guess or state a price before calling `request_quote`.
     """
-    return gateway("GET", "/products/search", params={"q": query, "limit": max(1, min(int(limit), 50))})
+    found = gateway("GET", "/products/search", params={"q": query, "limit": max(1, min(int(limit), 50))})
+    rows = [
+        [
+            card["id"],
+            card["name"],
+            _pack(card),
+            _allergens(card["allergens"]),
+            _fact(card["origin"]),
+            _fact(card["delivery_reliability"], 100, "%"),
+            _fact(card["carbon_footprint"], 1, " kg"),
+        ]
+        for card in found["products"]
+    ]
+    header = f"**{found['count']} products for '{query}'**, no prices here: `lookup_offers` prices them."
+    if not rows:
+        return _answer(f"No product name has every word of '{query}': try one word, in English.", found)
+    table = _table(["ID", "Product", "Pack", "Allergens", "Origin", "Delivered in full", "CO2e per kg"], rows)
+    return _answer(f"{header}\n\n{table}", found)
 
 
 @server.tool()
@@ -257,7 +449,7 @@ def lookup_offers(
     amount: float | None = None,
     unit: Literal["L", "KG", "ST"] | None = None,
     limit: int = 5,
-) -> dict[str, Any]:
+) -> CallToolResult:
     """Compare products: price, stock, delivery date and cut-off of every product matching `query`, in one call.
 
     Args:
@@ -274,11 +466,65 @@ def lookup_offers(
     params: dict[str, Any] = {"q": query, "delivery_date": delivery_date, "limit": max(1, min(int(limit), 50))}
     if amount is not None:
         params |= {"amount": amount, "unit": unit}
-    return gateway("GET", "/offers", params=params)
+    found = gateway("GET", "/offers", params=params)
+    return _answer(_offers_markdown(found), found)
+
+
+def _offers_markdown(found: dict[str, Any]) -> str:
+    wanted = f", for {_number(found['amount'])} {found['unit']}" if found.get("amount") is not None else ""
+    header = (
+        f"**Offers for '{found['query']}'**, delivery {_day(found['delivery_date'])}{wanted}. "
+        f"Indicative prices at {_time(found['as_of'])}, not signed: only `request_quote` commits Valio."
+    )
+    if not found["offers"]:
+        return f"{header}\n\nNo product name has every word of '{found['query']}': try one word, in English."
+    rows, cut_offs = [], set()
+    for offer in found["offers"]:
+        card, price = offer["product"], offer.get("price") or {}
+        comparison = (offer.get("comparison_price") or {}).get("value")
+        stock = offer.get("stock") or {}
+        to_order = offer.get("to_order")
+        row = [
+            card["id"],
+            card["name"],
+            f"{_eur(price.get('value'))} per {card['sales_unit']}" if price.get("value") is not None else "unknown",
+            f"{_eur(comparison)}/{offer.get('comparison_unit')}" if comparison is not None else "unknown",
+        ]
+        if wanted:
+            row.append(
+                f"{to_order['quantity']} {card['sales_unit']} = {_eur(to_order['total_minor'])}" if to_order else "n/a"
+            )
+        stock_text = _number(stock.get("value"))  # 'not given' when Valio does not count it
+        if isinstance(stock.get("value"), (int, float)):
+            stock_text += f" {stock.get('unit')}"
+        row += [
+            stock_text,
+            _day((offer.get("available_date") or {}).get("value")),
+            "yes" if offer["orderable"] else f"no: {offer.get('reason')}",
+        ]
+        rows.append(row)
+        if offer.get("closing_time"):
+            cut_offs.add(_time(offer["closing_time"]["value"]))
+    headers = [
+        "ID",
+        "Product",
+        "Price",
+        "Per kg or L",
+        *(["To order"] if wanted else []),
+        "Stock",
+        "Ready",
+        "Orderable",
+    ]
+    parts = [header, _table(headers, rows)]
+    if cut_offs:
+        parts.append("Order before: " + ", ".join(sorted(cut_offs)) + ".")
+    if found["matched"] > found["priced"]:
+        parts.append(f"{found['matched']} names matched, only the {found['priced']} closest were priced: add a word.")
+    return "\n\n".join(parts)
 
 
 @server.tool()
-def request_quote(needs: list[NeedInput], delivery_date: str, add_to: str | None = None) -> dict[str, Any]:
+def request_quote(needs: list[NeedInput], delivery_date: str, add_to: str | None = None) -> CallToolResult:
     """Request a Valio Aimo ES256-signed quote for the buyer's product needs and target delivery date.
 
     Args:
@@ -298,11 +544,12 @@ def request_quote(needs: list[NeedInput], delivery_date: str, add_to: str | None
     if add_to:
         body["add_to"] = add_to
     issued = driver("POST", "/agent/checkouts", json=body)
-    return _summarize_checkout(issued["checkout_id"], issued["checkout"])
+    summary = _summarize_checkout(issued["checkout_id"], issued["checkout"])
+    return _answer(_quote_markdown(summary), summary)
 
 
 @server.tool()
-def authorize_checkout(checkout_id: str, request_text: str) -> dict[str, Any]:
+def authorize_checkout(checkout_id: str, request_text: str) -> CallToolResult:
     """Submit a `checkout_id` to the buyer's guardrail harness for policy evaluation and signing.
 
     Args:
@@ -319,25 +566,94 @@ def authorize_checkout(checkout_id: str, request_text: str) -> dict[str, Any]:
     """
     if not request_text or not request_text.strip():
         raise ToolError("request_text must contain the human's original request sentence")
-    return driver("POST", "/agent/authorize", json={"checkout_id": checkout_id, "request_text": request_text})
+    status = driver("POST", "/agent/authorize", json={"checkout_id": checkout_id, "request_text": request_text})
+    return _answer(_status_markdown(status), status)
 
 
 @server.tool()
-def get_authorization_status(checkout_id: str) -> dict[str, Any]:
+def get_authorization_status(checkout_id: str) -> CallToolResult:
     """Check the current authorization and approval status of a `checkout_id` on the buyer's harness.
 
     Returns `ordered`, `pending_approval` (with `approval_url` and `deadline`), `denied`, `rejected`, or `expired`.
     If `pending_approval`, remind the human of the `deadline` and `approval_url` where approval must happen.
     """
-    return harness("GET", f"/authorizations/{checkout_id}")
+    status = harness("GET", f"/authorizations/{checkout_id}")
+    return _answer(_status_markdown(status), status)
 
 
 @server.tool()
-def get_order(order_id: str) -> dict[str, Any]:
+def list_pending_approvals() -> CallToolResult:
+    """List every quote waiting for the chef's signature: why, the cut-off, and where to approve.
+
+    Call it for 'what is waiting for the chef?' or 'what still needs approval?'. Approvals happen on the page at
+    `approval_url`, never in the chat.
+    """
+    pending = [s for s in harness("GET", "/authorizations") if s["status"] == "pending_approval"]
+    if not pending:
+        return _answer("Nothing is waiting for the chef.", pending)
+    rows = [
+        [f"`{s['checkout_id']}`", " ".join(s.get("reasons") or []), _time(s.get("deadline")), s.get("approval_url")]
+        for s in pending
+    ]
+    text = f"**{len(pending)} waiting for the chef's signature**\n\n" + _table(
+        ["Quote", "Why", "Sign before", "Approve on"], rows
+    )
+    return _answer(text, pending)
+
+
+@server.tool()
+def get_policy() -> CallToolResult:
+    """The buyer's rules the harness applies to every order: what the agent may sign alone, and when the chef signs.
+
+    Call it for 'how much can you spend alone?', 'why does the chef have to sign?', 'which allergens are blocked?',
+    or 'which substitutes do you accept?'. It is the rule itself, from the harness, not a summary of it.
+    """
+    policy = harness("GET", "/policy")
+    words = {"human": "the chef signs", "deny": "refused", "auto": "the agent signs"}
+    substitution = policy["substitution"]
+    pre_accepted = {
+        "same_category_and_same_allergens": "accepted when they have the same category and the same allergens",
+        "none": "none is accepted without a check",
+    }.get(substitution["pre_accepted"], substitution["pre_accepted"])
+    lines = [
+        f"**The buyer's rules** (policy `{policy['policy_id']}`, valid until {_time(policy['valid_until'])})",
+        (
+            f"- The agent signs alone up to **{_eur(policy['autonomous_limit_minor'])}** an order. Above, the chef "
+            f"({policy['approver']}) signs on the page."
+        ),
+        f"- Suppliers allowed: {', '.join(m['name'] for m in policy['allowed_merchants'])}.",
+        f"- Blocked allergens, always refused: {', '.join(policy['blocked_allergens']) or 'none'}.",
+        (
+            f"- Allergen data missing: {words.get(policy['unknown_allergen_data'])}. A substitute with other allergens: "
+            f"{words.get(policy['allergen_change_on_substitution'])}. A late delivery: "
+            f"{words.get(policy['late_delivery'])}."
+        ),
+    ]
+    if substitution["allowed"]:
+        lines.append(
+            f"- Substitutes: {pre_accepted}. The others are judged against the buyer's written preferences "
+            "(`substitution.preferences_text` in the JSON)."
+        )
+    else:
+        lines.append("- Substitutes: the chef signs every one.")
+    return _answer("\n".join(lines), policy)
+
+
+@server.tool()
+def get_order(order_id: str) -> CallToolResult:
     """Fetch a confirmed Valio Aimo order by `order_id` (without exposing raw cryptographic receipt tokens)."""
     order: dict[str, Any] = gateway("GET", f"/orders/{order_id}")
     order.pop("receipt_jwt", None)
-    return order
+    payment = order.get("payment") or {}
+    signer = "the agent, within its mandate" if order.get("signed_by") == "agent" else "the chef"
+    text = (
+        f"**Order `{order['order_id']}`: {order['status']}** by Valio Aimo, for quote `{order['checkout_id']}`\n\n"
+        f"Total {_eur(order.get('total_minor'))} excl. tax · delivery {_day(order.get('delivery_date'))} · "
+        f"signed by {signer} · placed {_time(order.get('created_at'))}"
+    )
+    if payment:
+        text += f"\n\nPayment: {payment.get('terms')}, {payment.get('status')}."
+    return _answer(text, order)
 
 
 def main(argv: list[str]) -> None:
