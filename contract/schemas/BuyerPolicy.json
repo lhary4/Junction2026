@@ -1,0 +1,171 @@
+{
+  "$defs": {
+    "Merchant": {
+      "description": "Schema defining a Mechant object",
+      "properties": {
+        "id": {
+          "description": "Unique identifier for the merchant.",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Human-readable name of the merchant.",
+          "title": "Name",
+          "type": "string"
+        },
+        "website": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Website belonging to the merchant.",
+          "title": "Website"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Merchant",
+      "type": "object"
+    },
+    "SubstitutionPolicy": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed": {
+          "title": "Allowed",
+          "type": "boolean"
+        },
+        "pre_accepted": {
+          "enum": [
+            "same_category_and_same_allergens",
+            "none"
+          ],
+          "title": "Pre Accepted",
+          "type": "string"
+        },
+        "preferences_text": {
+          "title": "Preferences Text",
+          "type": "string"
+        },
+        "judge_auto_threshold": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Judge Auto Threshold",
+          "type": "number"
+        },
+        "judge_floor": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Judge Floor",
+          "type": "number"
+        }
+      },
+      "required": [
+        "allowed",
+        "pre_accepted",
+        "preferences_text",
+        "judge_auto_threshold",
+        "judge_floor"
+      ],
+      "title": "SubstitutionPolicy",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "policy_id": {
+      "title": "Policy Id",
+      "type": "string"
+    },
+    "customer": {
+      "title": "Customer",
+      "type": "string"
+    },
+    "agent_id": {
+      "title": "Agent Id",
+      "type": "string"
+    },
+    "approver": {
+      "title": "Approver",
+      "type": "string"
+    },
+    "allowed_merchants": {
+      "items": {
+        "$ref": "#/$defs/Merchant"
+      },
+      "title": "Allowed Merchants",
+      "type": "array"
+    },
+    "currency": {
+      "title": "Currency",
+      "type": "string"
+    },
+    "autonomous_limit_minor": {
+      "minimum": 0,
+      "title": "Autonomous Limit Minor",
+      "type": "integer"
+    },
+    "blocked_allergens": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Blocked Allergens",
+      "type": "array"
+    },
+    "unknown_allergen_data": {
+      "enum": [
+        "human",
+        "deny"
+      ],
+      "title": "Unknown Allergen Data",
+      "type": "string"
+    },
+    "allergen_change_on_substitution": {
+      "enum": [
+        "human",
+        "deny"
+      ],
+      "title": "Allergen Change On Substitution",
+      "type": "string"
+    },
+    "late_delivery": {
+      "enum": [
+        "human",
+        "deny"
+      ],
+      "title": "Late Delivery",
+      "type": "string"
+    },
+    "substitution": {
+      "$ref": "#/$defs/SubstitutionPolicy"
+    },
+    "valid_until": {
+      "format": "date-time",
+      "title": "Valid Until",
+      "type": "string"
+    }
+  },
+  "required": [
+    "policy_id",
+    "customer",
+    "agent_id",
+    "approver",
+    "allowed_merchants",
+    "currency",
+    "autonomous_limit_minor",
+    "unknown_allergen_data",
+    "allergen_change_on_substitution",
+    "late_delivery",
+    "substitution",
+    "valid_until"
+  ],
+  "title": "BuyerPolicy",
+  "type": "object"
+}

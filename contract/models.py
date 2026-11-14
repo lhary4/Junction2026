@@ -1,0 +1,399 @@
+"""The contract as Pydantic models. Everyone imports these; docs/contract.md explains every field.
+
+Field names match contract/examples/ exactly, and tests/test_contract.py proves every example validates.
+Our own models refuse unknown fields (extra="forbid"), so a typo fails loudly instead of being dropped.
+Every field that can be null defaults to None, so a payload dumped with exclude_none=True validates again.
+"""
+
+from datetime import date
+from typing import Any, Literal
+
+from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
+
+from contract.ap2 import Checkout, Merchant
+
+
+class ContractModel(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+# ---------- Shared vocabulary ----------
+
+Certainty = Literal["measured", "declared", "estimated", "unknown"]
+ClaimSource = Literal[
+    "aimo_stock_count",
+    "supplier_warehouse",
+    "aimo_price_api",
+    "gs1_synkka",
+    "aimo_delivery_history",
+    "product_group_average",
+    "none",
+]
+BuyerUnit = Literal["L", "KG", "ST"]
+Decision = Literal["auto", "human", "deny"]
+Signer = Literal["agent", "human"]
+RuleId = Literal[
+    "quote-signature",
+    "quote-not-expired",
+    "merchant-allowed",
+    "allergen-not-blocked",
+    "allergen-data-known",
+    "allergen-unchanged-on-substitution",
+    "delivery-on-time",
+    "spend-limit",
+    "substitution-within-preferences",
+]
+Escalation = Literal["human", "deny"]
+
+
+class Claim(ContractModel):
+    """One fact Valio states, with where it comes from and how sure it is. `value` is null when unknown."""
+
+    value: int | float | str | None = None
+    unit: str
+    source: ClaimSource
+    as_of: AwareDatetime
+    certainty: Certainty
+
+    @model_validator(mode="after")
+    def unknown_has_no_value(self):
+        if (self.certainty == "unknown") != (self.value is None):
+            raise ValueError("value must be null exactly when certainty is 'unknown'")
+        return self
+
+
+class AllergenInfo(ContractModel):
+    """GS1 allergen codes. data='missing' never means 'free from'."""
+
+    contains: list[str] = []
+    free_from: list[str] = []
+    data: Literal["complete", "missing"]
+
+
+# ---------- Search: GET /products/search ----------
+
+
+class SizePerSalesUnit(ContractModel):
+    value: float | None = None
+    unit: str | None = None
+    how: str
+
+
+class PackSize(ContractModel):
+    unit_id: str
+    size_in_base_units: int
+
+
+class ProductCard(ContractModel):
+    id: str
+    name: str
+    category: str
+    vendor: str | None = None
+    brand: str | None = None
+    sales_unit: str
+    base_unit: str
+    size_per_sales_unit: SizePerSalesUnit
+    pack_sizes: list[PackSize] = []
+    temperature_condition: int | None = None
+    allergens: AllergenInfo
+    nutritional_claims: list[str] = []
+    labels: list[str] = []
+    origin: Claim
+    delivery_reliability: Claim
+    carbon_footprint: Claim
+    catalog_substitutes: list[str] = []
+
+
+class SearchResponse(ContractModel):
+    query: str
+    count: int
+    products: list[ProductCard]
+
+
+# ---------- Quote request: POST /checkouts ----------
+
+
+class Need(ContractModel):
+    """What the buyer asked for, in their own unit (litres, kilos or sales units)."""
+
+    product_id: str
+    amount: float = Field(gt=0)
+    unit: BuyerUnit
+
+
+class QuoteRequest(ContractModel):
+    customer: str
+    delivery_date: date
+    needs: list[Need] = Field(min_length=1)
+    allow_alternatives: bool = True
+
+
+# ---------- The signed quote: AimoCheckout ----------
+
+
+class SubstituteFor(ContractModel):
+    """The product a substitute line replaces, signed with the quote so the harness can compare."""
+
+    product_id: str
+    name: str
+    category: str
+    allergens: AllergenInfo
+
+
+class LineClaims(ContractModel):
+    """Our facts for one line item, under aimo.lines[<line item id>]."""
+
+    product_id: str
+    category: str
+    sales_unit: str
+    base_quantity: float
+    base_unit: BuyerUnit
+    comparison_price_minor: int
+    comparison_unit: str
+    substitute_for: SubstituteFor | None = None
+    logistic_model: Literal["Stock", "Terminal"]
+    available_date: date | None = None
+    closing_time: AwareDatetime | None = None
+    stock: Claim
+    price: Claim
+    origin: Claim
+    allergens: AllergenInfo
+    delivery_reliability: Claim
+    carbon_footprint: Claim
+    labels: list[str] = []
+
+
+class Shortfall(ContractModel):
+    product_id: str
+    requested_base_quantity: float
+    available_base_quantity: float
+    missing_base_quantity: float
+    base_unit: BuyerUnit
+    reason: Literal["partial_stock", "out_of_stock", "late_delivery", "not_found"]
+
+
+class Alternative(ContractModel):
+    for_product_id: str
+    product_id: str
+    tier: Literal["best", "better", "good"]
+    comparison_price_minor: int
+    comparison_unit: str
+    why: str
+    chosen: bool
+
+
+class AimoExtension(ContractModel):
+    """Everything of ours, under the one extra top-level key `aimo` that UCP's Checkout allows."""
+
+    customer: str
+    issued_at: AwareDatetime
+    totals_exclude_tax: bool = True
+    requested: list[Need]
+    requested_delivery_date: date
+    delivery_date: date
+    closing_time: AwareDatetime | None = None
+    lines: dict[str, LineClaims]
+    shortfalls: list[Shortfall] = []
+    alternatives: list[Alternative] = []
+
+
+class AimoCheckout(Checkout):
+    """UCP's Checkout as typed by the AP2 SDK, plus our `aimo` key. No SDK field is renamed or removed."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    aimo: AimoExtension
+
+    @model_validator(mode="after")
+    def lines_match_line_items(self):
+        item_ids = [line.id for line in self.line_items]
+        if sorted(item_ids) != sorted(self.aimo.lines):
+            raise ValueError(f"aimo.lines keys {sorted(self.aimo.lines)} must match line item ids {sorted(item_ids)}")
+        for line in self.line_items:
+            if self.aimo.lines[line.id].product_id != line.item.id:
+                raise ValueError(f"aimo.lines[{line.id}].product_id does not match line item {line.id}")
+        return self
+
+    def total_minor(self) -> int:
+        return next(t.amount for t in self.totals if t.type == "total")
+
+
+class CheckoutResponse(ContractModel):
+    """What POST /checkouts and GET /checkouts/{id} return."""
+
+    checkout_id: str
+    checkout_jwt: str
+    checkout: AimoCheckout
+
+
+# ---------- Buyer policy ----------
+
+
+class SubstitutionPolicy(ContractModel):
+    allowed: bool
+    pre_accepted: Literal["same_category_and_same_allergens", "none"]
+    preferences_text: str
+    judge_auto_threshold: float = Field(ge=0, le=1)
+    judge_floor: float = Field(ge=0, le=1)
+
+
+class BuyerPolicy(ContractModel):
+    policy_id: str
+    customer: str
+    agent_id: str
+    approver: str
+    allowed_merchants: list[Merchant]
+    currency: str
+    autonomous_limit_minor: int = Field(ge=0)
+    blocked_allergens: list[str] = []
+    unknown_allergen_data: Escalation
+    allergen_change_on_substitution: Escalation
+    late_delivery: Escalation
+    substitution: SubstitutionPolicy
+    valid_until: AwareDatetime
+
+
+# ---------- Verdict ----------
+
+
+class RuleResult(ContractModel):
+    rule_id: RuleId
+    outcome: Literal["pass", "human", "deny"]
+    message: str
+    evidence: dict[str, Any] = {}
+
+
+class JudgeSubject(ContractModel):
+    original: str
+    candidate: str
+
+
+class JudgeAnswer(ContractModel):
+    """What we asked the judge and what came back. The model gives no explanation, so we keep the question."""
+
+    question_key: str
+    type: str
+    instructions: str
+    subject: JudgeSubject
+    probability: float | None = None
+    confidence: float | None = None
+    auto_threshold: float
+    floor: float
+    routed: Literal["auto", "human"]
+    model: str
+
+
+class Verdict(ContractModel):
+    decision: Decision
+    checkout_id: str
+    checkout_hash: str
+    total_minor: int
+    currency: str
+    signer: Signer | None = None
+    deadline: AwareDatetime | None = None
+    decided_at: AwareDatetime
+    rules: list[RuleResult]
+    judge: list[JudgeAnswer] = []
+
+
+# ---------- Approval and authorization (harness) ----------
+
+
+class AuthorizeRequest(ContractModel):
+    """Body of POST /authorize on the harness."""
+
+    checkout_id: str
+    request_text: str
+
+
+class ApprovalDecision(ContractModel):
+    """Body of POST /approvals/{id}/decision on the harness."""
+
+    decision: Literal["approve", "reject"]
+    decided_by: str
+
+
+class ApprovalRequest(ContractModel):
+    approval_id: str
+    checkout_id: str
+    checkout_hash: str
+    status: Literal["pending", "approved", "rejected", "expired"]
+    total_minor: int
+    currency: str
+    reasons: list[RuleResult]
+    judge: list[JudgeAnswer] = []
+    request_text: str
+    requested_at: AwareDatetime
+    deadline: AwareDatetime | None = None
+    decided_by: str | None = None
+    decided_at: AwareDatetime | None = None
+    order_id: str | None = None
+
+
+class AuthorizationStatus(ContractModel):
+    status: Literal["ordered", "pending_approval", "denied", "rejected", "expired"]
+    checkout_id: str
+    decision: Decision
+    signed_by: Signer | None = None
+    order_id: str | None = None
+    reasons: list[str] = []
+    approval_id: str | None = None
+    approval_url: str | None = None
+    deadline: AwareDatetime | None = None
+
+
+class Authorization(ContractModel):
+    """The two AP2 mandate chains the harness sends to the gateway. Never shown to the agent."""
+
+    signed_by: Signer
+    checkout_mandate: str
+    payment_mandate: str
+
+
+# ---------- Order (gateway) ----------
+
+
+class Receipt(ContractModel):
+    """Decoded payload of the receipt JWT the gateway signs."""
+
+    status: Literal["Success", "Error"]
+    iss: str
+    iat: int
+    reference: str
+    order_id: str
+
+
+class Order(ContractModel):
+    order_id: str
+    status: Literal["accepted"]  # a refused order is HTTP 403 with {"problems": [...]}, never an Order
+    checkout_id: str
+    checkout_hash: str
+    mandate_reference: str
+    signed_by: Signer
+    total_minor: int
+    currency: str
+    delivery_date: date
+    created_at: AwareDatetime
+    accepted_at: AwareDatetime | None = None
+    receipt_jwt: str | None = None
+    receipt: Receipt | None = None
+
+
+# ---------- Audit ----------
+
+
+class AuditEvent(ContractModel):
+    """One line of a hash-chained audit log. Each side keeps its own chain."""
+
+    seq: int = Field(ge=1)
+    at: AwareDatetime
+    side: Literal["buyer", "merchant"]
+    actor: Literal["agent", "harness", "human", "merchant"]
+    action: str
+    checkout_id: str | None = None
+    checkout_hash: str | None = None
+    what: str
+    why: str
+    rule: str | None = None
+    prev_hash: str | None = None
+    hash: str

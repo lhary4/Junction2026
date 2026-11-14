@@ -1,0 +1,280 @@
+{
+  "$defs": {
+    "AllergenInfo": {
+      "additionalProperties": false,
+      "description": "GS1 allergen codes. data='missing' never means 'free from'.",
+      "properties": {
+        "contains": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Contains",
+          "type": "array"
+        },
+        "free_from": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Free From",
+          "type": "array"
+        },
+        "data": {
+          "enum": [
+            "complete",
+            "missing"
+          ],
+          "title": "Data",
+          "type": "string"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "title": "AllergenInfo",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "description": "One fact Valio states, with where it comes from and how sure it is. `value` is null when unknown.",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "aimo_stock_count",
+            "supplier_warehouse",
+            "aimo_price_api",
+            "gs1_synkka",
+            "aimo_delivery_history",
+            "product_group_average",
+            "none"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "certainty": {
+          "enum": [
+            "measured",
+            "declared",
+            "estimated",
+            "unknown"
+          ],
+          "title": "Certainty",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit",
+        "source",
+        "as_of",
+        "certainty"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "PackSize": {
+      "additionalProperties": false,
+      "properties": {
+        "unit_id": {
+          "title": "Unit Id",
+          "type": "string"
+        },
+        "size_in_base_units": {
+          "title": "Size In Base Units",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "unit_id",
+        "size_in_base_units"
+      ],
+      "title": "PackSize",
+      "type": "object"
+    },
+    "SizePerSalesUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "how": {
+          "title": "How",
+          "type": "string"
+        }
+      },
+      "required": [
+        "how"
+      ],
+      "title": "SizePerSalesUnit",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "title": "Id",
+      "type": "string"
+    },
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "category": {
+      "title": "Category",
+      "type": "string"
+    },
+    "vendor": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Vendor"
+    },
+    "brand": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Brand"
+    },
+    "sales_unit": {
+      "title": "Sales Unit",
+      "type": "string"
+    },
+    "base_unit": {
+      "title": "Base Unit",
+      "type": "string"
+    },
+    "size_per_sales_unit": {
+      "$ref": "#/$defs/SizePerSalesUnit"
+    },
+    "pack_sizes": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/PackSize"
+      },
+      "title": "Pack Sizes",
+      "type": "array"
+    },
+    "temperature_condition": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Temperature Condition"
+    },
+    "allergens": {
+      "$ref": "#/$defs/AllergenInfo"
+    },
+    "nutritional_claims": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Nutritional Claims",
+      "type": "array"
+    },
+    "labels": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Labels",
+      "type": "array"
+    },
+    "origin": {
+      "$ref": "#/$defs/Claim"
+    },
+    "delivery_reliability": {
+      "$ref": "#/$defs/Claim"
+    },
+    "carbon_footprint": {
+      "$ref": "#/$defs/Claim"
+    },
+    "catalog_substitutes": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Catalog Substitutes",
+      "type": "array"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "category",
+    "sales_unit",
+    "base_unit",
+    "size_per_sales_unit",
+    "allergens",
+    "origin",
+    "delivery_reliability",
+    "carbon_footprint"
+  ],
+  "title": "ProductCard",
+  "type": "object"
+}

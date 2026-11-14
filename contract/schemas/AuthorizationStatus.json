@@ -1,0 +1,109 @@
+{
+  "additionalProperties": false,
+  "properties": {
+    "status": {
+      "enum": [
+        "ordered",
+        "pending_approval",
+        "denied",
+        "rejected",
+        "expired"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "checkout_id": {
+      "title": "Checkout Id",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "auto",
+        "human",
+        "deny"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "signed_by": {
+      "anyOf": [
+        {
+          "enum": [
+            "agent",
+            "human"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Signed By"
+    },
+    "order_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Order Id"
+    },
+    "reasons": {
+      "default": [],
+      "items": {
+        "type": "string"
+      },
+      "title": "Reasons",
+      "type": "array"
+    },
+    "approval_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Approval Id"
+    },
+    "approval_url": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Approval Url"
+    },
+    "deadline": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Deadline"
+    }
+  },
+  "required": [
+    "status",
+    "checkout_id",
+    "decision"
+  ],
+  "title": "AuthorizationStatus",
+  "type": "object"
+}
