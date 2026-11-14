@@ -12,6 +12,10 @@ The chef's decision does not come through here: the page sends it to the harness
 The driver only remembers which scenario is on screen and which quote it asked for. Everything else is read again on
 every call, so the state can never disagree with what the gateway and the harness hold.
 
+An outside agent can also go through the driver, so that its order shows on the page: the MCP server (agent_mcp/) asks
+its quotes on POST /agent/checkouts and its authorizations on POST /agent/authorize. The driver forwards both, and the
+authorized quote becomes the "Chat order" on screen, with the human's own sentence as the request.
+
 The attack scenario is the one exception to "no key". There the driver plays an agent whose key leaked, together with
 a copy of the open mandates: it skips the harness and sends three bad mandates straight to the gateway. It builds them
 from the demo keys of the repo (contract/fixtures/keys/), the way the gateway's own tests do.
@@ -23,7 +27,7 @@ import os
 import sys
 import threading
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -42,9 +46,11 @@ from contract.models import (
     AuditEvent,
     Authorization,
     AuthorizationStatus,
+    AuthorizeRequest,
     BuyerPolicy,
     CheckoutResponse,
     DemoState,
+    Need,
     Order,
     Verdict,
 )
@@ -156,6 +162,9 @@ SCENARIOS = (
 )
 
 
+CHAT_ORDER = "chat-order"  # the scenario on screen when an outside agent, through MCP, asked for the order
+
+
 class DriverError(Exception):
     """The driver could not do what was asked. `status_code` is what the page gets, `detail` is a readable sentence."""
 
@@ -205,6 +214,8 @@ class Driver:
         )
         self._lock = threading.Lock()  # held only to read or replace `_current`, never during a call to a service
         self._current: _Run | None = None
+        # What an outside agent asked for each quote it got through the driver: needs and delivery date, by checkout id.
+        self._asked: dict[str, tuple[tuple[tuple[str, float, str], ...], str]] = {}
 
     # ---------- the three things the page asks ----------
 
@@ -240,6 +251,57 @@ class Driver:
         finally:
             run.running = False
         return self.state()
+
+    # ---------- an outside agent, through MCP ----------
+
+    def agent_quote(self, needs: list[Need], delivery_date: str) -> CheckoutResponse:
+        """A signed quote for an outside agent. The driver remembers what was asked, to show it if it is authorized."""
+        body = {
+            "customer": CUSTOMER,
+            "delivery_date": delivery_date,
+            "needs": [need.model_dump(mode="json", exclude_none=True) for need in needs],
+        }
+        issued = CheckoutResponse.model_validate(self._post(self.gateway, "gateway", "/checkouts", body))
+        asked = tuple((need.product_id, need.amount, need.unit) for need in needs)
+        with self._lock:
+            self._asked[issued.checkout_id] = (asked, delivery_date)
+        return issued
+
+    def agent_authorize(self, checkout_id: str, request_text: str) -> AuthorizationStatus:
+        """The outside agent asks the harness to order a quote: that order becomes the scenario on screen."""
+        with self._lock:
+            asked = self._asked.get(checkout_id)
+        if asked is None:
+            raise DriverError(404, f"no quote {checkout_id!r} was asked through the driver: ask it on /agent/checkouts")
+        issued = self._get(self.gateway, "gateway", f"/checkouts/{checkout_id}", CheckoutResponse)
+        if issued is None:
+            raise DriverError(404, f"the gateway has no quote {checkout_id!r}")
+        needs, delivery_date = asked
+        scenario = Scenario(
+            id=CHAT_ORDER,
+            title="Chat order",
+            hint="Asked by an outside agent, in a chat, through MCP.",
+            text=request_text,
+            needs=needs,
+            delivery_date=delivery_date,
+        )
+        run = _Run(scenario, issued=issued)
+        with self._lock:
+            if self._current and self._current.running:
+                raise DriverError(409, f"scenario {self._current.scenario.id!r} is still running")
+            self._current = run
+        try:
+            answer = self._post(
+                self.harness, "harness", "/authorize", {"checkout_id": checkout_id, "request_text": request_text}
+            )
+        except DriverError:
+            with self._lock:
+                if self._current is run:
+                    self._current = None  # as for a button: nothing half-done stays on screen
+            raise
+        finally:
+            run.running = False
+        return AuthorizationStatus.model_validate(answer)
 
     def state(self) -> DemoState:
         with self._lock:
@@ -369,16 +431,19 @@ class Driver:
         self, run: _Run | None, status: str, steps: list[dict], audit: dict | None = None, **pieces
     ) -> DemoState:
         scenario = run.scenario if run else None
+        shown = list(self.scenarios.values())
+        if scenario and scenario.id not in self.scenarios:  # a chat order: on screen, but not a button
+            shown.append(scenario)
         return DemoState.model_validate(
             {
-                "scenarios": [{"id": s.id, "title": s.title, "hint": s.hint} for s in self.scenarios.values()],
+                "scenarios": [{"id": s.id, "title": s.title, "hint": s.hint} for s in shown],
                 "scenario": {
                     "id": scenario.id if scenario else None,
                     "title": scenario.title if scenario else None,
                     "status": status,
                 },
                 "kitchen": KITCHEN,
-                "request": request_of(scenario) if scenario else None,
+                "request": request_of(scenario, run.issued) if scenario else None,
                 "steps": steps,
                 "audit": audit or {"buyer": [], "merchant": []},
                 **pieces,
@@ -420,18 +485,30 @@ class Driver:
         return [event for event in events if event.checkout_id == checkout_id]
 
 
-def request_of(scenario: Scenario) -> dict:
-    """What the agent was asked, with the kitchen's own name for each product and the dish it goes into."""
+def request_of(scenario: Scenario, issued: CheckoutResponse | None = None) -> dict:
+    """What the agent was asked, with the kitchen's own name for each product and the dish it goes into.
+
+    A product that is not on the menu (a chat order can ask for anything in the catalog) takes its name from the quote.
+    """
+    titles: dict[str, str] = {}
+    if issued:
+        for item in issued.checkout.line_items:
+            claims = issued.checkout.aimo.lines[item.id]
+            if claims.substitute_for:  # Valio replaced the product asked for: the quote signs its name too
+                titles.setdefault(claims.substitute_for.product_id, claims.substitute_for.name)
+            else:
+                titles.setdefault(claims.product_id, item.item.title)
+    dish = "Asked in the chat" if scenario.id == CHAT_ORDER else "Shared"
     return {
         "text": scenario.text,
         "delivery_date": scenario.delivery_date,
         "lines": [
             {
                 "product_id": product_id,
-                "name": INGREDIENTS.get(product_id, (product_id, "Shared"))[0],
+                "name": INGREDIENTS.get(product_id, (titles.get(product_id, product_id), dish))[0],
                 "amount": amount,
                 "unit": unit,
-                "dish": INGREDIENTS.get(product_id, (product_id, "Shared"))[1],
+                "dish": INGREDIENTS.get(product_id, (titles.get(product_id, product_id), dish))[1],
             }
             for product_id, amount, unit in scenario.needs
         ],
@@ -668,6 +745,13 @@ def _detail(response: httpx.Response) -> str:
 # ---------- the service ----------
 
 
+class AgentQuoteRequest(BaseModel):
+    """Body of POST /agent/checkouts. The customer is always the demo restaurant."""
+
+    needs: list[Need]
+    delivery_date: date
+
+
 def create_app(driver: Driver | None = None) -> FastAPI:
     active = driver or Driver()
     api = FastAPI(title="Demo driver", version="0.1")
@@ -693,6 +777,17 @@ def create_app(driver: Driver | None = None) -> FastAPI:
     @api.post("/reset")
     def reset() -> DemoState:
         return active.reset()
+
+    @api.post("/agent/checkouts")
+    def agent_quote(request: AgentQuoteRequest) -> dict:
+        """For the MCP server: a signed quote, without its token (the agent never sees one)."""
+        issued = active.agent_quote(request.needs, request.delivery_date.isoformat())
+        return {"checkout_id": issued.checkout_id, "checkout": issued.checkout.model_dump(mode="json")}
+
+    @api.post("/agent/authorize")
+    def agent_authorize(request: AuthorizeRequest) -> AuthorizationStatus:
+        """For the MCP server: the harness decides, and the order shows on the page as the chat order."""
+        return active.agent_authorize(request.checkout_id, request.request_text)
 
     return api
 

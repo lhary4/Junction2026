@@ -253,7 +253,7 @@ Demo driver, port 8003 (`scenarios/run.py`):
 | `GET /state` | | `DemoState` |
 | `POST /reset` | | `DemoState`, idle |
 
-The driver plays the buying agent with the two calls of the MCP tools: `POST /checkouts` on the gateway, then `POST /authorize` on the harness. For an order it holds no key. It only remembers which scenario is on screen and which quote it asked for: every `GET /state` reads the quote, the verdict, the approval, the order and both audit logs again from the two services. The scenarios it knows are in `state.scenarios`: `normal-order`, `substitution` and `attack`.
+The driver plays the buying agent with the two calls of the MCP tools: `POST /checkouts` on the gateway, then `POST /authorize` on the harness. For an order it holds no key. It only remembers which scenario is on screen and which quote it asked for: every `GET /state` reads the quote, the verdict, the approval, the order and both audit logs again from the two services. The scenarios it knows are in `state.scenarios`: `normal-order`, `substitution` and `attack`. An outside agent (the MCP server) asks its quotes on `POST /agent/checkouts` (`needs`, `delivery_date`; the answer has `checkout_id` and `checkout`, never the token) and its authorizations on `POST /agent/authorize` (`checkout_id`, `request_text`; the answer is the harness's `AuthorizationStatus`). The authorized quote becomes the scenario `chat-order` on screen, added to `state.scenarios` while it is there.
 
 The chef's decision does not go through the driver: the page sends it to the harness (`POST /approvals/{id}/decision`), then reads `GET /state` again.
 

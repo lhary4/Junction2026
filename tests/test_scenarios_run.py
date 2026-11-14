@@ -11,11 +11,11 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
-from contract.models import DemoState
+from contract.models import DemoState, Need
 from harness.app import create_app as create_harness
 from merchant import audit, payments, store
 from merchant.app import app as gateway_app
-from scenarios.run import KITCHEN, SCENARIOS, Driver, DriverError, Scenario, create_app, request_of
+from scenarios.run import INGREDIENTS, KITCHEN, SCENARIOS, Driver, DriverError, Scenario, create_app, request_of
 
 ROOT = Path(__file__).resolve().parent.parent
 EXAMPLES = ROOT / "contract" / "examples"
@@ -274,3 +274,39 @@ def test_the_restaurant_scenarios_ask_what_the_recorded_examples_asked(scenario)
     assert request_of(scenario) == recorded["request"]
     assert recorded["kitchen"] == KITCHEN
     assert {"id": scenario.id, "title": scenario.title, "hint": scenario.hint} in recorded["scenarios"]
+
+
+def test_an_outside_agent_order_shows_on_the_page_as_the_chat_order(services):
+    """The MCP door: a quote and an authorization asked through the driver become the scenario on screen."""
+    driver, _ = services
+    page = TestClient(create_app(driver))
+    needs = [{"product_id": "464306", "amount": 1000, "unit": "L"}]
+    quoted = page.post("/agent/checkouts", json={"needs": needs, "delivery_date": MONDAY})
+    assert quoted.status_code == 200 and "checkout_jwt" not in quoted.json()  # the agent never sees a token
+    checkout_id = quoted.json()["checkout_id"]
+    assert page.get("/state").json()["scenario"]["status"] == "idle"  # a quote alone puts nothing on screen
+
+    sentence = "We need 1,000 litres of lactose-free milk for Monday."
+    authorized = page.post("/agent/authorize", json={"checkout_id": checkout_id, "request_text": sentence})
+    assert authorized.status_code == 200 and authorized.json()["status"] == "ordered"
+
+    state = DemoState.model_validate(page.get("/state").json())
+    assert (state.scenario.id, state.scenario.title, state.scenario.status) == ("chat-order", "Chat order", "done")
+    assert "chat-order" in [s.id for s in state.scenarios] and state.request.text == sentence
+    assert state.order.order_id == authorized.json()["order_id"] and state.order.signed_by == "agent"
+    assert {step.status for step in state.steps} == {"done"}
+    assert state.request.lines[0].name != "464306"  # the kitchen's name, or the quote's title: never a bare id
+
+    unknown = page.post("/agent/authorize", json={"checkout_id": "chk_nobody", "request_text": sentence})
+    assert unknown.status_code == 404
+
+
+def test_a_product_off_the_menu_takes_its_name_from_the_quote(services):
+    driver, _ = services
+    assert "465039" not in INGREDIENTS  # a lactose-free milk the catalog lists as a substitute, not on the menu
+    issued = driver.agent_quote([Need(product_id="465039", amount=10, unit="L")], MONDAY)
+    chat = Scenario("chat-order", "Chat order", "", "Ten litres.", (("465039", 10, "L"),), MONDAY)
+    claims = issued.checkout.aimo.lines[issued.checkout.line_items[0].id]
+    named = claims.substitute_for.name if claims.substitute_for else issued.checkout.line_items[0].item.title
+    line = request_of(chat, issued)["lines"][0]
+    assert (line["name"], line["dish"]) == (named, "Asked in the chat")

@@ -91,9 +91,10 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it is: MCP is the standard plug that lets an AI assistant use outside tools. Our agent gets five tools. Behind them run two small web services, one for Valio, one for the buyer's harness.
 - Why: we do not have to write the agent, and it is a real outside agent, as in the brief. The services also work without MCP, for any other client.
 - What it changes for us: the agent only passes short identifiers, never a signed token. The human approves on a separate page, not in the chat. A Valio Aimo engineer told us the agent will first live inside their own customer portal, and that MCP is for the customers whose ERP has its own agent (`contexte/mentor-notes.md`). So in the video the two services are called by a small demo driver behind a portal page, and MCP is shown as the second door to the same services.
-- If we change it: only `agent_mcp/` changes.
+- Live MCP (trying it): the five tools now call the real services instead of reading example files. Quotes and authorizations go through the demo driver, so an order asked in Claude's chat shows on the kitchen page as the "Chat order", with the human's own sentence. The server runs on stdio for Claude Desktop, or over HTTP on port 8005 for chats that live in the cloud (claude.ai, ChatGPT), reached through a temporary tunnel. Anyone who has the tunnel address can place sandbox orders, with the demo keys: close the tunnel after recording. Any catalog product works in live mode; in replay mode only the recorded products do.
+- If we change it: only `agent_mcp/` changes, plus the two `/agent/...` routes of the driver.
 - Alternatives we looked at: our own agent loop; a chat-only demo (the brief says this is not about a chatbot, and an agent could approve itself).
-- Decided in: PR #7, 14/11/2026. Portal first, MCP as the second door: PR #23, 14/11/2026.
+- Decided in: PR #7, 14/11/2026. Portal first, MCP as the second door: PR #23, 14/11/2026. Live MCP through the driver: PR to come, 14/11/2026.
 
 ## Models: Claude as the buying agent, Gemini Decision as the judge
 - Status: decided
