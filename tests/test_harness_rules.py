@@ -124,7 +124,9 @@ def test_load_policy_reads_default_and_explicit_path(tmp_path, monkeypatch):
 
     default_pol = load_policy()
     assert isinstance(default_pol, BuyerPolicy)
-    assert default_pol.policy_id == "pol_demo_hotel_1"
+    assert default_pol.policy_id == "pol_demo_restaurant_1"
+    assert default_pol.customer == "demo-restaurant-helsinki"
+    assert default_pol.approver == "chef@demo-restaurant.example"
     assert default_pol.autonomous_limit_minor == 150000
 
     # When scenarios/policy.demo.json exists, the default and the explicit path both read it

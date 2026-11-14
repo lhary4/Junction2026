@@ -2,6 +2,64 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## L8: sandbox payment round-trip (`Order.payment` / `Order.mandate`) & `GET /mandates/open`
+
+- Merged `main` after Adrien's A8 (`#30`) and A9 (`#31`) PRs and verified all harness + scenario driver tests pass cleanly (`241 passed`, `ruff` clean).
+- Added `test_real_gateway_sandbox_payment_auto_and_human_round_trip` in `tests/test_harness_service.py` covering `auto` booking, `human`-approved booking (`cap_minor=None`), and simulated EUR 20,000 invoice credit-limit exhaustion (`HTTP 403` -> clean refusal + intact buyer audit chain).
+- **For Adrien (A8 step 1 hash):** Added `GET /mandates/open` on the harness (`harness/app.py` + `harness/signer.py`) returning `policy_id`, `issued_at`, `checkout_hash`, and `payment_hash` (43-char SHA-256 base64url fingerprints, never raw SD-JWT tokens) so `scenarios/run.py` can populate `steps["open_mandate"].proof` over HTTP. Also removed the last `ap2.sdk` helper import from `harness/app.py`.
+
+## L7: 1:55 demo script, 5-slide pitch deck & exported PDF (`docs/demo-script.md`, `docs/pitch-deck.md`, `docs/pitch-deck.pdf`)
+
+- Wrote the second-by-second **1:55** video script (`docs/demo-script.md`) across all 6 `PLAN.md` beats with exact on-screen clicks, spoken lines (~135 wpm using `"mandate"` and `"sandbox payment"`), and instant fallbacks per beat (`VALIO_MODE=replay uv run python scripts/dev.py --fresh`, `?mock=1`, lingonberry jam fallback).
+- Wrote the 5-slide executive pitch deck (`docs/pitch-deck.md`) and exported the 16:9 widescreen PDF (`docs/pitch-deck.pdf`) with the synthetic-data compliance banner on all 5 slides.
+
+## L6: Telegram notification on pending approval (`harness/notify.py`) + L8 readiness check
+
+- **`harness/notify.py`**:
+  - Sends one concise plain-text Telegram message (`POST https://api.telegram.org/bot{token}/sendMessage`) when a new pending `ApprovalRequest` is created: 1-sentence reason, EUR total, Helsinki deadline (`%Y-%m-%d %H:%M` or `none`), and the direct link to the approval page (`{HARNESS_URL}/#/approvals/{approval_id}`).
+  - Approval stays strictly on the web surface—never in Telegram chat—so the signing boundary over `checkout_hash` (and future passkey check) is never weakened.
+  - Reads optional `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` from `os.environ` / `.env` (added without values to `.env.example`). Missing or empty values return `NotifyResult(status="skipped")` with zero HTTP calls.
+  - Strict `2.0s` timeout; any timeout, connection failure, non-200 response, invalid JSON, or `{"ok": false}` reply is caught, logged at `WARNING` with `TELEGRAM_BOT_TOKEN` redacted (both raw and URL-encoded), and swallowed so notification errors never alter, fail, or delay a verdict.
+- **`harness/app.py`**:
+  - Wired `notify_fn` into `create_app(..., notify_fn=...)` (defaulting to `notify_approval`), triggered only when a **new** pending approval is created in `POST /authorize` (idempotent repeat calls on an already-pending `checkout_id` return early without sending a second alert).
+- **L8 proactive check (`Order.payment`)**:
+  - Verified `_submit_mandate_and_verify_receipt` in `harness/app.py` parses gateway responses via `Order.model_validate(...)` and only reads `order_id`, `mandate_reference`, and `receipt_jwt`. Once Adrien adds `payment` (with `= None` default per `contract/models.py` convention) to `Order`, `harness/` and `tests/test_harness_*.py` require zero changes.
+
+## L5: Restaurant policy & live Gemini Decision scores on the menu substitution candidates
+
+Updated `scenarios/policy.demo.json` for the 50-cover Helsinki restaurant (`policy_id: "pol_demo_restaurant_1"`, `customer: "demo-restaurant-helsinki"`, `approver: "chef@demo-restaurant.example"`), keeping `autonomous_limit_minor = 150000` (EUR 1,500), `blocked_allergens = ["AP", "AN"]`, `pre_accepted = "same_category_and_same_allergens"`, `judge_auto_threshold = 0.85`, and `judge_floor = 0.15`. Rewrote only the first line of `preferences_text` (`"This order: a 50-cover Nordic set menu, every dairy product is lactose free, no peanuts and no tree nuts."`) while keeping the intro sentence and all three rule lists (`NEVER ACCEPT`, `A HUMAN DECIDES`, `ACCEPT WITHOUT ASKING`) word-for-word intact.
+
+### 1. Live `gemini-decision-1` scores on harness-built product cards (`VALIO_MODE=live`, `auto_threshold = 0.85`, `floor = 0.15`)
+
+Cards built through the exact `SubstituteFor` / `LineClaims` -> `_build_original_card` / `_build_candidate_card` -> `build_judge_input` pipeline on the full 17,546-product catalog:
+
+| Original -> Candidate | Category & key card facts | `within_preferences` (conf, routed) | `same_use` (conf, routed) | Combined verdict & rule message |
+|---|---|---|---|---|
+| **Squeaky cheese `474880` -> `475072`** (*Haapalan lactose-free bread cheese 500 g*, chilled) | `10640 -> 10640`, `temp 3 -> 3`, `FI`, Blue Swan, `FREE_FROM_LACTOSE` + `LOW_SODIUM_SALT`, `1 KG` weight -> `0.5 KG` ST packs | **0.6414** (conf `0.6414`, `human`) | **0.9282** (conf `0.9282`, `auto`) | **`human`** — *"The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign."* |
+| **Squeaky cheese `474880` -> `467148`** (*Riitan Herkku Squeaky cheese c. 670 g lactose-free frozen*) | `10640 -> 41770`, `temp 3 -> 7` (chilled -> frozen), same maker `Riitan Herkku`, `FI`, Blue Swan | **0.0100** (conf `0.9900`, `human`) | **0.0187** (conf `0.9813`, `human`) | **`human`** (below `0.15` floor) — *"The judge puts this substitute outside the buyer's stated preferences (0.01, floor 0.15)."* (`NEVER ACCEPT: Frozen instead of fresh`) |
+| **Squeaky cheese `474880` -> `474404`** (*Nacho&Taco Cheddar cheese creme 1.5 kg*, **default gateway pick**) | `10640 -> 10640`, `contains: ["AM"]`, `FREE_FROM_LACTOSE`, cheapest in `10640` (`8.86 EUR/kg`), `catalog_listed = False` | **0.0100** (conf `0.9900`, `human`) | **0.0100** (conf `0.9900`, `human`) | **`human`** (below `0.15` floor) — *"The judge puts this substitute outside the buyer's stated preferences (0.01, floor 0.15)."* |
+| **Lingonberry jam `465815` -> `462198`** (*Dronningholm Lingonberry jam 1 kg*) | `21450 -> 21450`, `contains: []`, `temp 8 -> 8`, `FI`, `3 KG` ST tub -> `1 KG` PRK tubs (`6.54 EUR/kg`) | **0.3143** (conf `0.6857`, `human`) | **0.7517** (conf `0.7517`, `human`) | **`human`** — *"The judge is unsure about this substitute (0.31, threshold 0.85): a human must sign."* |
+| **Lingonberry jam `465815` -> `475860`** (*Saarioinen Apple filling bake stable 6 kg*, **default gateway pick**) | `21450 -> 21450`, `contains: []`, cheapest in `21450` (`4.50 EUR/kg`), `catalog_listed = False` | **0.0100** (conf `0.9900`, `human`) | **0.0100** (conf `0.9900`, `human`) | **`human`** (below `0.15` floor) — *"The judge puts this substitute outside the buyer's stated preferences (0.01, floor 0.15)."* (`NEVER ACCEPT: another fruit`) |
+
+### 2. What `POST /checkouts` + `POST /authorize` actually do in `VALIO_MODE=live` for `delivery_date = "2026-11-19"` (notes for Adrien on Button 2 & Button 1)
+
+Ran all scenarios end-to-end through `merchant.app` -> `harness.app` -> `POST /approvals/{id}/decision` (`decided_by = "chef@demo-restaurant.example"`):
+
+1. **Why `467148` (frozen squeaky cheese) is NOT offered by `POST /checkouts` right now:**
+   - Fresh squeaky cheese `474880` is in GS1 category `10640` (`catalog_substitutes: []`), while Riitan Herkku's frozen squeaky cheese `467148` is in frozen category `41770`. Because `merchant/quotes.py` currently only maps `RELATED_CATEGORIES = {"10400": ("10402",), "10402": ("10400",)}`, asking for `substitute_with="467148"` returns **HTTP 422** (`"467148 cannot replace 474880 (offered: 474404)"`). Even if `"10640": ("41770",)` is added to `RELATED_CATEGORIES` so `467148` shows up as a `"good"` tier alternative on the card, `gemini-decision-1` scores it **0.0100 / 0.0187** because of `"Frozen instead of fresh"`.
+2. **Why PR #21 / PR #25 (`Alternative.catalog_listed == True`) just saved the dessert and main course in live mode:**
+   - Without `substitute_with`, the gateway's cheapest-per-kg `best` pick in category `10640` for `474880` (`13.4 KG`, shortfall `late_delivery`) is **`474404` Nacho&Taco Cheddar cheese creme 1.5 kg** (`9 ST = 13.5 KG`, `119.61 EUR`, `contains: ["AM"]`, `FREE_FROM_LACTOSE`). Similarly, for lingonberry jam `465815` (`6.0 KG`, shortfall `out_of_stock`), the cheapest-per-kg `best` pick in category `21450` is **`475860` Saarioinen Apple filling bake stable 6 kg** (`1 PRK = 6.0 KG`, `26.98 EUR`, `contains: []`).
+   - Had pre-acceptance trusted `same_category_and_same_allergens` on unlisted category guesses, the agent would have **auto-signed 13.5 kg of nacho cheddar sauce for warm squeaky cheese dessert** (and apple bakery filling for sautéed reindeer)! Instead, `catalog_listed=False` sends both to `gemini-decision-1`, which flags both at **`0.0100` (`conf = 0.9900`, below the `0.15` floor)**.
+3. **Best picks for Button 2 (the `human` chef-signs flow):**
+   - **Primary choice — Squeaky cheese `474880` (`13.4 KG`) with `substitute_with="475072"` (*Haapalan lactose-free bread cheese 500 g*):**
+     - `POST /checkouts` -> HTTP 200, quotes `27 ST` (`13.5 KG`) for **`147.69 EUR`** excl. VAT (`closing_time = 2026-11-15T17:00:00+02:00`), listing both `474404` (`chosen=False`) and `475072` (`chosen=True`) in `aimo.alternatives`.
+     - `POST /authorize` -> `status = "pending_approval"`, `decision = "human"`, `same_use = 0.9282` (`auto`) vs `within_preferences = 0.6414` (`human`, pack/brand/salt change). When `chef@demo-restaurant.example` approves, `POST /approvals/{id}/decision` signs closed AP2 mandates with the manager/chef key and completes the order (`signed_by = "human"`).
+   - **Fallback choice — Lingonberry jam `465815` (`6.0 KG`) with `substitute_with="462198"` (*Dronningholm Lingonberry jam 1 kg*):**
+     - `POST /checkouts` -> HTTP 200, quotes `6 PRK` (`6.0 KG`) for **`39.24 EUR`** excl. VAT (`closing_time = 2026-11-15T17:00:00+02:00`), listing `475860` (`chosen=False`) and `462198` (`chosen=True`).
+     - `POST /authorize` -> `status = "pending_approval"`, `decision = "human"` (`within_preferences = 0.3143`, `same_use = 0.7517`), and chef approval completes cleanly with `signed_by = "human"`.
+4. **Heads-up for Adrien on Button 1 (`460325` Dansukker caster sugar 1 kg):**
+   - Tested the 10 dairy + dry goods lines from `PLAN.md` in `VALIO_MODE=live` (`delivery_date = "2026-11-19"`): 9 of the 10 lines (`463437`, `464194`, `476890`, `464306`, `460200`, `467958`, `468513`, `468172`, `466608`) quote and auto-order cleanly (`183.79 EUR` excl. VAT -> `decision = "auto"`, `signed_by = "agent"`), **but `460325` (*Dansukker caster sugar 1 kg*) has `comparisonPrice: None` and `comparisonUnit: None` in the live Valio price API**, which raises `KeyError: 'comparisonPrice'` at `merchant/quotes.py:76` (`Offer.comparison_price_minor`) and `merchant/quotes.py:205`! Falling back to `catalogPrice` / `card.sales_unit` when `comparisonPrice` is missing (or omitting `460325` from Button 1) avoids that 500.
+
 ## Signed substitution claims & typed `catalog_listed` flag in the quote (PR #25 follow-up to PR #21 & Adrien's PR #24)
 
 Closed the last two contract cleanups (plus both `TECH-CHOICES.md` / `temperature_condition` notes from Adrien's PR #24) so 100% of substitution guardrail & judge inputs come from the ES256-signed quote with zero unsigned `/products/search` lookup and zero string matching on `Alternative.why`:
