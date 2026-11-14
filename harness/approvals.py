@@ -45,7 +45,15 @@ def expired_reason(deadline: datetime | None) -> str:
 
 
 class ApprovalStore:
-    """Thread-safe store persisted under `<state_dir>/buyer/`."""
+    """Thread-safe store persisted under `<state_dir>/buyer/`.
+
+    Stores four small JSON files so state survives service restarts and is easy to inspect:
+    - `approvals.json`: human approval cards (`pending` -> `approved` | `rejected` | `expired`)
+    - `authorizations.json`: latest `AuthorizationStatus` per `checkout_id`
+    - `verdicts.json`: full rule-by-rule `Verdict` per `checkout_id` (used by the surface)
+    - `checkout_jwts.json`: exact verified quote token per `checkout_id` so human approval signs
+      the exact quote whose `checkout_hash` was shown on screen
+    """
 
     def __init__(self, directory: Path | None = None) -> None:
         self._explicit_dir = directory
@@ -60,6 +68,7 @@ class ApprovalStore:
         return self._explicit_dir if self._explicit_dir is not None else buyer_state_dir()
 
     def _ensure_loaded(self) -> Path:
+        # Reload automatically if `AIMO_STATE_DIR` changed between test cases.
         folder = self._dir()
         if self._loaded_dir != folder:
             self._approvals = {}

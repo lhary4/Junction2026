@@ -457,7 +457,15 @@ def evaluate(
     *,
     checkout_hash: str | None = None,
 ) -> Verdict:
-    """Turn a policy and a quote into a deterministic Verdict (`deny` > `human` > `auto`)."""
+    """Turn a policy and a quote into a deterministic Verdict (`deny` > `human` > `auto`).
+
+    Evaluation order and invariants:
+    1. If Valio's signature check failed (`signature.outcome != "pass"`), stop immediately:
+       we never run business rules on an unsigned or tampered quote.
+    2. Otherwise run every applicable rule (even if an earlier rule already failed) so the
+       audit log and approval page can show the full list of reasons at once.
+    3. Combine outcomes strictly: one `deny` -> `deny`; else one `human` -> `human`; else `auto`.
+    """
     if now.tzinfo is None:
         raise ValueError("evaluate requires a timezone-aware `now` datetime")
     if signature.rule_id != "quote-signature":
@@ -465,6 +473,7 @@ def evaluate(
 
     resolved_hash = checkout_hash if checkout_hash is not None else _default_checkout_hash(checkout, signature)
 
+    # Short-circuit on invalid quote signature: untrusted cart numbers must not be evaluated.
     if signature.outcome != "pass":
         return Verdict(
             decision=signature.outcome,
@@ -482,6 +491,7 @@ def evaluate(
     lines = _ordered_lines(checkout)
     sub_lines = [(lid, lc) for lid, lc in lines if lc.substitute_for is not None]
 
+    # Run all deterministic rules on the verified quote facts.
     rules: list[RuleResult] = [
         signature,
         _check_not_expired(checkout, now),
@@ -496,11 +506,13 @@ def evaluate(
     rules.append(_check_delivery_on_time(policy, checkout))
     rules.append(_check_spend_limit(policy, checkout))
 
+    # Only call the Gemini judge when a quote actually contains a substitute that is not pre-accepted.
     judge_answers: list[JudgeAnswer] = []
     if sub_lines:
         sub_rule, judge_answers = _check_substitution_within_preferences(policy, checkout, sub_lines, judge)
         rules.append(sub_rule)
 
+    # Strict precedence: `deny` beats `human`, and `human` beats `auto`.
     outcomes = {r.outcome for r in rules}
     if "deny" in outcomes:
         decision: Decision = "deny"
@@ -509,6 +521,7 @@ def evaluate(
     else:
         decision = "auto"
 
+    # Only `auto` names a signer right away ("agent"); `human` waits for the approval page, `deny` has none.
     signer: Signer | None = "agent" if decision == "auto" else None
     deadline = None if decision == "deny" else (checkout.aimo.closing_time or checkout.expires_at)
 

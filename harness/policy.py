@@ -16,7 +16,11 @@ EXAMPLE_POLICY = ROOT / "contract" / "examples" / "policy.demo.json"
 
 
 def load_policy(path: str | Path | None = None) -> BuyerPolicy:
-    """Load and validate a BuyerPolicy from JSON."""
+    """Load and validate a BuyerPolicy from JSON.
+
+    Prefers `scenarios/policy.demo.json` (owned by Colette for the live demo) and
+    automatically falls back to `contract/examples/policy.demo.json` until it exists.
+    """
     if path is None:
         target = SCENARIO_POLICY if SCENARIO_POLICY.exists() else EXAMPLE_POLICY
     else:

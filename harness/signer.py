@@ -18,7 +18,13 @@ from trust.mandates import OpenMandates, close_as_agent, close_as_human, issue_o
 
 
 class HarnessSigner:
-    """Holds the buyer-side keys and open mandates issued under the current BuyerPolicy."""
+    """Holds the buyer-side keys and open mandates issued under the current BuyerPolicy.
+
+    Why this lives in the harness (and never in the MCP agent):
+    - In AP2, an agent may only close an open mandate that the manager signed earlier (`sign_auto`).
+    - When a guardrail rule routes to `human`, the manager signs a closed mandate directly (`sign_human`)
+      on the approval page, bypassing the agent's key completely.
+    """
 
     def __init__(self, policy: BuyerPolicy | None = None, keys_dir: Path = KEYS_DIR) -> None:
         self._keys_dir = keys_dir
@@ -31,11 +37,13 @@ class HarnessSigner:
             self.refresh_policy(policy)
 
     def refresh_policy(self, policy: BuyerPolicy) -> OpenMandates:
+        """Issue fresh manager-signed open mandates (allowed merchant + spend cap) for `policy`."""
         self._policy = policy
         self._open_mandates = issue_open_mandates(policy, self._manager_key, self._agent_pub)
         return self._open_mandates
 
     def open_mandates(self, policy: BuyerPolicy | None = None) -> OpenMandates:
+        """Return cached open mandates, re-issuing them only if the BuyerPolicy changed."""
         target_policy = policy or self._policy or load_policy()
         if self._open_mandates is None or self._policy != target_policy:
             return self.refresh_policy(target_policy)
@@ -47,7 +55,11 @@ class HarnessSigner:
         return close_as_agent(mandates, self._agent_key, checkout_jwt)
 
     def sign_human(self, checkout_jwt: str) -> Authorization:
-        """Sign closed mandates directly with the manager's key for this exact quote."""
+        """Sign closed mandates directly with the manager's key for this exact quote.
+
+        Note for the pitch: in the hackathon demo the Approve button on `:8002` calls this
+        with the demo manager key; in production this step is a WebAuthn passkey in the browser.
+        """
         return close_as_human(self._manager_key, checkout_jwt)
 
 

@@ -235,6 +235,12 @@ def create_app(
         authorization: Authorization,
         jwks: dict[str, Any],
     ) -> tuple[Order | None, list[str]]:
+        """Send signed AP2 mandates to Valio's gateway and verify the signed receipt before trusting it.
+
+        Core principle ("submission is not acceptance"): an order is only reported as `ordered`
+        if Valio's gateway returns HTTP 200 AND its `receipt_jwt` verifies against Valio's JWKS
+        with matching `order_id`, `mandate_reference`, and `status == "Success"`.
+        """
         resp = client.post(
             f"/checkouts/{checkout_id}/complete",
             json=authorization.model_dump(mode="json"),
@@ -275,10 +281,17 @@ def create_app(
 
     @api.post("/authorize")
     def authorize(request: AuthorizeRequest) -> AuthorizationStatus:
+        """Main entrypoint called by the agent (`authorize_checkout` MCP tool).
+
+        The agent passes only `checkout_id` and `request_text`. The harness fetches the signed
+        quote directly from Valio's gateway, verifies Valio's signature, evaluates all rules,
+        and then either signs (`auto`), queues a human approval (`human`), or refuses (`deny`).
+        """
         now = clock.now().astimezone(HELSINKI)
         expired_items = active_store.expire_due(now)
         _record_expired_audits(expired_items, now)
 
+        # Idempotent retry: asking to authorize the same quote twice returns its current status.
         existing = active_store.get_authorization(request.checkout_id)
         if existing is not None:
             return existing

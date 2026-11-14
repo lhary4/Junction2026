@@ -4,9 +4,11 @@ Results, numbers and open questions for the others. Newest first.
 
 ## L4: Harness service (`harness/app.py`, `harness/signer.py`, `harness/approvals.py`)
 
+- L1 + L2 + L3 + L4 are united and tested together with `main` (`uv run python scripts/dev.py` now starts both Valio's gateway on `:8001` and the buyer's harness on `:8002` with one command).
 - All contract routes on `:8002` are live and tested against both a fake gateway and Adrien's real `merchant.app` (`VALIO_MODE=replay`):
   - `POST /authorize`, `GET /authorizations/{checkout_id}`, `GET /approvals?status=pending`, `POST /approvals/{id}/decision`, `GET /policy`, `GET /audit`, plus `surface/static` served at `/` (and `/contract/examples` mounted so `?mock=1` also works on `:8002`).
-  - Extra helper routes for Colette's C4 live surface: `GET /authorizations`, `GET /verdicts/{checkout_id}`, and `GET /approvals/{approval_id}`.
+  - Extra read-only routes for Colette's C4 live surface (also listed in `docs/contract.md`): `GET /authorizations`, `GET /verdicts/{checkout_id}`, and `GET /approvals/{approval_id}`.
+- Replay clock compatibility confirmed with Adrien's PR #15 (`common/clock.py` frozen at `2026-11-14T13:29:15+02:00` in `VALIO_MODE=replay`, overridable via `AIMO_FROZEN_NOW` to demo expiry).
 - Pending approvals automatically transition to `expired` once `clock.now() >= deadline`, both when polled and if someone tries to decide after cut-off; deciding an already approved/rejected request returns HTTP 409.
 - Pitch note on `sign_human`: in the demo the Approve button on `:8002` triggers the buyer-side manager key; in production this step is a WebAuthn passkey signature in the browser on the approval surface.
 

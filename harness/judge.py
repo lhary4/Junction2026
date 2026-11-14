@@ -26,6 +26,9 @@ DEFAULT_AUTO_THRESHOLD = 0.85
 DEFAULT_FLOOR = 0.15
 DEFAULT_TIMEOUT_SECONDS = 5.0
 
+# In the Gemini Decisions API, "noul" means a calibrated yes/no probability in [0.01, 0.99]
+# with no generated explanation text. Because the model never sees the dictionary keys
+# ("within_preferences", "same_use"), the full question must be written inside `instructions`.
 QUESTIONS: dict[str, dict[str, str]] = {
     "within_preferences": {
         "type": "noul",
@@ -43,6 +46,7 @@ QUESTIONS: dict[str, dict[str, str]] = {
     },
 }
 
+# Expand short GS1/Valio allergen codes into plain English so the judge does not have to guess codes.
 ALLERGEN_LABELS: dict[str, str] = {
     "AM": "AM (milk)",
     "AW": "AW (cereals containing gluten)",
@@ -85,7 +89,11 @@ def _format_allergens(raw: Any) -> dict[str, list[str]]:
 
 
 def _structured_product(card: dict[str, Any]) -> dict[str, Any]:
-    """Extract strictly structured catalog facts; never include marketing descriptions."""
+    """Extract strictly structured catalog facts; never include marketing descriptions.
+
+    Google's Decisions API docs warn that free-form marketing copy can try to persuade
+    the classifier ("perfect substitute for milk!"). Passing only structured fields blocks that.
+    """
     return {
         "id": _product_id(card),
         "name": card.get("name", ""),
@@ -112,6 +120,7 @@ def _fail_closed_answers(
     auto_threshold: float,
     floor: float,
 ) -> list[dict[str, Any]]:
+    """Safe fallback when the judge cannot answer: never guess 'yes', always ask a human."""
     return [
         {
             "question_key": key,
