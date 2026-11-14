@@ -194,6 +194,15 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: x402, Nevermined (named in the brief as context, not required).
 - Decided in: PR #7, 14/11/2026.
 
+## Approval page: three plain files, with a mock mode that reads the examples
+- Status: decided
+- What it is: the page where a human approves is three files (`surface/static/`), opened in a browser. With `?mock=1` in the address it reads the example files in `contract/examples/` instead of the running services. Every screen of the demo has its own link (for example `&state=expired`), and `&now=...` starts the page's clock at a chosen time.
+- Why: the page could be built and rehearsed before the gateway and the harness exist, and it stays as a safety net if a service fails on stage.
+- What it changes for us: the page never works out a fact itself. A price only appears if it is in a signed quote, a missing value reads "unknown", and "verified" is only written when the harness said so. Anything the agent wrote is shown as plain text, so it cannot add a button to an approval card. In mock mode nothing is really checked or signed, and the page says so.
+- If we change it: only `surface/` changes. If an example file is renamed, a test fails.
+- Alternatives we looked at: React (a build step, dropped earlier); the harness serving ready-made pages (the page could not be built before the harness).
+- Decided in: PR for step C2 (`feat/surface-mock`), 14/11/2026.
+
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
 
