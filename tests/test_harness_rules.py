@@ -502,3 +502,17 @@ def test_approval_deadline_never_exceeds_quote_expiry_and_expired_policy_require
     assert verdict_exp_pol.decision == "human"
     spend_rule = next(r for r in verdict_exp_pol.rules if r.rule_id == "spend-limit")
     assert spend_rule.outcome == "human"
+
+
+def test_past_closing_time_denies_even_when_expires_at_is_future():
+    policy = load_policy()
+    data = copy.deepcopy(_example("checkout.act2.json"))
+    data["expires_at"] = "2026-11-15T17:00:00+02:00"
+    data["aimo"]["closing_time"] = "2026-11-14T13:00:00+02:00"  # before NOW (13:15)
+    checkout = AimoCheckout.model_validate(data)
+
+    verdict = evaluate(policy, checkout, NOW, SIG_PASS)
+    assert verdict.decision == "deny"
+    exp_rule = next(r for r in verdict.rules if r.rule_id == "quote-not-expired")
+    assert exp_rule.outcome == "deny"
+    assert "cut-off" in exp_rule.message

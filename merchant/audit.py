@@ -27,7 +27,8 @@ def record(
 
 
 def events() -> list[AuditEvent]:
-    return _log().read()
+    with _lock:
+        return _log().read()
 
 
 def _log() -> AuditLog:

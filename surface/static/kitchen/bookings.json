@@ -5,7 +5,7 @@
       "date": "2026-11-19",
       "meal": "dinner",
       "booked": 38,
-      "planned": 50,
+      "projected": 50,
       "usual": [
         30,
         50
@@ -15,7 +15,7 @@
       "date": "2026-11-20",
       "meal": "dinner",
       "booked": 46,
-      "planned": 50,
+      "projected": 50,
       "usual": [
         40,
         50
@@ -25,7 +25,7 @@
       "date": "2026-11-21",
       "meal": "dinner",
       "booked": 50,
-      "planned": 50,
+      "projected": 50,
       "usual": [
         45,
         50

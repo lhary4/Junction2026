@@ -54,7 +54,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Status: decided
 - What it is: in a quote, stock, price, origin, delivery reliability and carbon footprint each come with where the value comes from, when, and a certainty level: measured, declared, estimated or unknown.
 - Why: a signature proves Valio said it and nobody changed it. It does not prove it is true. The certainty level is what lets an agent decide without a manual check.
-- What it changes for us: unknown is a real value, shown as "unknown" and never read as "fine". Missing allergen data goes to a human.
+- What it changes for us: unknown is a real value, shown as "unknown" and never read as "fine". Missing allergen data goes to a human. Missing stock does not: when Valio gives no count (a product it cannot count, or "plenty"), both pages say it under the quote ("Stock not confirmed on 6 of 10 lines: Valio gave no count. This does not stop the order.") and the order still goes ahead. The signature proves Valio promised, not that the stock exists. Whether an unknown stock should ever go to a human is an open question for the mentors.
 - If we change it: the quote format, the rules and the comparison table change.
 - Alternatives we looked at: signing the quote only, without sources.
 - Decided in: PR #7, 14/11/2026.
@@ -269,18 +269,37 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Demo page: the chef's order in three steps, with a replay of recorded runs
 - Status: trying it
-- What it is: `surface/static/portal.html` is the page of the video. The chef goes through three steps, like a checkout: the recipes, the stock (what is needed, what the last count found, what is missing), then the order, sent by one button. The seven signing steps sit at the top and light up one by one. A side panel shows the exchange with the buying agent as a conversation. The scenario buttons are in a dark strip at the bottom, drawn so that nobody takes them for part of the customer's page.
+- What it is: `surface/static/portal.html` is the page of the video. The chef goes through three steps, like a checkout: the recipes, the stock (what is needed, what the last count found, what is missing), then the order, sent by one button. The signing steps stay in a panel on the left and light up one after the other in about three seconds. A panel on the right is the conversation with Aimo Personal Assistant. The scenario buttons are in a dark strip at the bottom, drawn so that nobody takes them for part of the customer's page.
 - Why: the first screen showed products as shop cards and did not show how an order comes to exist. A kitchen thinks in recipes and stock, so the page starts there, and the order is the last step.
 - What it changes for us:
-  - The page reads three sources. The demo driver gives the demo state. The harness gives the spend limit and takes the chef's signature. The kitchen's recipes, stock count and bookings are three small files in `surface/static/kitchen/`.
+  - The page reads four sources. The demo driver gives the demo state. The harness gives the spending limit and takes the chef's signature. The assistant service answers the chat. The kitchen's recipes, stock count and bookings are three small files in `surface/static/kitchen/`.
   - The kitchen files are synthetic: they stand in for the restaurant's own system, which Valio told us we may mock. They are written so that what is missing is exactly what each recorded scenario orders, and a test checks it.
-  - When the demo driver does not answer, the page replays the runs recorded in `contract/examples/demo-state.*.json`. The strip at the bottom says which mode is on. The video can be recorded this way if a service fails.
-  - The chef cannot change a line on the page yet: a scenario always sends its own lines.
+  - When the demo driver does not answer, or cannot run a scenario, the page replays the runs recorded in `contract/examples/demo-state.*.json` and says so. The strip at the bottom has a light for each service. The video can be recorded this way if a service fails.
+  - The chef can change the stock count and the quantity to order, in the table or through the chat. The page sends these lines to the demo driver with the order. The driver plays each scenario's own lines, so when the chef's lines differ the quote is not for them, and the page says so in a red line above the quote. After a refused order (the attack), the chef corrects the quantities and orders again.
+  - The page shows eight steps. Seven are the AP2 trail of the demo state. The eighth, "Delivery scheduled", is read by the page from the order Valio accepted. It is not in the contract: the contract still has seven steps.
+  - Words are the chef's. The buying agent and the judge are both called Aimo Personal Assistant, and each rule of the harness has a plain sentence written in the page ("The total is within your spending limit"). The harness's own sentences stay as they are, in a tooltip. A test fails if the harness gets a rule the page has no words for.
+  - A signature is asked twice: the button, then a window that shows exactly what is signed. Reject stays at the top of the work area, Approve and sign is at the bottom of the card.
+  - The spending limit can be opened and changed on the page, but the change is sent to the harness, which has no route for it yet. The page never keeps a limit of its own, because only the harness enforces it.
   - The look follows the Valio Aimo web shop: its colours and its logo. Its two fonts are commercial and we have no licence, so the page ships the closest free fonts (Sofia Sans Extra Condensed and Figtree, under the SIL Open Font License) and no internet is needed.
-  - The conversation is not a chat with a model. It shows what each step reports. The chef signs with a button on the page, never in the conversation.
-- If we change it: only `surface/` changes. If the demo state changes shape, this page changes with it. If the scenarios order other lines, the kitchen files must follow, and the test says so.
-- Alternatives we looked at: product cards as in the shop (too big, and it is not a shop); a free chat with the agent (slow, and approval must not happen in a chat); the three-zone screen of the first plan, with the buttons on the left (the buttons looked like part of the product).
-- Decided in: PR for the branch `feat/surface-portal-v1`, 14/11/2026.
+- If we change it: only `surface/` changes. If the demo state changes shape, this page changes with it. If the scenarios order other lines, the kitchen files must follow, and the test says so. If the harness renames a rule, the page's sentence for it must be renamed too.
+- Alternatives we looked at: product cards as in the shop (too big, and it is not a shop); the three-zone screen of the first plan, with the buttons on the left (the buttons looked like part of the product); the signing steps in a row at the top (the team found them hard to follow, and they scrolled away); adding the eighth step to the contract (it would change `DemoState` for everyone on the last evening).
+- Decided in: PR #28 (branch `feat/surface-portal-v1`), then the PR for the branch `feat/surface-portal-v2`, 14/11/2026.
+
+## Chat on the page: Gemini, behind a small service that checks what it may change
+- Status: trying it
+- What it is: the chef can write to Aimo Personal Assistant on the order page. A small service, `surface/assistant.py` on port 8004, passes the message to Gemini (model `gemini-3.5-flash-lite`) with what the page shows at that moment, and returns the answer. The same service serves the page.
+- Why: the team wanted the stock to be changed "by hand in the table and with the agent", and a chat that really answers. The key cannot sit in the page, where anyone could read it, so a service holds it. We already have a Gemini key for the judge, and this model answers in about one second, which a live demo needs.
+- What it changes for us:
+  - The chat only repeats what the page shows. It is told never to state a price, a stock or an allergen that is not there, and to say "I do not know yet" instead. This keeps the rule "the agent never decides a fact".
+  - The chat never signs, approves, rejects or orders. The chef signs on the page with a button, never in the conversation. This keeps the rule "a human approves on the page".
+  - The chat may change two numbers when the chef asks: the kitchen's stock count and the quantity to order. Both are the kitchen's own data, not Valio's. The service checks each change again (a known product, zero or more, no order open), and the page writes under the answer what really changed, so a wrong sentence of the model cannot hide a change.
+  - It fails closed: no key, a timeout or an unreadable answer gives an error, never an invented reply. The table can still be changed by hand.
+  - The service serves three folders and nothing else from the repo, so `.env` cannot be read through it. Before, the page was served by a plain file server on the whole repo.
+  - One more command to start: `uv run uvicorn surface.assistant:app --port 8004`. `scripts/dev.py` does not start it yet.
+  - Cost: one short Gemini call for each message, on the team's key.
+- If we change it: another model is one line (`ASSISTANT_MODEL` in `.env`). Another provider means rewriting one function. Without the service the page still works, with the chat field switched off.
+- Alternatives we looked at: no model, only the scripted lines of V1 (the team asked for a real chat); calling Gemini from the page (the key would be public); letting the chat call the gateway and the harness itself (that is the buying agent's job, done by the demo driver and the MCP tools, and it would put a second agent in the product); Claude as the model (no key for it in the project).
+- Decided in: PR for the branch `feat/surface-portal-v2`, 14/11/2026.
 
 ## Chef notification: one Telegram alert when an approval is waiting, never an approval in chat
 - Status: decided
@@ -290,6 +309,15 @@ None of us is a seasoned developer. This file explains every technical choice in
 - If we change it: only harness/notify.py changes. Nothing in the rules, the signatures, or Valio's gateway depends on it.
 - Alternatives we looked at: approving directly inside Telegram chat (dropped because chat has no browser passkey or quote-fingerprint signing boundary); email or SMS text messages (slower on stage or require paid sender setup).
 - Decided in: PR #33, 14/11/2026.
+
+## Chef notification: one Telegram alert when an approval is waiting, never an approval in chat
+- Status: decided
+- What it is: when the harness decides that a human must review an order, it sends one short message to the chef on Telegram with the reason in one sentence, the total in euros, the Helsinki deadline, and a link to the approval page.
+- Why: a chef in service is not watching a browser tab, so the phone needs to buzz right away. Telegram's bot service is free, arrives right away on a phone, and needs only a bot key and a chat number, unlike paid text message services or slow email setup.
+- What it changes for us: the two Telegram settings in the local environment file are optional; when either one is empty, the harness makes no network call at all. When set, the alert has a strict two-second time limit, and any failure is written to the warning log without revealing the bot key, so a broken notification never changes, blocks, or delays a verdict. Asking to authorize the same pending quote a second time does not send a second message. Above all, the chef never approves inside Telegram: the link opens the web page, which is the only place that shows and signs the exact quote.
+- If we change it: only harness/notify.py changes. Nothing in the rules, the signatures, or Valio's gateway depends on it.
+- Alternatives we looked at: approving directly inside Telegram chat (dropped because chat has no browser passkey or quote-fingerprint signing boundary); email or SMS text messages (slower on stage or require paid sender setup).
+- Decided in: Branch feat/harness-notify, 14/11/2026.
 
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).

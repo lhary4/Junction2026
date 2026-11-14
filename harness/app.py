@@ -24,6 +24,7 @@ import inspect
 import json
 import logging
 import os
+import threading
 from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path
@@ -65,6 +66,7 @@ from harness.rules import JudgeFn, evaluate
 from harness.signer import HarnessSigner
 from trust import TrustError
 from trust.checkout import checkout_hash, read_checkout, verify_checkout
+from trust.mandates import mandate_reference
 from trust.receipts import verify_receipt
 
 logger = logging.getLogger(__name__)
@@ -335,13 +337,28 @@ def create_app(
         except TrustError as err:
             raise HTTPException(status_code=502, detail=f"invalid gateway receipt signature: {err}") from err
 
+        expected_ref = mandate_reference(authorization)
         if (
-            receipt_claims.get("order_id") != order.order_id
-            or receipt_claims.get("reference") != order.mandate_reference
+            order.checkout_id != checkout_id
+            or order.mandate_reference != expected_ref
+            or receipt_claims.get("order_id") != order.order_id
+            or receipt_claims.get("reference") != expected_ref
             or receipt_claims.get("status") != "Success"
         ):
             raise HTTPException(status_code=502, detail="gateway receipt does not match order or mandate reference")
         return order, []
+
+    locks_guard = threading.Lock()
+    checkout_locks: dict[str, threading.Lock] = {}
+    approval_locks: dict[str, threading.Lock] = {}
+
+    def _lock_for(registry: dict[str, threading.Lock], key: str) -> threading.Lock:
+        with locks_guard:
+            lock = registry.get(key)
+            if lock is None:
+                lock = threading.Lock()
+                registry[key] = lock
+            return lock
 
     api = FastAPI(title="Buyer Guardrails Harness", version="0.1")
     api.add_middleware(
@@ -359,6 +376,10 @@ def create_app(
         quote directly from the merchant gateway, verifies the signature, evaluates all rules,
         and then either signs (`auto`), queues a human approval (`human`), or refuses (`deny`).
         """
+        with _lock_for(checkout_locks, request.checkout_id):
+            return _authorize_locked(request)
+
+    def _authorize_locked(request: AuthorizeRequest) -> AuthorizationStatus:
         now = clock.now().astimezone(HELSINKI)
         expired_items = active_store.expire_due(now)
         _record_expired_audits(expired_items, now)
@@ -553,6 +574,13 @@ def create_app(
 
     @api.post("/approvals/{approval_id}/decision")
     def decide_approval(approval_id: str, body: ApprovalDecision) -> AuthorizationStatus:
+        with _lock_for(approval_locks, approval_id):
+            try:
+                return _decide_approval_locked(approval_id, body)
+            except ApprovalAlreadyDecidedError as err:
+                raise HTTPException(status_code=409, detail=str(err)) from err
+
+    def _decide_approval_locked(approval_id: str, body: ApprovalDecision) -> AuthorizationStatus:
         now = clock.now().astimezone(HELSINKI)
         try:
             approval, expired_status, newly_expired = active_store.check_ready_for_decision(approval_id, now=now)

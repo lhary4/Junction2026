@@ -23,7 +23,9 @@ def sign_checkout(checkout: AimoCheckout, merchant_key: JWK) -> str:
 def verify_checkout(checkout_jwt: str, merchant_jwks: dict, now: datetime) -> AimoCheckout:
     """Raises TrustError with rule 'quote-signature' (bad signature or shape) or 'quote-not-expired'."""
     checkout = _parse(verify(checkout_jwt, merchant_jwks))
-    if checkout.expires_at is not None and checkout.expires_at <= now:
+    if checkout.expires_at is None:
+        raise TrustError("The quote has no expiry date, so it cannot be trusted.", rule="quote-not-expired")
+    if checkout.expires_at <= now:
         expired = checkout.expires_at.astimezone(HELSINKI)
         raise TrustError(f"The quote expired on {expired:%d/%m/%Y at %H:%M}.", rule="quote-not-expired")
     return checkout

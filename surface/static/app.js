@@ -382,6 +382,20 @@ function checkoutTotal(checkout) {
   return total ? total.amount : null;
 }
 
+/**
+ * One sentence under the quote when Valio gave no stock count on some lines (unknown, or "available, no count given").
+ * Nothing blocks the order for that: the signature proves Valio promised, not that the stock exists. Empty when every count is known.
+ */
+function stockNote(checkout) {
+  const total = checkout.line_items.length;
+  const unconfirmed = checkout.line_items.filter((lineItem) => {
+    const stock = (checkout.aimo.lines[lineItem.id] || {}).stock;
+    return !stock || stock.certainty === "unknown" || typeof stock.value !== "number";
+  }).length;
+  if (unconfirmed === 0) return "";
+  return `<p class="stock-note">Stock not confirmed on ${unconfirmed} of ${total} ${total === 1 ? "line" : "lines"}: Valio gave no count. This does not stop the order.</p>`;
+}
+
 /** The lines of a quote: what, how many, at what price. Used on the offers area and on the approval card. */
 function linesTable(checkout, { withStock = false } = {}) {
   const rows = checkout.line_items
@@ -709,6 +723,7 @@ function offersView(data) {
         ${signatureLine(signatureState(quote, data.audit))}
       </div>
       ${linesTable(checkout, { withStock: true })}
+      ${stockNote(checkout)}
       <dl class="keyfacts">
         <div><dt>Delivery</dt><dd>${esc(dayOnly(checkout.aimo.delivery_date))}</dd></div>
         <div><dt>Order cut-off</dt><dd>${esc(dayAndTime(checkout.aimo.closing_time))}</dd></div>
@@ -1249,6 +1264,7 @@ if (IN_BROWSER) {
     dayOnly,
     countdownText,
     claimValueText,
+    stockNote,
     buildMockData,
     setMockState,
     comparisonRows,
