@@ -36,15 +36,15 @@
   --lime-band: #edf6e4;
   --lime-border: #adcfa0;
 
-  /* Mineral surfaces & hairline rules */
-  --bg: #f2f5f7;
+  /* Mineral & Birch Vellum surfaces */
+  --bg: #f4f1ea;
   --panel: #ffffff;
-  --mist: #f7f9fa;
-  --ink: #0f2029;
-  --ink-soft: #4e606b;
-  --line: #d3dde3;
-  --line-soft: #e4ecef;
-  --line-strong: #b4c4cd;
+  --mist: #f9f8f4;
+  --ink: #102028;
+  --ink-soft: #4b5c66;
+  --line: #d8d3c8;
+  --line-soft: #e7e3da;
+  --line-strong: #beb8aa;
 
   /* Semantic verification states (WCAG AA+) */
   --ok: #145e38;
@@ -186,7 +186,7 @@ code,
 }
 
 .masthead__util {
-  background: var(--petrol-deep);
+  background: #03171f;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.88);
   font-size: 12px;

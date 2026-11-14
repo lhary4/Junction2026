@@ -128,3 +128,58 @@ def test_it_serves_the_page_and_what_the_page_reads():
 @pytest.mark.parametrize("path", ["/.env", "/surface/static/../../.env", "/scenarios/pairs.csv", "/pyproject.toml"])
 def test_it_serves_nothing_else_from_the_repo(path):
     assert client_answering("Hello.").get(path).status_code == 404
+
+
+def test_interactions_stateful_id_focus_and_follow_ups_are_validated():
+    seen_prev: list[str | None] = []
+
+    def fake_ask(turns, state, previous_interaction_id=None):
+        seen_prev.append(previous_interaction_id)
+        return (
+            ModelAnswer(
+                reply="Updated butter in walk-in.",
+                stock_changes=[StockChange(product_id="463437", field="in_stock", amount=4)],
+                focus_product_id="999999",  # unknown SKU must not pass through; falls back to edited SKU
+                follow_ups=["  Check whipping cream  ", "x", "Check whipping cream"],
+            ),
+            "v1_interaction_abc",
+        )
+
+    client = TestClient(create_app(ask=fake_ask))
+    resp = client.post(
+        "/chat",
+        json={
+            "turns": [{"who": "chef", "text": "We have 4 kg of butter"}],
+            "state": STATE,
+            "previous_interaction_id": "v1_prev_123",
+        },
+    ).json()
+
+    assert seen_prev == ["v1_prev_123"]
+    assert resp["interaction_id"] == "v1_interaction_abc"
+    assert resp["focus_product_id"] == "463437"
+    assert resp["follow_ups"] == ["Check whipping cream"]
+
+
+def test_pulse_returns_calibrated_metrics_and_fails_closed():
+    client = TestClient(
+        create_app(
+            ask=lambda turns, state: ModelAnswer(reply="ok"),
+            pulse=lambda state: assistant.PulseAnswer(
+                metrics=[assistant.PulseMetric(key="menu_covered", probability=0.92, confidence=0.94)],
+                model="gemini-decision-1",
+                output_tokens=0,
+            ),
+        )
+    )
+    ok = client.post("/pulse", json={"state": STATE})
+    assert ok.status_code == 200
+    assert ok.json()["output_tokens"] == 0
+    assert ok.json()["metrics"][0]["probability"] == 0.92
+
+    def broken_pulse(state):
+        raise AssistantUnavailableError("Decision check unavailable: TimeoutError")
+
+    down = TestClient(create_app(ask=lambda turns, state: ModelAnswer(reply="ok"), pulse=broken_pulse))
+    assert down.post("/pulse", json={"state": STATE}).status_code == 503
+

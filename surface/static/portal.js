@@ -130,11 +130,20 @@ const app = {
   sentKey: null, // the quantities of the order on screen
   correcting: false, // the chef is correcting the quantities of a refused order
   mismatch: false, // the quote is not for the quantities the chef asked
-  detailsOpen: false, // the full comparison of a substitute
+  detailsOpen: true, // the full comparison of a substitute
   policy: null,
   busy: false,
   chatBusy: false,
   problem: null,
+  interactionId: null, // Gemini Interactions API server-side stateful chain id
+  assistantModel: "",
+  decisionModel: "gemini-decision-1",
+  followUps: [], // contextual follow-up chips suggested by Gemini
+  focusedProductId: null, // ingredient or product highlighted by Gemini
+  pulseOnline: false,
+  pulseBusy: false,
+  pulseData: null, // calibrated readiness metrics from gemini-decision-1
+  pulseKey: "",
 };
 
 /* ---------- Small helpers ---------- */
@@ -261,6 +270,7 @@ function icon(name) {
     shield: '<path d="M10 2.2l6.3 2.3v4.7c0 3.9-2.6 7.1-6.3 8.6-3.7-1.5-6.3-4.7-6.3-8.6V4.5z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M7.1 10.1l2.1 2.1 3.9-4.1" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>',
     pen: '<path d="M3.5 16.5l.9-3.7L13.7 3.5l2.8 2.8-9.3 9.3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M11.8 5.4l2.8 2.8" stroke="currentColor" stroke-width="1.7"/>',
     send: '<path d="M4 10h11.5M11 5.5L15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    pulse: '<path d="M2.5 10.5h3l2.1-5 3.2 9.5 2.4-6.2 1.6 1.7h2.7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
   };
   return `<svg class="icon" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${paths[name]}</svg>`;
 }
@@ -284,7 +294,9 @@ const harness = {
 
 const assistant = {
   health: () => call(`${ASSISTANT_URL}/health`, {}, 1200),
-  chat: (turns, state) => postJson(`${ASSISTANT_URL}/chat`, { turns, state }, 30000),
+  chat: (turns, state, previous_interaction_id) =>
+    postJson(`${ASSISTANT_URL}/chat`, { turns, state, previous_interaction_id }, 30000),
+  pulse: (state) => postJson(`${ASSISTANT_URL}/pulse`, { state }, 8000),
 };
 
 // The page sits in surface/static/. Served by the harness, the same path reaches /contract/examples/.
@@ -372,6 +384,7 @@ function reveal() {
       draw();
     }, 900);
     draw();
+    schedulePulse();
     return;
   }
   app.shown += 1;
@@ -475,19 +488,20 @@ function useNeed() {
 /* ---------- Drawing: header ---------- */
 
 function drawAccount() {
-  const name = app.state?.kitchen?.name ?? "";
+  const name = app.state?.kitchen?.name ?? "Ravintola Demo";
+  const city = app.state?.kitchen?.city ? ` · ${app.state.kitchen.city}` : "";
   setHtml(
     el("account"),
-    `<button class="account__btn" id="account-btn" aria-haspopup="true" aria-expanded="false" aria-controls="account-menu">
-      ${icon("user")}${esc(name)}
-      <svg class="account__chevron" width="14" height="14" viewBox="0 0 14 14" aria-hidden="true">
+    `<button class="account__btn" id="account-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="account-menu">
+      ${icon("user")}<span>${esc(name)}${esc(city)}</span>
+      <svg class="account__chevron" width="13" height="13" viewBox="0 0 14 14" aria-hidden="true">
         <path d="M2 5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" />
       </svg>
     </button>
     <div class="account__menu" id="account-menu" hidden>
-      <p class="account__who"><strong>${esc(name)}</strong>Customer ${esc(app.state?.kitchen?.customer)}</p>
-      <button class="account__item" type="button" data-action="limit">Spending limit</button>
-      <button class="account__item" type="button">Log out</button>
+      <p class="account__who"><strong>${esc(name)}</strong>Customer ${esc(app.state?.kitchen?.customer ?? "unknown")}</p>
+      <button class="account__item" type="button" data-action="limit">Autonomous mandate limit</button>
+      <button class="account__item" type="button" data-action="reset">Reset order desk</button>
     </div>`
   );
 }
@@ -498,19 +512,24 @@ function drawPlanning() {
     setHtml(el("planning"), "");
     return;
   }
+  const capacity = app.kitchen.recipes?.covers_per_service || app.state?.kitchen?.covers_per_service || 50;
   const days = services
-    .map(
-      (service) => `<li class="day">
-          <span class="day__date display">${esc(dayShort(service.date))}</span>
-          <span class="day__covers"><b>${esc(service.booked)}</b> booked<br />${esc(service.projected)} projected</span>
-        </li>`
-    )
+    .map((service, idx) => {
+      const pct = Math.min(100, Math.round((Number(service.booked) / capacity) * 100));
+      const target = idx === 0;
+      return `<li class="day${target ? " day--target" : ""}">
+          <div class="day__top">
+            <span class="day__name">${esc(dayShort(service.date))}</span>
+            ${target ? '<span class="day__tag">Delivery</span>' : `<span class="day__pct mono">${pct}%</span>`}
+          </div>
+          <p class="day__nums"><b>${esc(service.booked)}</b> booked <span class="day__sep">·</span> <span>${esc(service.projected)} proj.</span></p>
+          <div class="day__meter" aria-hidden="true"><span style="width:${pct}%"></span></div>
+        </li>`;
+    })
     .join("");
   setHtml(
     el("planning"),
-    `<p class="needby"><span>Needed by</span><b class="display">${esc(dayLong(services[0].date))}</b></p>
-    <ol class="days" aria-label="Covers per service: booked, and projected by the kitchen">${days}</ol>
-    <p class="planning__src">${esc(titleCase(services[0].meal))} services<br />from bookings and planning</p>`
+    `<ol class="days" aria-label="Covers per service: booked, and projected by the kitchen">${days}</ol>`
   );
 }
 
@@ -522,21 +541,19 @@ function drawFlow() {
   const sent = orderOnScreen();
   const accepted = sent && status() === "done" && !app.busy && !revealing(); // not before the last step has lit up
   const items = [
-    { n: 1, title: "Recipes", sub: app.confirmed.recipes ? `Confirmed at ${app.confirmed.recipes}` : `${recipes.length} on the menu`, done: Boolean(app.confirmed.recipes), open: true },
-    { n: 2, title: "Stock", sub: app.confirmed.stock ? `Confirmed at ${app.confirmed.stock} · ${missing} to order` : `${missing} to order`, done: Boolean(app.confirmed.stock), open: Boolean(app.confirmed.recipes) || hasRun() },
-    { n: 3, title: "Order", sub: accepted ? "Signed and accepted" : "then the signatures", done: accepted, open: Boolean(app.confirmed.stock) || hasRun() },
+    { n: 1, title: "Recipes", sub: app.confirmed.recipes ? `Confirmed ${app.confirmed.recipes}` : `${recipes.length} courses on menu`, done: Boolean(app.confirmed.recipes), open: true },
+    { n: 2, title: "Stock", sub: app.confirmed.stock ? `Confirmed ${app.confirmed.stock} · ${missing} short` : `${missing} lines to order`, done: Boolean(app.confirmed.stock), open: Boolean(app.confirmed.recipes) || hasRun() },
+    { n: 3, title: "Order", sub: accepted ? "Signed & accepted" : "Quote & signatures", done: accepted, open: Boolean(app.confirmed.stock) || hasRun() },
   ];
   setHtml(
     el("flow"),
     items
       .map(
-        (item) => `<li>
-          <button class="flow__step${item.done ? " is-done" : ""}" type="button" data-step="${item.n}"
+        (item) => `<button class="flow__step${item.done ? " flow__step--done" : ""}" type="button" data-step="${item.n}"
             ${app.step === item.n ? 'aria-current="step"' : ""} ${item.open ? "" : "disabled"}>
-            <span class="flow__n">${item.done ? icon("check") : String(item.n).padStart(2, "0")}</span>
+            <span class="flow__num">${item.done ? icon("check") : String(item.n).padStart(2, "0")}</span>
             <span class="flow__text"><b>${item.title}</b><span>${esc(item.sub)}</span></span>
-          </button>
-        </li>`
+          </button>`
       )
       .join("")
   );
@@ -545,38 +562,37 @@ function drawFlow() {
   if (inFlight()) {
     const waiting = status() === "waiting_for_human" && !app.busy && !revealing();
     cta = waiting
-      ? `<p class="cta__status cta__status--waiting_for_human">${icon("pen")}Your signature is needed</p>
-         <button class="btn btn--reject" type="button" data-action="reject">Reject</button>`
-      : '<p class="cta__status">Your assistant is at work…</p>';
+      ? `<p class="cta__status cta__status--waiting_for_human">${icon("pen")}<span>Your signature is needed</span></p>
+         <button class="btn btn--reject-outline" type="button" data-action="reject">Reject</button>`
+      : `<p class="cta__status">${icon("wait")}<span>Your assistant is at work…</span></p>`;
   } else if (app.step === 1) {
-    cta = `<button class="btn" type="button" data-action="confirm-recipes">${app.confirmed.recipes ? "Go to the stock" : "Confirm recipes"} ${icon("arrow")}</button>`;
+    cta = `<button class="btn btn--primary" type="button" data-action="confirm-recipes">${app.confirmed.recipes ? "Go to stock ledger" : "Confirm recipes"} ${icon("arrow")}</button>`;
   } else if (app.step === 2) {
-    cta = `<button class="btn" type="button" data-action="confirm-stock">${sent ? "Back to the order" : "Confirm stock"} ${icon("arrow")}</button>`;
+    cta = `<button class="btn btn--primary" type="button" data-action="confirm-stock">${sent ? "Back to the order" : "Confirm stock"} ${icon("arrow")}</button>`;
   } else if (sent) {
     const done = status() === "done";
-    cta = `<p class="cta__status cta__status--${done ? "done" : "refused"}">${done ? `${icon("check")}Order sent` : "No order placed"}</p>
-      ${done ? "" : '<button class="btn" type="button" data-action="correct">Correct quantities</button>'}
-      <button class="btn btn--quiet" type="button" data-action="reset">New order</button>`;
+    cta = `<p class="cta__status cta__status--${done ? "done" : "refused"}">${done ? `${icon("check")}<span>Order sent</span>` : `${icon("cross")}<span>No order placed</span>`}</p>
+      ${done ? "" : '<button class="btn btn--primary" type="button" data-action="correct">Correct quantities</button>'}
+      <button class="btn btn--ghost" type="button" data-action="reset">New order</button>`;
   } else {
-    cta = `<button class="btn btn--go" type="button" data-action="run" ${missing ? "" : "disabled"}>${icon("dispatch")} Order with my assistant</button>`;
+    cta = `<button class="btn btn--primary" type="button" data-action="run" ${missing ? "" : "disabled"}>${icon("dispatch")} Order with my assistant</button>`;
   }
   setHtml(el("cta"), cta);
 }
 
-/* ---------- Drawing: who signs ---------- */
+/* ---------- Drawing: who signs (AP2 Cryptographic Vault) ---------- */
 
 function sealHtml() {
-  if (!orderOnScreen() && !app.busy) return `<p class="seal">${icon("shield")}<span>No signature, no order.</span></p>`;
-  if (app.busy || revealing()) return `<p class="seal seal--running">${icon("shield")}<span>Checking every signature…</span></p>`;
-  if (status() === "waiting_for_human") return `<p class="seal seal--waiting">${icon("pen")}<span>Waiting for your signature.</span></p>`;
-  if (status() === "refused") return `<p class="seal seal--refused">${icon("shield")}<span>Stopped: no valid signature, no order.</span></p>`;
+  if (!orderOnScreen() && !app.busy) return `${icon("shield")}<span>No signature, no order.</span>`;
+  if (app.busy || revealing()) return `${icon("shield")}<span>Verifying mandate chain…</span>`;
+  if (status() === "waiting_for_human") return `${icon("pen")}<span>Waiting for your signature.</span>`;
+  if (status() === "refused") return `${icon("shield")}<span>Stopped: no valid signature, no order.</span>`;
   if (status() === "done") {
-    // Who signed, read from the steps that are done.
     const names = { manager: "you", agent: "your assistant", merchant: "Valio" };
     const signers = [...new Set(trailSteps().filter((step) => step.status === "done" && names[step.signer]).map((step) => names[step.signer]))];
-    return `<p class="seal seal--done">${icon("shield")}<span>Signed and checked at every step: ${esc(signers.join(", "))}.</span></p>`;
+    return `${icon("shield")}<span>Signed &amp; verified: ${esc(signers.join(", "))}.</span>`;
   }
-  return `<p class="seal">${icon("shield")}<span>No signature, no order.</span></p>`;
+  return `${icon("shield")}<span>No signature, no order.</span>`;
 }
 
 function drawTrail() {
@@ -586,32 +602,38 @@ function drawTrail() {
     .map((step, index) => {
       const on = index < shown;
       const state = on ? step.status : "pending";
-      const mark = { done: icon("check"), refused: icon("cross"), waiting: icon("wait"), skipped: icon("skip") }[state] ?? String(index + 1).padStart(2, "0");
+      const numStr = String(index + 1).padStart(2, "0");
+      const mark = { done: icon("check"), refused: icon("cross"), waiting: icon("wait"), skipped: icon("skip") }[state] ?? numStr;
       const signer = on && state !== "skipped" && SIGNER_WORDS[step.signer] ? `<span class="step__signer">${esc(SIGNER_WORDS[step.signer])}</span>` : "";
       const classes = [
         `step--${state}`,
         index === app.fresh && on ? "step--fresh" : "",
-        index + 1 < shown ? "step--through" : "",
-        index + 1 === app.fresh && index + 1 < shown ? "step--link" : "", // the line that has just reached the next step
-      ].join(" ");
+      ]
+        .filter(Boolean)
+        .join(" ");
       return `<li class="step ${esc(classes)}">
           <span class="step__dot" aria-hidden="true">${mark}</span>
           <div class="step__body">
-            <p class="step__title">${esc(STEP_WORDS[step.key] ?? step.title)}${signer}<span class="visually-hidden">, ${esc(state)}</span></p>
-            <p class="step__term">${esc(step.title)}${on && step.proof ? `<span class="step__proof mono" title="Signature: ${esc(step.proof)}">${icon("lock")}${esc(shortProof(step.proof))}</span>` : ""}</p>
-            ${on && step.detail ? `<p class="step__detail" title="${esc(plainDetail(step.detail))}">${esc(plainDetail(step.detail))}</p>` : ""}
+            <div class="step__top">
+              <span class="step__index mono">${numStr}</span>
+              <span class="step__name">${esc(STEP_WORDS[step.key] ?? step.title)}</span>${signer}<span class="visually-hidden">, ${esc(state)}</span>
+            </div>
+            <p class="step__sub">${esc(step.title)}${on && step.proof ? ` <span class="step__proof mono" title="Signature: ${esc(step.proof)}">${icon("lock")}${esc(shortProof(step.proof))}</span>` : ""}</p>
+            ${on && step.detail ? `<p class="step__sub step__sub--detail" title="${esc(plainDetail(step.detail))}">${esc(plainDetail(step.detail))}</p>` : ""}
           </div>
         </li>`;
     })
     .join("");
-  // Three parts drawn apart: a part that did not change keeps its animation running.
-  el("trail").classList.toggle("is-running", app.busy || revealing());
+  const trailNode = el("trail");
+  trailNode.classList.toggle("is-running", app.busy || revealing());
+  trailNode.classList.toggle("trail--sealed", orderOnScreen() && status() === "done" && !app.busy && !revealing());
   setHtml(
     el("limit"),
-    `<p class="limit__label">Your spending limit</p>
-      <p class="limit__value display">${limitKnown() ? esc(limitText()) : "unknown"}<span> an order</span></p>
-      <p class="limit__text">Above it, you sign every order yourself.</p>
-      <button class="limit__btn" type="button" data-action="limit" ${canEdit() ? "" : "disabled"}>Change</button>`
+    `<div>
+        <p class="limit__label">Autonomous Mandate Cap</p>
+        <p class="limit__value">${limitKnown() ? esc(limitText()) : "unknown"} <span class="limit__per">/ order</span></p>
+      </div>
+      <button class="limit__edit" type="button" data-action="limit" ${canEdit() ? "" : "disabled"}>Change</button>`
   );
   setHtml(el("steps"), items);
   setHtml(el("seal"), sealHtml());
@@ -623,35 +645,63 @@ function recipesView() {
   const data = app.kitchen.recipes;
   const recipes = data?.recipes ?? [];
   const chosen = recipes.find((recipe) => recipe.id === app.recipeId) ?? recipes[0];
-  const rows = recipes
-    .map(
-      (recipe) => `<tr class="pick${recipe === chosen ? " is-chosen" : ""}">
-          <td><span class="tag">${esc(recipe.course)}</span></td>
-          <td><button class="pick__btn" type="button" data-recipe="${esc(recipe.id)}" aria-pressed="${recipe === chosen}">
-              <b>${esc(recipe.name)}</b><span>${esc(recipe.with)}</span>
-            </button></td>
-          <td class="num">${recipe.ingredients.length}</td>
-        </tr>`
-    )
+  const services = app.kitchen.bookings?.services ?? [];
+  const totalBooked = services.reduce((sum, s) => sum + Number(s.booked || 0), 0);
+  const totalProjected = services.reduce((sum, s) => sum + Number(s.projected || 0), 0);
+
+  const cards = recipes
+    .map((recipe, idx) => {
+      const active = recipe === chosen;
+      return `<button class="course-card${active ? " is-chosen" : ""}" type="button" data-recipe="${esc(recipe.id)}" aria-pressed="${active}">
+          <div class="course-card__top">
+            <span class="tag">${esc(recipe.course)}</span>
+            <span class="course-card__idx mono">${String(idx + 1).padStart(2, "0")}</span>
+          </div>
+          <p class="course-card__title">${esc(recipe.name)}</p>
+          <p class="course-card__meta"><span>${esc(recipe.with)}</span> <span>·</span> <span class="mono">${recipe.ingredients.length} SKUs</span></p>
+        </button>`;
+    })
     .join("");
+
   const ingredients = (chosen?.ingredients ?? [])
-    .map(
-      (item) => `<tr><td>${esc(item.name)}</td><td class="num">${esc(item.per_service)}</td><td class="muted num">${esc(item.product_id)}</td></tr>`
-    )
+    .map((item) => {
+      const stockEntry = app.lines.find((line) => line.product_id === item.product_id);
+      const totalNeed = stockEntry ? qty(stockEntry.need, stockEntry.unit) : "—";
+      const focused = app.focusedProductId === item.product_id;
+      return `<tr data-row-id="${esc(item.product_id)}" class="${focused ? "is-focused" : ""}">
+          <td><span class="ing-name">${esc(item.name)}</span></td>
+          <td class="num">${esc(item.per_service)}</td>
+          <td class="num"><b>${esc(totalNeed)}</b></td>
+          <td class="num"><span class="ing-sku mono">#${esc(item.product_id)}</span></td>
+        </tr>`;
+    })
     .join("");
-  return `<div class="head">
-      <h2 class="display">Recipes on the menu</h2>
-      <p class="head__meta">Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.</p>
+
+  return `<div class="stage-head">
+      <div>
+        <p class="stage-head__kicker">01 · Culinary Menu &amp; Mise-en-Place</p>
+        <h2 class="work__title">Recipes on the menu</h2>
+        <p class="work__lead">Scaled for ${esc(data?.covers_per_service)} covers per service. Inspect each course's mise-en-place before checking walk-in stock.</p>
+      </div>
+    </div>
+    <div class="kpi-strip">
+      <div class="kpi"><span class="kpi__label">Menu Courses</span><span class="kpi__val">${recipes.length} Dishes</span></div>
+      <div class="kpi"><span class="kpi__label">Service Scale</span><span class="kpi__val">${esc(data?.covers_per_service ?? 50)} Covers / Svc</span></div>
+      <div class="kpi"><span class="kpi__label">3-Day Bookings</span><span class="kpi__val">${totalBooked} Booked · ${totalProjected} Proj</span></div>
+      <div class="kpi kpi--accent"><span class="kpi__label">Tracked Valio SKUs</span><span class="kpi__val">${app.lines.length} Ingredients</span></div>
     </div>
     <div class="split">
-      <table class="tbl">
-        <thead><tr><th>Course</th><th>Recipe</th><th class="num">Ingredients</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
+      <div class="course-stack">${cards}</div>
       <div class="panel">
-        <h3 class="panel__title">${esc(chosen?.name)}</h3>
+        <div class="panel__head">
+          <div>
+            <span class="tag">${esc(chosen?.course)}</span>
+            <h3 class="panel__title">${esc(chosen?.name)}</h3>
+          </div>
+          <span class="panel__stamp mono">${esc(data?.covers_per_service ?? 50)} covers / service</span>
+        </div>
         <table class="tbl tbl--tight">
-          <thead><tr><th>Ingredient</th><th class="num">For one service</th><th class="num">Product</th></tr></thead>
+          <thead><tr><th>Ingredient</th><th class="num">Per service</th><th class="num">3-Svc Need</th><th class="num">Valio SKU</th></tr></thead>
           <tbody>${ingredients}</tbody>
         </table>
       </div>
@@ -660,10 +710,10 @@ function recipesView() {
 
 /* ---------- Drawing: step 2, stock ---------- */
 
-function field(line, name, label) {
+function field(line, name, label, highlightShort = false) {
   const who = line.by[name];
   const title = who ? `Changed by ${who}` : "";
-  return `<span class="field${who ? " is-changed" : ""}" title="${esc(title)}">
+  return `<span class="field${who ? " is-changed" : ""}${highlightShort ? " field--short" : ""}" title="${esc(title)}">
       <input class="field__input" type="text" inputmode="decimal" autocomplete="off" value="${esc(line[name])}"
         data-cell="${esc(line.product_id)}:${name}" aria-label="${esc(`${label}, ${line.name}, in ${unitWord(line.unit)}`)}" ${canEdit() ? "" : "disabled"} />
       <span class="field__unit">${esc(unitWord(line.unit, line[name]))}</span>
@@ -673,46 +723,73 @@ function field(line, name, label) {
 function stockView() {
   const stock = app.kitchen.stock;
   const missing = missingLines();
+  const coveredCount = app.lines.length - missing.length;
   const shownLines = app.stockFilter === "missing" ? missing : [...missing, ...app.lines.filter((line) => line.to_order <= 0)];
   const rows = shownLines
     .map((line) => {
       const short = line.to_order > 0;
       const above = line.to_order > neededNow(line);
-      return `<tr class="${short ? "is-short" : "is-covered"}">
-          <td>${esc(line.name)}${above ? ' <span class="tag tag--warn" title="More than the recipes need, with what is in stock">above need</span>' : ""}</td>
+      const focused = app.focusedProductId === line.product_id;
+      const editedBy = line.by.in_stock || line.by.to_order;
+      const coverPct = line.need > 0 ? Math.min(100, Math.round((line.in_stock / line.need) * 100)) : 100;
+      return `<tr data-row-id="${esc(line.product_id)}" class="${short ? "is-short" : "is-covered"}${focused ? " is-focused" : ""}">
+          <td>
+            <span class="ing-name">${esc(line.name)}</span>
+            <span class="ing-sku mono"> #${esc(line.product_id)}</span>
+            ${above ? ' <span class="tag tag--warn" title="More than the recipes need, with what is in stock">above need</span>' : ""}
+            ${editedBy ? `<span class="row-note">Edited by ${esc(editedBy)}</span>` : ""}
+          </td>
           <td class="muted">${esc(line.dishes.join(", "))}</td>
-          <td class="num">${esc(qty(line.need, line.unit))}</td>
+          <td class="num">
+            <span class="need-cell">
+              <span>${esc(qty(line.need, line.unit))}</span>
+              <span class="need-bar" title="${coverPct}% covered by walk-in stock"><i style="width:${coverPct}%"></i></span>
+            </span>
+          </td>
           <td class="num">${field(line, "in_stock", "In stock")}</td>
-          <td class="num">${field(line, "to_order", "To order")}</td>
+          <td class="num">${field(line, "to_order", "To order", short)}</td>
         </tr>`;
     })
     .join("");
-  const chip = (id, label, count) =>
-    `<button class="chip" type="button" data-filter="${id}" aria-pressed="${app.stockFilter === id}">${label} <span>${count}</span></button>`;
+
+  const tab = (id, label, count) =>
+    `<button class="filter-tab${app.stockFilter === id ? " is-active" : ""}" type="button" data-filter="${id}" aria-pressed="${app.stockFilter === id}">${label} <span>${count}</span></button>`;
   const changed = changedLines().length;
 
-  // Where things stand, in the line under the title. Without anything to say, it tells where the count comes from.
-  let note = `<p class="head__meta">Counted ${esc(dayLong(stock.counted_at))}, ${esc(stock.counted_by)}. Need is for the ${esc(stock.for_services)} services. You can change any number.</p>`;
+  let note = `<p class="work__lead">Counted ${esc(dayLong(stock.counted_at))} by ${esc(stock.counted_by)}. Need covers ${esc(stock.for_services)} services — edit any count directly or tell ${ASSISTANT}.</p>`;
   if (!canEdit()) {
-    note = `<p class="note">${icon("lock")}An order is open with these quantities. They are locked until it is signed or rejected.</p>`;
+    note = `<p class="note">${icon("lock")}<span>An order is open with these quantities. They are locked until it is signed or rejected.</span></p>`;
   } else if (app.correcting && !dirty()) {
-    note = `<p class="note note--refused">The refused order asked for these quantities. Correct them, then order again.
-        <button class="link" type="button" data-action="use-need">Use what the recipes need</button></p>`;
+    note = `<p class="note note--refused"><span>The refused order asked for these quantities. Correct them, then order again.</span>
+        <button class="link" type="button" data-action="use-need">Reset to recipe need</button></p>`;
   } else if (dirty()) {
-    note = '<p class="note">The quantities changed since the last order. Confirm the stock to prepare a new order.</p>';
+    note = '<p class="note"><span>Quantities changed since the last order. Confirm stock to prepare a fresh order.</span></p>';
   }
-  return `<div class="head">
-      <h2 class="display">Stock check</h2>
-      ${note}
-      <div class="chips">
+
+  return `<div class="stage-head">
+      <div>
+        <p class="stage-head__kicker">02 · Walk-In Cold Room &amp; Dry Store Ledger</p>
+        <h2 class="work__title">Stock check</h2>
+        ${note}
+      </div>
+      <div class="stock-toolbar">
         ${changed && canEdit() ? `<button class="link" type="button" data-action="undo">Undo ${changed} ${changed === 1 ? "change" : "changes"}</button>` : ""}
-        ${chip("all", "All", app.lines.length)}${chip("missing", "To order", missing.length)}
+        <div class="filter-tabs" role="group" aria-label="Filter stock lines">
+          ${tab("all", "All SKUs", app.lines.length)}${tab("missing", "To order", missing.length)}
+        </div>
       </div>
     </div>
-    <table class="tbl tbl--stock">
-      <thead><tr><th>Ingredient</th><th>Used in</th><th class="num">Need</th><th class="num">In stock</th><th class="num">To order</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+    <div class="kpi-strip kpi-strip--3">
+      <div class="kpi"><span class="kpi__label">Last Walk-In Count</span><span class="kpi__val">${esc(dayShort(stock.counted_at))} · ${esc(stock.for_services)} Services</span></div>
+      <div class="kpi"><span class="kpi__label">Covered In House</span><span class="kpi__val">${coveredCount} of ${app.lines.length} Lines</span></div>
+      <div class="kpi kpi--accent"><span class="kpi__label">Shortfall To Order</span><span class="kpi__val">${missing.length} ${missing.length === 1 ? "Ingredient" : "Ingredients"}</span></div>
+    </div>
+    <div class="sheet-wrap">
+      <table class="tbl tbl--stock">
+        <thead><tr><th>Ingredient</th><th>Used in</th><th class="num">Need</th><th class="num">In stock</th><th class="num">To order</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 /* ---------- Drawing: step 3, the order ---------- */
@@ -721,19 +798,28 @@ function requestTable() {
   const lines = missingLines();
   const rows = lines
     .map(
-      (line) => `<tr><td>${esc(line.name)}</td><td class="muted">${esc(line.dishes.join(", "))}</td><td class="num"><b>${esc(qty(line.to_order, line.unit))}</b></td></tr>`
+      (line) => `<tr data-row-id="${esc(line.product_id)}" class="${app.focusedProductId === line.product_id ? "is-focused" : ""}">
+          <td><span class="ing-name">${esc(line.name)}</span> <span class="ing-sku mono">#${esc(line.product_id)}</span></td>
+          <td class="muted">${esc(line.dishes.join(", "))}</td>
+          <td class="num"><span class="short">${esc(qty(line.to_order, line.unit))}</span></td>
+        </tr>`
     )
     .join("");
-  const empty = lines.length ? "" : '<p class="note">Everything is covered by the stock: there is nothing to order.</p>';
-  return `<div class="head">
-      <h2 class="display">Ready to order</h2>
-      <p class="head__meta">What your assistant will ask Valio Aimo for. Prices and Valio's stock come with the signed quote.</p>
+  const empty = lines.length ? "" : '<p class="note"><span>Everything is covered by walk-in stock: there is nothing to order.</span></p>';
+  return `<div class="stage-head">
+      <div>
+        <p class="stage-head__kicker">03 · Outbound AP2 Mandate Dispatch</p>
+        <h2 class="work__title">Ready to order</h2>
+        <p class="work__lead">What your assistant will ask Valio Aimo to quote. Prices, availability, and allergens arrive inside Valio's signed quote.</p>
+      </div>
     </div>
     ${empty}
-    <table class="tbl">
-      <thead><tr><th>Ingredient</th><th>Used in</th><th class="num">To order</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+    <div class="sheet-wrap">
+      <table class="tbl">
+        <thead><tr><th>Ingredient</th><th>Used in</th><th class="num">To order</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 /* One sentence under the quote when Valio gave no stock count on some lines. It never blocks the order: unknown is shown, not hidden. */
@@ -744,40 +830,59 @@ function stockNote(quote) {
     return !stock || stock.certainty === "unknown" || typeof stock.value !== "number";
   }).length;
   if (unconfirmed === 0) return "";
-  return `<p class="stock-note">Stock not confirmed on ${unconfirmed} of ${total} ${total === 1 ? "line" : "lines"}: Valio gave no count. This does not stop the order.</p>`;
+  return `<p class="stock-note">Stock not confirmed on ${unconfirmed} of ${total} ${total === 1 ? "line" : "lines"}: Valio gave no count. Unknown stays unknown — this does not block the order.</p>`;
 }
 
 function quoteTable(state) {
   const quote = state.quote;
   const total = quote.totals.find((item) => item.type === "total");
+  const quoteStep = (state.steps ?? []).find((step) => step.key === "signed_quote");
   const rows = quote.line_items
     .map((item) => {
       const facts = quote.aimo.lines[item.id] ?? {};
       const lineTotal = item.totals.find((entry) => entry.type === "total");
-      const replaces = facts.substitute_for ? `<span class="tag tag--warn">Substitute</span> <span class="muted">for ${esc(facts.substitute_for.name)}</span>` : "";
-      return `<tr>
-          <td><b>${esc(item.item.title)}</b>${replaces ? `<br />${replaces}` : ""}</td>
+      const focused = app.focusedProductId === item.item.id || app.focusedProductId === facts.substitute_for?.product_id;
+      const replaces = facts.substitute_for
+        ? `<span class="sub-note"><span class="tag tag--warn">Substitute</span> replaces ${esc(facts.substitute_for.name)}</span>`
+        : "";
+      return `<tr data-row-id="${esc(item.item.id)}" class="${focused ? "is-focused" : ""}">
+          <td>
+            <span class="ing-name">${esc(item.item.title)}</span> <span class="ing-sku mono">#${esc(item.item.id)}</span>
+            ${replaces ? `<br />${replaces}` : ""}
+          </td>
           <td class="num">${esc(qty(item.quantity, facts.sales_unit))}</td>
           <td class="num">${esc(money(item.item.price, quote.currency))}</td>
           <td class="num"><b>${esc(money(lineTotal.amount, quote.currency))}</b></td>
-          <td>${esc(stockText(facts.stock))}</td>
+          <td class="muted">${esc(stockText(facts.stock))}</td>
         </tr>`;
     })
     .join("");
   const mismatch = app.mismatch
-    ? `<p class="note note--refused">This quote is for the quantities of the recorded run, not for the ones you changed.
+    ? `<p class="mismatch">This quote is for the quantities of the recorded run, not for the ones you changed.
         ${app.mode === "live" ? "The demo driver does not take changed quantities yet." : "A quote for your own quantities needs the demo driver, which is not running."}</p>`
     : "";
-  return `<div class="head">
-      <h2 class="display">Quote signed by Valio Aimo</h2>
-      <p class="head__meta">Delivery ${esc(dayLong(quote.aimo.delivery_date))}, valid until ${esc(clock(quote.expires_at))}. Prices before tax.</p>
+  return `<div class="invoice-head">
+      <div>
+        <p class="stage-head__kicker">03 · Verified Wholesale Quote · Valio Aimo</p>
+        <h2 class="work__title">Quote signed by Valio Aimo</h2>
+        <p class="work__lead">Delivery ${esc(dayLong(quote.aimo.delivery_date))}, valid until ${esc(clock(quote.expires_at))}. Prices before tax.</p>
+      </div>
+      <div class="sig-pill">
+        ${icon("shield")}
+        <div>
+          <b>ES256 Signature Verified</b>
+          <span class="mono">${esc(shortProof(quoteStep?.proof) || quote.id)} · ${quote.line_items.length} lines</span>
+        </div>
+      </div>
     </div>
     ${mismatch}
-    <table class="tbl tbl--quote">
-      <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Total</th><th>Valio's stock</th></tr></thead>
-      <tbody>${rows}</tbody>
-      <tfoot><tr><td colspan="3">Total before tax</td><td class="num"><b>${esc(money(total.amount, quote.currency))}</b></td><td></td></tr></tfoot>
-    </table>${stockNote(quote)}`;
+    <div class="sheet-wrap">
+      <table class="tbl tbl--quote">
+        <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Total</th><th>Valio's stock</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="3">Total before tax</td><td class="num">${esc(money(total.amount, quote.currency))}</td><td></td></tr></tfoot>
+      </table>
+    </div>${stockNote(quote)}`;
 }
 
 /* A card moves in once, when the step it belongs to lights up. */
@@ -812,23 +917,23 @@ function checksCard(state) {
       <span class="check__out">${esc(OUTCOME_WORDS[check.outcome] ?? check.outcome)}</span>
     </li>`;
   const passed = checks.filter((check) => check.outcome === "pass");
-  // When a check needs the chef, the ones that passed fold away: what matters is read first.
   const list = open.length
     ? `<ul class="checks">${open.map(row).join("")}</ul>
        <details class="passed"><summary>The ${passed.length} other checks passed</summary><ul class="checks">${passed.map(row).join("")}</ul></details>`
     : `<ul class="checks">${passed.map(row).join("")}</ul>`;
-  return `<section class="card card--${esc(verdict.decision)}${arriving(3)}">
+  const cardTone = verdict.decision === "auto" ? "done" : verdict.decision;
+  return `<section class="card card--${esc(cardTone)}${arriving(3)}">
       <p class="card__label">Safety checks before anyone signs</p>
-      <p class="card__lead"><span class="badge badge--${esc(verdict.decision)}">${esc(badge)}</span>${esc(lead)}</p>
+      <p class="card__lead"><span class="badge badge--${esc(verdict.decision)}">${esc(badge)}</span><span>${esc(lead)}</span></p>
       ${list}
     </section>`;
 }
 
-function productFacts(title, name, facts, extra = "") {
+function productFacts(title, name, facts, extra = "", proposed = false) {
   const size = facts.size_per_sales_unit ? `${num(facts.size_per_sales_unit.value)} ${String(facts.size_per_sales_unit.unit).toLowerCase()} a unit` : "unknown";
   const claims = (facts.nutritional_claims ?? []).map(words).join(", ") || "none stated";
   const labels = (facts.labels ?? []).map(words).join(", ") || "none stated";
-  return `<div class="versus__side">
+  return `<div class="versus__side${proposed ? " versus__side--prop" : ""}">
       <p class="card__label">${title}</p>
       <p class="versus__name">${esc(name)}</p>
       <dl class="facts">
@@ -867,9 +972,10 @@ function approvalCard(state) {
   if (approval.status !== "pending") {
     const outcome = { approved: "Signed", rejected: "Rejected: nobody signed, no order", expired: "Expired: nobody signed in time" }[approval.status] ?? approval.status;
     const who = approval.decided_by ? ` by ${approval.decided_by}${approval.decided_at ? `, ${clock(approval.decided_at)}` : ""}` : "";
-    return `<section class="card card--human">
+    const tone = approval.status === "approved" ? "done" : "deny";
+    return `<section class="card card--${tone}">
         <p class="card__label">Your signature</p>
-        <p class="sign__done sign__done--${esc(approval.status)}">${approval.status === "approved" ? icon("check") : icon("cross")}${esc(outcome + who)}</p>
+        <p class="sign__done sign__done--${esc(approval.status)}">${approval.status === "approved" ? icon("check") : icon("cross")}<span>${esc(outcome + who)}</span></p>
       </section>`;
   }
 
@@ -880,12 +986,11 @@ function approvalCard(state) {
     const shortfall = (quote.aimo.shortfalls ?? []).find((entry) => entry.product_id === facts.substitute_for.product_id);
     const why = shortfall ? `Valio cannot deliver what you asked for: ${SHORTFALL_WORDS[shortfall.reason] ?? words(shortfall.reason)}.` : "Valio proposes another product than the one you asked for.";
     const candidates = (quote.aimo.alternatives ?? []).length;
-    // What a chef looks at first: the same allergens or not (a check of the harness), and how sure the assistant is.
     const allergens = state.verdict?.rules.find((rule) => rule.rule_id === "allergen-unchanged-on-substitution");
     const allergenFact = allergens ? checkLine(allergens) : null;
     const fits = (approval.judge ?? []).find((answer) => answer.question_key === "within_preferences");
     const sure = fits && Number.isFinite(fits.probability)
-      ? `${ASSISTANT} is ${Math.round(fits.probability * 100)}% sure it fits your kitchen's preferences. Below ${Math.round(fits.auto_threshold * 100)}%, it asks you.`
+      ? `${ASSISTANT} is ${Math.round(fits.probability * 100)}% sure it fits your kitchen's preferences (auto threshold ${Math.round(fits.auto_threshold * 100)}%).`
       : `${ASSISTANT} could not tell whether it fits your kitchen's preferences, so it asks you.`;
     const extra = `<dt>Price</dt><dd>${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}</dd>
       <dt>Valio's stock</dt><dd>${esc(stockText(facts.stock))}</dd>`;
@@ -896,9 +1001,9 @@ function approvalCard(state) {
         <p class="swap__to"><span class="card__label">Valio proposes</span>${esc(item.item.title)}</p>
       </div>
       <ul class="keys">
-        ${allergenFact ? `<li class="key key--${esc(allergenFact.outcome)}">${allergenFact.outcome === "pass" ? icon("check") : icon("pen")}${esc(allergenFact.label)}${allergenFact.value ? `: ${esc(allergenFact.value)}` : ""}</li>` : `<li class="key">Contains: ${esc(allergenText(facts.allergens))}</li>`}
-        <li class="key">${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}, ${esc(money(approval.total_minor, approval.currency))} for the order</li>
-        <li class="key key--human">${icon("gauge")}${esc(sure)}</li>
+        ${allergenFact ? `<li class="key key--${esc(allergenFact.outcome)}">${allergenFact.outcome === "pass" ? icon("check") : icon("pen")}<span>${esc(allergenFact.label)}${allergenFact.value ? `: ${esc(allergenFact.value)}` : ""}</span></li>` : `<li class="key"><span>Contains: ${esc(allergenText(facts.allergens))}</span></li>`}
+        <li class="key">${icon("shield")}<span>${esc(money(facts.comparison_price_minor, quote.currency))} / ${esc(String(facts.comparison_unit).toLowerCase())} · ${esc(money(approval.total_minor, approval.currency))} total</span></li>
+        <li class="key key--human">${icon("gauge")}<span>${esc(sure)}</span></li>
       </ul>
       <button class="toggle" type="button" data-action="details" role="switch" aria-checked="${app.detailsOpen}">
         <span class="toggle__track" aria-hidden="true"><span class="toggle__knob"></span></span>All details of both products
@@ -907,23 +1012,24 @@ function approvalCard(state) {
         app.detailsOpen
           ? `<div class="versus">
               ${productFacts("You asked for", facts.substitute_for.name, facts.substitute_for)}
-              ${productFacts("Valio proposes", item.item.title, facts, extra)}
+              ${productFacts("Valio proposes", item.item.title, facts, extra, true)}
             </div>
-            <p class="card__label card__label--gap">How sure ${ASSISTANT} is</p>
+            <p class="card__label card__label--gap">Calibrated confidence · ${ASSISTANT}</p>
             <ul class="judges">${confidenceBars(approval)}</ul>`
           : ""
       }`;
   } else {
-    // No substitute: the reasons the harness gave for asking the chef.
     body = `<ul class="reasons">${approval.reasons.map((reason) => `<li>${esc(checkLine(reason).label)}</li>`).join("")}</ul>`;
   }
   return `<section class="card card--human card--sign${arriving(4)}">
       <p class="card__label">Your signature is needed</p>
-      <p class="sign__deadline">${icon("wait")}Sign before <b>${esc(clock(approval.deadline))}</b>, Valio's order cut-off.</p>
+      <p class="sign__deadline">${icon("wait")} Sign before <b>${esc(clock(approval.deadline))}</b>, Valio's order cut-off.</p>
       ${body}
-      <button class="btn btn--go btn--wide" type="button" data-action="approve" ${app.busy ? "disabled" : ""}>
-        ${icon("pen")}Approve and sign · ${esc(money(approval.total_minor, approval.currency))}
-      </button>
+      <div class="sign">
+        <button class="btn btn--approve btn--wide" type="button" data-action="approve" ${app.busy ? "disabled" : ""}>
+          ${icon("pen")} Approve and sign · ${esc(money(approval.total_minor, approval.currency))}
+        </button>
+      </div>
     </section>`;
 }
 
@@ -933,9 +1039,9 @@ function receiptCard(state) {
   const receipt = state.steps.find((step) => step.key === "signed_receipt");
   return `<section class="card card--done${arriving(7)}">
       <p class="card__label">Receipt signed by Valio Aimo</p>
-      <p class="card__lead">${icon("check")}Order ${esc(order.order_id)} accepted</p>
+      <p class="card__lead">${icon("check")}<span>Order ${esc(order.order_id)} accepted</span></p>
       <dl class="facts">
-        <dt>Total</dt><dd>${esc(money(order.total_minor, order.currency))} before tax</dd>
+        <dt>Total</dt><dd><b>${esc(money(order.total_minor, order.currency))}</b> before tax</dd>
         <dt>Delivery</dt><dd>${esc(dayLong(order.delivery_date))}</dd>
         <dt>Signed by</dt><dd>${esc(order.signed_by === "human" ? "you, on this page" : "your assistant, inside your limits")}</dd>
         <dt>Payment</dt><dd>${esc(payment?.detail ?? "unknown")}</dd>
@@ -946,21 +1052,23 @@ function receiptCard(state) {
 
 function attacksCard(state) {
   const items = state.attacks
-    .map((attack) => {
-      // "accepted" would mean Valio let a bad mandate through: it is shown as a failure.
+    .map((attack, idx) => {
       const refused = attack.status === "refused";
-      const label = { refused: "Refused by Valio", accepted: "ACCEPTED: this must not happen", pending: "Not sent yet" }[attack.status] ?? attack.status;
+      const label = { refused: "Refused by Valio", accepted: "ACCEPTED: must not happen", pending: "Not sent yet" }[attack.status] ?? attack.status;
       const problems = attack.problems.map((problem) => `<li>${esc(problem)}</li>`).join("");
-      return `<li class="attack attack--${esc(attack.status)}">
-          <p class="attack__title">${refused ? icon("cross") : icon("wait")}${esc(lexicon(attack.title))}</p>
-          <p class="attack__status">${esc(label)}</p>
-          ${problems ? `<details class="attack__more"><summary>What Valio answered</summary><ul class="attack__problems">${problems}</ul></details>` : ""}
+      return `<li class="attack__item">
+          <div class="attack__head">
+            <span class="attack__idx mono">${String(idx + 1).padStart(2, "0")}</span>
+            <span class="attack__title">${esc(lexicon(attack.title))}</span>
+            <span class="badge badge--${refused ? "deny" : "human"}">${esc(label)}</span>
+          </div>
+          ${problems ? `<ul class="attack__problems">${problems}</ul>` : ""}
         </li>`;
     })
     .join("");
   return `<section class="card card--deny${arriving(5)}">
-      <p class="card__label">Orders signed without you, sent straight to Valio</p>
-      <ul class="attacks">${items}</ul>
+      <p class="card__label">Zero-trust verification · Forged mandates sent straight to Valio</p>
+      <ul class="attack__list">${items}</ul>
     </section>`;
 }
 
@@ -989,7 +1097,6 @@ function drawMain() {
 
 /* ---------- Drawing: the side column ---------- */
 
-/* The week's menu only goes with the recipes: on the stock and the order it would take room for nothing. */
 function drawMenu() {
   const node = el("menu");
   node.hidden = app.step !== 1;
@@ -997,10 +1104,104 @@ function drawMenu() {
   const items = menu
     .map((item) => {
       const cut = item.dish.indexOf(",");
-      return `<li><span class="menu__course">${esc(item.course)}</span>${esc(cut === -1 ? item.dish : item.dish.slice(0, cut))}</li>`;
+      return `<li><span class="menu__course">${esc(item.course)}</span><span>${esc(cut === -1 ? item.dish : item.dish.slice(0, cut))}</span></li>`;
     })
     .join("");
-  setHtml(node, `<h2 class="side__title display">This week's menu</h2><ul class="menu__list">${items}</ul>`);
+  setHtml(node, `<p class="menu__kicker">Service Tasting Sheet</p><h2 class="side__title">This week's menu</h2><ul class="menu__list">${items}</ul>`);
+}
+
+const PULSE_LABELS = {
+  menu_covered: "Menu coverage",
+  dietary_intact: "Safety & origin",
+  ready_without_escalation: "Mandate fit",
+};
+
+function drawPulse() {
+  const node = el("pulse");
+  if (!node) return;
+  const metricsByKey = Object.fromEntries((app.pulseData?.metrics ?? []).map((m) => [m.key, m]));
+  const cells = ["menu_covered", "dietary_intact", "ready_without_escalation"]
+    .map((key) => {
+      const m = metricsByKey[key];
+      const hasProb = m && Number.isFinite(m.probability);
+      const pct = hasProb ? Math.round(m.probability * 100) : null;
+      const conf = m && Number.isFinite(m.confidence) ? Math.round(m.confidence * 100) : null;
+      const tone = pct === null ? "" : pct >= 80 ? " pulse__cell--ok" : pct >= 45 ? " pulse__cell--warn" : " pulse__cell--bad";
+      const tip = hasProb
+        ? `${PULSE_LABELS[key]}: ${pct}% calibrated probability${conf !== null ? ` (confidence ${conf}%)` : ""} · 0 output tokens`
+        : "Calibrated probability not yet evaluated";
+      return `<div class="pulse__cell${tone}" title="${esc(tip)}">
+          <span class="pulse__label">${esc(PULSE_LABELS[key])}</span>
+          <span class="pulse__val mono">${app.pulseBusy && !hasProb ? "…" : pct !== null ? `${pct}%` : "—"}</span>
+          <span class="pulse__bar" aria-hidden="true"><i style="width:${pct ?? 0}%"></i></span>
+        </div>`;
+    })
+    .join("");
+
+  const statusTag = !app.pulseOnline
+    ? '<span class="pulse__tag mono">offline</span>'
+    : `<button class="pulse__btn" type="button" data-action="pulse" ${app.pulseBusy ? "disabled" : ""} title="Run zero-output-token calibrated check via ${esc(app.decisionModel)}">${app.pulseBusy ? "Scoring…" : "0-tok check"}</button>`;
+
+  setHtml(
+    node,
+    `<div class="pulse__head">
+        <span class="pulse__title">${icon("pulse")}<span>Calibrated Readiness · ${esc(app.decisionModel)}</span></span>
+        ${statusTag}
+      </div>
+      <div class="pulse__grid">${cells}</div>`
+  );
+}
+
+function defaultPrompts() {
+  if (app.step === 1) {
+    return [
+      "Which dishes need dairy deliveries?",
+      "Summarize the 3-day cover forecast",
+    ];
+  }
+  if (app.step === 2) {
+    return canEdit()
+      ? [
+          "We found 2 L more cooking cream in walk-in",
+          "Which ingredients are short right now?",
+        ]
+      : ["Why are the stock quantities locked?"];
+  }
+  if (status() === "waiting_for_human") {
+    return [
+      "Compare the substitute allergens and price",
+      "Why does this order need my signature?",
+    ];
+  }
+  if (status() === "refused") {
+    return [
+      "Why was this order blocked?",
+      "Which checks or signatures failed?",
+    ];
+  }
+  if (orderOnScreen()) {
+    return [
+      "Summarize the signed quote and delivery",
+      "Are any Valio stock counts unconfirmed?",
+    ];
+  }
+  return [
+    "What will you ask Valio Aimo to quote?",
+    "Is this within my spending limit?",
+  ];
+}
+
+function drawPrompts() {
+  const node = el("prompts");
+  if (!node) return;
+  const items = (app.followUps.length ? app.followUps : defaultPrompts()).slice(0, 3);
+  const chips = items
+    .map(
+      (prompt) =>
+        `<button class="prompt-chip" type="button" data-prompt="${esc(prompt)}" ${!app.up.assistant || app.chatBusy ? "disabled" : ""}>${esc(prompt)}</button>`
+    )
+    .join("");
+  setHtml(node, chips);
 }
 
 function drawTalk() {
@@ -1011,7 +1212,12 @@ function drawTalk() {
       if (line.typing) return '<li class="say say--agent"><span class="say__dots" aria-label="working"><i></i><i></i><i></i></span></li>';
       const speaker = line.speaker ?? (line.who === "chef" ? "Chef" : ASSISTANT);
       const proof = line.proof ? `<span class="say__proof mono" title="${esc(line.proof)}">${esc(shortProof(line.proof))}</span>` : "";
-      const changes = (line.changes ?? []).map((change) => `<span class="say__change">${icon("pen")}${esc(change)}</span>`).join("");
+      const changes = (line.changes ?? [])
+        .map((change) => {
+          if (typeof change === "string") return `<span class="say__change">${icon("pen")}<span>${esc(change)}</span></span>`;
+          return `<button class="say__change" type="button" data-jump="${esc(change.productId)}" title="Highlight in stock table">${icon("pen")}<span>${esc(change.text)}</span></button>`;
+        })
+        .join("");
       return `<li class="say say--${line.who === "chef" ? "chef" : "agent"}${line.status ? ` say--${esc(line.status)}` : ""}">
           <span class="say__who">${esc(speaker)}</span>
           <span class="say__text">${esc(line.text)}</span>${changes}${proof}
@@ -1027,10 +1233,21 @@ function drawTalk() {
     el("agent-title"),
     `${icon("terminal")}<span>${ASSISTANT}</span><span class="agent__state"><i class="dot dot--${app.up.assistant ? "on" : "off"}"></i>${app.up.assistant ? "Live" : "Log only"}</span>`
   );
+  const subNode = el("agent-sub");
+  if (subNode) {
+    const modelTag = app.assistantModel || "gemini-3.5-flash-lite";
+    const chainTag = app.interactionId ? " · Stateful chain" : "";
+    setHtml(
+      subNode,
+      app.up.assistant
+        ? `Interactions API (${esc(modelTag)})${chainTag} · Grounded on signed state`
+        : "Gemini Interactions API · Grounded exclusively on signed page state"
+    );
+  }
   el("ask-text").disabled = !app.up.assistant || app.chatBusy;
   el("ask-send").disabled = !app.up.assistant || app.chatBusy;
   setHtml(el("ask-send"), `<span>Send</span>${icon("send")}`);
-  setHtml(el("ask-note"), app.up.assistant ? "It can change the stock table. It never signs: you do, with the buttons." : `${ASSISTANT} is offline. You can still change the table by hand.`);
+  setHtml(el("ask-note"), app.up.assistant ? "Edits walk-in stock on command. Never signs mandates — only you sign with the buttons." : `${ASSISTANT} is offline. You can still edit the stock table directly.`);
 }
 
 /* ---------- Drawing: the demo strip (for the team, not for the customer) ---------- */
@@ -1053,7 +1270,7 @@ function drawDemo() {
     <span class="demo__src">
       ${light(app.mode === "live", "driver", `live (${DRIVER_URL})`, app.up.driver ? "could not run, replaying a recorded run" : "not started, replaying the runs recorded on 14/11", "scenarios/run.py on port 8003, started by scripts/dev.py. It needs VALIO_MODE=live.")}
       ${light(app.up.harness, "harness", "live", "not started", "uv run python scripts/dev.py starts the gateway (8001), the harness (8002) and the driver (8003)")}
-      ${light(app.up.assistant, "assistant", "live", "not started", "uv run uvicorn surface.assistant:app --port 8004")}
+      ${light(app.up.assistant, "assistant", app.pulseOnline ? "live (interactions + decisions)" : "live", "not started", "uv run uvicorn surface.assistant:app --port 8004")}
       <span>kitchen data: synthetic</span>
     </span>
     <span class="demo__note">Concept mock-up, Junction 2026, synthetic data. Not a Valio Aimo service.</span>`
@@ -1065,6 +1282,8 @@ function draw() {
   drawTrail();
   drawMain();
   drawMenu();
+  drawPulse();
+  drawPrompts();
   drawTalk();
   drawDemo();
 }
@@ -1087,15 +1306,15 @@ function toast(text) {
 }
 
 let dialogConfirm = null;
-function openDialog({ title, body, confirm, tone = "go", onConfirm }) {
+function openDialog({ title, body, confirm, tone = "primary", onConfirm }) {
   const node = el("dialog");
   dialogConfirm = onConfirm;
   node.innerHTML = `<form class="dialog__box" method="dialog" id="dialog-form">
-      <h2 class="dialog__title display" id="dialog-title">${esc(title)}</h2>
+      <h2 class="dialog__title" id="dialog-title">${esc(title)}</h2>
       <div class="dialog__body">${body}</div>
       <p class="dialog__error" id="dialog-error" role="alert" hidden></p>
       <div class="dialog__actions">
-        <button class="btn btn--quiet" type="button" data-dialog="cancel">Cancel</button>
+        <button class="btn btn--ghost" type="button" data-dialog="cancel">Cancel</button>
         <button class="btn btn--${esc(tone)}" type="submit" id="dialog-ok">${confirm}</button>
       </div>
     </form>`;
@@ -1121,6 +1340,7 @@ function askSignature() {
     .join("");
   openDialog({
     title: "Sign this order?",
+    tone: "approve",
     body: `<ul class="dialog__lines">${lines}</ul>
       <dl class="facts dialog__facts">
         <dt>Total</dt><dd><b>${esc(money(approval.total_minor, approval.currency))}</b> before tax</dd>
@@ -1174,6 +1394,7 @@ function askLimit() {
         toast(`New limit signed: ${limitText()} an order`);
         say("chef", `My spending limit is now ${limitText()} an order.`);
         draw();
+        schedulePulse();
       } catch (error) {
         el("dialog-ok").disabled = false;
         // The limit lives in the harness, which enforces it. The page never keeps a limit of its own.
@@ -1184,6 +1405,53 @@ function askLimit() {
     },
   });
   el("limit-input").select();
+}
+
+/* ---------- Focus highlight & calibrated pulse ---------- */
+
+let focusTimer = null;
+function focusRow(productId) {
+  if (!productId) return;
+  app.focusedProductId = productId;
+  drawMain();
+  requestAnimationFrame(() => {
+    const row = document.querySelector(`[data-row-id="${CSS.escape(productId)}"]`);
+    row?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  });
+  clearTimeout(focusTimer);
+  focusTimer = setTimeout(() => {
+    app.focusedProductId = null;
+    drawMain();
+  }, 2400);
+}
+
+function pulseFingerprint() {
+  const stockPart = app.lines.map((l) => `${l.product_id}:${l.in_stock}:${l.to_order}`).join(",");
+  return `${app.scenarioId}|${status()}|${app.state?.approval?.status ?? ""}|${limitText() ?? ""}|${stockPart}`;
+}
+
+let pulseTimer = null;
+function schedulePulse(force = false) {
+  if (!app.pulseOnline || revealing()) return;
+  const key = pulseFingerprint();
+  if (!force && key === app.pulseKey) return;
+  clearTimeout(pulseTimer);
+  pulseTimer = setTimeout(async () => {
+    if (!app.pulseOnline || app.pulseBusy) return;
+    const nextKey = pulseFingerprint();
+    if (!force && nextKey === app.pulseKey) return;
+    app.pulseBusy = true;
+    drawPulse();
+    try {
+      app.pulseData = await assistant.pulse(pageFacts());
+      app.pulseKey = nextKey;
+    } catch {
+      /* fail closed: leave unknown rather than guessing */
+    } finally {
+      app.pulseBusy = false;
+      drawPulse();
+    }
+  }, force ? 20 : 280);
 }
 
 /* ---------- Actions ---------- */
@@ -1199,6 +1467,7 @@ async function guarded(work) {
   } finally {
     app.busy = false;
     draw();
+    schedulePulse();
   }
 }
 
@@ -1213,8 +1482,13 @@ function startOver() {
   app.sentKey = null;
   app.correcting = false;
   app.mismatch = false;
-  app.detailsOpen = false;
+  app.detailsOpen = true;
   app.talk = [];
+  app.interactionId = null;
+  app.followUps = [];
+  app.focusedProductId = null;
+  app.pulseData = null;
+  app.pulseKey = "";
   loadLines(app.kitchen.stock);
   say("agent", openingLine());
 }
@@ -1276,8 +1550,9 @@ async function runScenario() {
   app.fresh = null;
   app.told = {};
   app.correcting = false;
-  app.detailsOpen = false;
+  app.detailsOpen = true;
   app.mismatch = false;
+  app.followUps = [];
   draw();
   app.state = await liveOrRecorded(
     () => driver.run(app.scenarioId, { lines, delivery_date: deliveryDate }),
@@ -1312,6 +1587,7 @@ async function decide(decision) {
     } else {
       app.state = decision === "approve" ? await recorded("substitution.approved") : rejectedReplay(app.state);
     }
+    app.followUps = [];
     say("chef", decision === "approve" ? "I approve and sign this order." : "I reject this order.");
     toast(decision === "approve" ? "Signed" : "Rejected: nothing is ordered");
     app.shown = Math.min(app.shown, 3); // the signature step lights up again, signed this time
@@ -1336,8 +1612,10 @@ function correctQuantities() {
   app.correcting = true;
   app.confirmed.stock = null;
   app.step = 2;
+  app.followUps = [];
   say("agent", "The quantities of the refused order are in the table. Correct them, confirm the stock, and I ask Valio for a new quote.");
   draw();
+  schedulePulse();
 }
 
 /* What the page shows, for the assistant's chat: it may only repeat what is here. */
@@ -1370,6 +1648,7 @@ function pageFacts() {
         lines: quote.line_items.map((item) => {
           const line = quote.aimo.lines[item.id] ?? {};
           return {
+            product_id: item.item.id,
             product: item.item.title,
             quantity: qty(item.quantity, line.sales_unit),
             unit_price: money(item.item.price, quote.currency),
@@ -1398,11 +1677,24 @@ async function sendChat(text) {
   draw();
   try {
     const turns = app.talk.slice(-12).map((line) => ({ who: line.who === "chef" ? "chef" : "assistant", text: String(line.text).slice(0, 2000) }));
-    const answer = await assistant.chat(turns, pageFacts());
+    const answer = await assistant.chat(turns, pageFacts(), app.interactionId);
+    if (answer.interaction_id) app.interactionId = answer.interaction_id;
+    if (answer.model) app.assistantModel = answer.model;
+    if (Array.isArray(answer.follow_ups)) app.followUps = answer.follow_ups;
+
     // The page applies the changes itself and shows what really changed, whatever the reply says.
     const applied = (answer.stock_changes ?? []).map((change) => setStock(change.product_id, change.field, change.amount, ASSISTANT)).filter(Boolean);
-    say("agent", answer.reply, { changes: applied.map(changeText) });
-    if (applied.length) toast(`${applied.length} ${applied.length === 1 ? "line" : "lines"} changed in the stock table`);
+    if (applied.length && app.confirmed.stock && !orderOnScreen()) app.confirmed.stock = null;
+    say("agent", answer.reply, {
+      changes: applied.map((change) => ({ productId: change.line.product_id, text: changeText(change) })),
+    });
+    if (applied.length) {
+      if (app.step === 1) app.step = 2;
+      toast(`${applied.length} ${applied.length === 1 ? "line" : "lines"} updated in stock ledger`);
+      schedulePulse();
+    }
+    const targetId = answer.focus_product_id || applied[0]?.line.product_id || null;
+    if (targetId) setTimeout(() => focusRow(targetId), 40);
   } catch (error) {
     app.up.assistant = Boolean(error.status) && error.status !== 503;
     say("agent", "I could not answer just now. Nothing was changed. You can still change the table by hand.", { status: "refused" });
@@ -1424,6 +1716,7 @@ function watch() {
       if (JSON.stringify(fresh.steps) !== JSON.stringify(app.state.steps) || fresh.scenario.status !== status()) {
         app.state = fresh;
         reveal();
+        schedulePulse();
       }
     } catch {
       /* the next look may work */
@@ -1434,7 +1727,7 @@ function watch() {
 
 /*
  * Are the services there? The page looks again every few seconds, so a service started after the page shows up
- * without a reload. (Before, the page looked once when it loaded: a harness started later stayed "not reached".)
+ * without a reload.
  */
 async function checkServices() {
   const [policy, health, state] = await Promise.all([
@@ -1445,6 +1738,9 @@ async function checkServices() {
   app.up.harness = Boolean(policy);
   if (policy) app.policy = policy;
   app.up.assistant = Boolean(health?.chat);
+  app.pulseOnline = Boolean(health?.pulse);
+  if (health?.model) app.assistantModel = health.model;
+  if (health?.decision_model) app.decisionModel = health.decision_model;
   app.up.driver = Boolean(state && Array.isArray(state.steps));
   // The driver arrived while nothing was running: from now on the page is live.
   if (app.up.driver && app.mode === "replay" && !hasRun() && !app.busy) {
@@ -1452,6 +1748,7 @@ async function checkServices() {
     app.state = state;
   }
   draw();
+  schedulePulse();
   setTimeout(checkServices, SERVICES_MS);
 }
 
@@ -1479,10 +1776,25 @@ document.addEventListener("click", (event) => {
     return;
   }
 
+  const promptChip = event.target.closest("[data-prompt]");
+  if (promptChip && !promptChip.disabled) {
+    sendChat(promptChip.dataset.prompt);
+    return;
+  }
+
+  const jumpBtn = event.target.closest("[data-jump]");
+  if (jumpBtn) {
+    if (app.step !== 2) app.step = 2;
+    draw();
+    focusRow(jumpBtn.dataset.jump);
+    return;
+  }
+
   // The chef can always go back to the recipes and the stock, also once an order was sent.
   const stepButton = event.target.closest("[data-step]");
   if (stepButton) {
     app.step = Number(stepButton.dataset.step);
+    app.followUps = [];
     draw();
     return;
   }
@@ -1516,6 +1828,7 @@ document.addEventListener("click", (event) => {
       toast("Recipes confirmed");
     }
     app.step = 2;
+    app.followUps = [];
     draw();
   } else if (action === "confirm-stock") {
     if (!orderOnScreen()) {
@@ -1526,6 +1839,7 @@ document.addEventListener("click", (event) => {
       toast(`Stock confirmed: ${missing} ${missing === 1 ? "ingredient" : "ingredients"} to order`);
     }
     app.step = 3;
+    app.followUps = [];
     draw();
   } else if (action === "run") {
     toast("Order handed to your assistant");
@@ -1545,9 +1859,13 @@ document.addEventListener("click", (event) => {
   } else if (action === "use-need") {
     useNeed();
     draw();
+    schedulePulse();
   } else if (action === "undo") {
     undoChanges();
     draw();
+    schedulePulse();
+  } else if (action === "pulse") {
+    schedulePulse(true);
   } else if (action === "reset") {
     chooseScenario(app.scenarioId === "attack" ? "normal-order" : app.scenarioId);
   }
@@ -1566,6 +1884,7 @@ document.addEventListener("change", (event) => {
   setTimeout(() => {
     const focused = document.activeElement?.dataset?.cell;
     draw();
+    schedulePulse();
     if (focused) document.querySelector(`[data-cell="${CSS.escape(focused)}"]`)?.focus();
   }, 0);
 });
