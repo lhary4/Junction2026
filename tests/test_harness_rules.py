@@ -428,6 +428,41 @@ def test_lost_label_origin_or_dietary_claim_is_never_pre_accepted():
     assert len(verdict_claims.judge) == 2
 
 
+def test_signed_catalog_listed_flag_and_signed_claims_govern_pre_acceptance_without_why_coupling():
+    """Pre-acceptance checks `Alternative.catalog_listed` (never `why` wording) and signed `nutritional_claims`."""
+    policy = load_policy()
+
+    # 1) `catalog_listed=True` pre-accepts even if `why` is reworded completely
+    reworded = copy.deepcopy(_example("checkout.act3.json"))
+    reworded["aimo"]["alternatives"][0]["why"] = "Valio replacement"
+    reworded["aimo"]["alternatives"][0]["catalog_listed"] = True
+    verdict_ok = evaluate(policy, AimoCheckout.model_validate(reworded), NOW, SIG_PASS)
+    assert verdict_ok.decision == "auto"
+
+    # 2) `catalog_listed=False` calls the judge even if `why` contains the old catalog substring
+    unlisted = copy.deepcopy(_example("checkout.act3.json"))
+    unlisted["aimo"]["alternatives"][0]["why"] = "same category, listed as a substitute in the catalog"
+    unlisted["aimo"]["alternatives"][0]["catalog_listed"] = False
+    verdict_unlisted = evaluate(
+        policy, AimoCheckout.model_validate(unlisted), NOW, SIG_PASS, judge=_fake_judge(0.20, 0.50)
+    )
+    assert verdict_unlisted.decision == "human"
+    assert len(verdict_unlisted.judge) == 2
+
+    # 3) Signed `nutritional_claims` on `SubstituteFor` vs `LineClaims` catch lost NO_ADDED_SUGARS directly
+    signed_claims = copy.deepcopy(_example("checkout.act3.json"))
+    signed_claims["aimo"]["lines"]["li-2"]["substitute_for"]["nutritional_claims"] = [
+        "FREE_FROM_LACTOSE",
+        "NO_ADDED_SUGARS",
+    ]
+    signed_claims["aimo"]["lines"]["li-2"]["nutritional_claims"] = ["FREE_FROM_LACTOSE"]
+    verdict_signed = evaluate(
+        policy, AimoCheckout.model_validate(signed_claims), NOW, SIG_PASS, judge=_fake_judge(0.05, 0.12)
+    )
+    assert verdict_signed.decision == "human"
+    assert len(verdict_signed.judge) == 2
+
+
 def test_uncovered_shortfall_requires_human_approval():
     """If alternatives are disabled and only 384 L of 600 L can be delivered, never auto-sign silently."""
     policy = load_policy()
