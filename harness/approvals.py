@@ -17,7 +17,7 @@ from typing import Literal
 from zoneinfo import ZoneInfo
 
 from common import clock
-from contract.models import ApprovalRequest, AuthorizationStatus, Verdict
+from contract.models import ApprovalRequest, Authorization, AuthorizationStatus, Verdict
 
 ROOT = Path(__file__).resolve().parent.parent
 HELSINKI = ZoneInfo("Europe/Helsinki")
@@ -47,12 +47,14 @@ def expired_reason(deadline: datetime | None) -> str:
 class ApprovalStore:
     """Thread-safe store persisted under `<state_dir>/buyer/`.
 
-    Stores four small JSON files so state survives service restarts and is easy to inspect:
+    Stores five small JSON files so state survives service restarts and is easy to inspect:
     - `approvals.json`: human approval cards (`pending` -> `approved` | `rejected` | `expired`)
     - `authorizations.json`: latest `AuthorizationStatus` per `checkout_id`
     - `verdicts.json`: full rule-by-rule `Verdict` per `checkout_id` (used by the surface)
     - `checkout_jwts.json`: exact verified quote token per `checkout_id` so human approval signs
       the exact quote whose `checkout_hash` was shown on screen
+    - `signed_mandates.json`: signed `Authorization` per `checkout_id` so a network retry after
+      a lost response replays the identical mandate instead of getting refused with HTTP 403
     """
 
     def __init__(self, directory: Path | None = None) -> None:
@@ -63,6 +65,7 @@ class ApprovalStore:
         self._authorizations: dict[str, AuthorizationStatus] = {}
         self._verdicts: dict[str, Verdict] = {}
         self._checkout_jwts: dict[str, str] = {}
+        self._signed_mandates: dict[str, Authorization] = {}
 
     def _dir(self) -> Path:
         return self._explicit_dir if self._explicit_dir is not None else buyer_state_dir()
@@ -75,6 +78,7 @@ class ApprovalStore:
             self._authorizations = {}
             self._verdicts = {}
             self._checkout_jwts = {}
+            self._signed_mandates = {}
             self._load_from_disk(folder)
             self._loaded_dir = folder
         return folder
@@ -98,6 +102,11 @@ class ApprovalStore:
         jwts_file = folder / "checkout_jwts.json"
         if jwts_file.exists():
             self._checkout_jwts = dict(json.loads(jwts_file.read_text(encoding="utf-8")))
+
+        mandates_file = folder / "signed_mandates.json"
+        if mandates_file.exists():
+            raw = json.loads(mandates_file.read_text(encoding="utf-8"))
+            self._signed_mandates = {k: Authorization.model_validate(v) for k, v in raw.items()}
 
     def _flush(self, folder: Path) -> None:
         folder.mkdir(parents=True, exist_ok=True)
@@ -127,6 +136,14 @@ class ApprovalStore:
         )
         (folder / "checkout_jwts.json").write_text(
             json.dumps(self._checkout_jwts, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        (folder / "signed_mandates.json").write_text(
+            json.dumps(
+                {k: v.model_dump(mode="json") for k, v in self._signed_mandates.items()},
+                indent=2,
+            )
+            + "\n",
             encoding="utf-8",
         )
 
@@ -241,6 +258,57 @@ class ApprovalStore:
         with self._lock:
             self._ensure_loaded()
             return self._checkout_jwts.get(checkout_id)
+
+    def save_signed_mandate(
+        self,
+        checkout_id: str,
+        authorization: Authorization,
+        *,
+        checkout_jwt: str | None = None,
+    ) -> None:
+        """Persist a signed mandate before calling `/complete` so retries resend the exact same token."""
+        with self._lock:
+            folder = self._ensure_loaded()
+            self._signed_mandates[checkout_id] = authorization
+            if checkout_jwt is not None:
+                self._checkout_jwts[checkout_id] = checkout_jwt
+            self._flush(folder)
+
+    def get_signed_mandate(self, checkout_id: str) -> Authorization | None:
+        with self._lock:
+            self._ensure_loaded()
+            return self._signed_mandates.get(checkout_id)
+
+    def record_expired(
+        self,
+        approval_id: str,
+        *,
+        reason: str | None = None,
+        now: datetime | None = None,
+    ) -> tuple[ApprovalRequest, AuthorizationStatus]:
+        """Mark a pending approval as `expired` (e.g. if the quote expired right before `/complete`)."""
+        _ = now  # reserved for signature symmetry
+        with self._lock:
+            folder = self._ensure_loaded()
+            approval = self._approvals.get(approval_id)
+            if approval is None:
+                raise ApprovalNotFoundError(approval_id)
+            updated = approval.model_copy(update={"status": "expired"})
+            status = AuthorizationStatus(
+                status="expired",
+                checkout_id=approval.checkout_id,
+                decision="human",
+                signed_by=None,
+                order_id=None,
+                reasons=[reason or expired_reason(approval.deadline)],
+                approval_id=approval_id,
+                approval_url=None,
+                deadline=approval.deadline,
+            )
+            self._approvals[approval_id] = updated
+            self._authorizations[approval.checkout_id] = status
+            self._flush(folder)
+            return updated, status
 
     def get_authorization(self, checkout_id: str) -> AuthorizationStatus | None:
         with self._lock:

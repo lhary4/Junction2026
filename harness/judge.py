@@ -33,27 +33,50 @@ QUESTIONS: dict[str, dict[str, str]] = {
     "within_preferences": {
         "type": "noul",
         "instructions": (
-            "Does `candidate_product` respect every preference in `buyer_preferences` "
-            "for autonomous ordering without requiring manager approval?"
+            "Under the rules in `buyer_preferences`, does `candidate_product` qualify to "
+            "replace `original_product` automatically without requiring human review or rejection?"
         ),
     },
     "same_use": {
         "type": "noul",
         "instructions": (
-            "Can the kitchen use `candidate_product` in the exact same way and for the exact same "
-            "purpose as `original_product`, without changing anything?"
+            "Can the kitchen use `candidate_product` for the same dish or purpose as "
+            "`original_product` without changing the recipe, storage handling, or preparation?"
         ),
     },
 }
 
-# Expand short GS1/Valio allergen codes into plain English so the judge does not have to guess codes.
+# Standard GS1 Synkka allergen codes expanded into plain English so the judge never guesses codes.
 ALLERGEN_LABELS: dict[str, str] = {
+    "AC": "AC (crustaceans)",
+    "AE": "AE (eggs)",
+    "AF": "AF (fish)",
     "AM": "AM (milk)",
-    "AW": "AW (cereals containing gluten)",
-    "GO": "GO (oats)",
-    "AP": "AP (peanuts)",
     "AN": "AN (tree nuts)",
+    "AP": "AP (peanuts)",
+    "AS": "AS (sesame seeds)",
+    "AU": "AU (sulphur dioxide and sulphites)",
+    "AW": "AW (cereals containing gluten)",
+    "AY": "AY (soybeans)",
+    "BC": "BC (celery)",
+    "BM": "BM (mustard)",
+    "GB": "GB (barley)",
+    "GK": "GK (kamut)",
+    "GO": "GO (oats)",
+    "GR": "GR (rye)",
+    "GS": "GS (spelt)",
     "ML": "ML (lactose)",
+    "NL": "NL (lupin)",
+    "SA": "SA (almonds)",
+    "SC": "SC (cashews)",
+    "SH": "SH (hazelnuts)",
+    "SM": "SM (macadamia nuts)",
+    "SP": "SP (pecans)",
+    "SR": "SR (brazil nuts)",
+    "ST": "ST (pistachios)",
+    "SW": "SW (walnuts)",
+    "UM": "UM (molluscs)",
+    "UW": "UW (wheat)",
 }
 
 
@@ -80,28 +103,51 @@ def _product_id(card: dict[str, Any]) -> str:
     return str(card.get("id") or card.get("product_id") or "")
 
 
-def _format_allergens(raw: Any) -> dict[str, list[str]]:
+def _format_allergens(raw: Any) -> dict[str, Any]:
     if not isinstance(raw, dict):
-        return {"contains": [], "free_from": []}
+        return {"data_status": "unknown", "contains": [], "free_from": []}
+    status = str(raw.get("data") or raw.get("data_status") or "complete")
     contains = [ALLERGEN_LABELS.get(code, str(code)) for code in raw.get("contains", [])]
     free_from = [ALLERGEN_LABELS.get(code, str(code)) for code in raw.get("free_from", [])]
-    return {"contains": contains, "free_from": free_from}
+    return {"data_status": status, "contains": contains, "free_from": free_from}
+
+
+def _extract_origin(raw: Any) -> str:
+    if isinstance(raw, dict):
+        val = raw.get("value")
+        return str(val) if val else "unknown"
+    if isinstance(raw, str) and raw.strip():
+        return raw.strip()
+    return "unknown"
 
 
 def _structured_product(card: dict[str, Any]) -> dict[str, Any]:
     """Extract strictly structured catalog facts; never include marketing descriptions.
 
     Google's Decisions API docs warn that free-form marketing copy can try to persuade
-    the classifier ("perfect substitute for milk!"). Passing only structured fields blocks that.
+    the classifier ("perfect substitute for milk!"). Passing only structured fields blocks that,
+    while keeping origin, labels, nutritional claims, and pack sizes so policy rules can check them.
     """
-    return {
+    structured: dict[str, Any] = {
         "id": _product_id(card),
         "name": card.get("name", ""),
         "brand": card.get("brand"),
         "category": card.get("category", ""),
+        "origin_country": _extract_origin(card.get("origin") or card.get("origin_country")),
         "allergens": _format_allergens(card.get("allergens")),
         "nutritional_claims": list(card.get("nutritional_claims", [])),
+        "labels": list(card.get("labels", [])),
     }
+    if card.get("sales_unit"):
+        structured["sales_unit"] = card["sales_unit"]
+    if card.get("base_unit"):
+        structured["base_unit"] = card["base_unit"]
+    size_info = card.get("size_per_sales_unit")
+    if isinstance(size_info, dict) and size_info.get("value") is not None and size_info.get("unit"):
+        structured["size_per_sales_unit"] = f"{size_info['value']:g} {size_info['unit']}"
+    elif isinstance(size_info, str) and size_info:
+        structured["size_per_sales_unit"] = size_info
+    return structured
 
 
 def build_judge_input(original: dict[str, Any], candidate: dict[str, Any], preferences_text: str) -> str:
@@ -226,7 +272,8 @@ def judge_substitution(
 
 def _load_demo_case() -> tuple[dict[str, Any], list[dict[str, Any]], str, float, float]:
     cards_path = ROOT / "contract" / "examples" / "product-cards.json"
-    policy_path = ROOT / "contract" / "examples" / "policy.demo.json"
+    scenario_policy = ROOT / "scenarios" / "policy.demo.json"
+    policy_path = scenario_policy if scenario_policy.exists() else (ROOT / "contract" / "examples" / "policy.demo.json")
     cards = {card["id"]: card for card in json.loads(cards_path.read_text(encoding="utf-8"))}
     policy = json.loads(policy_path.read_text(encoding="utf-8"))
     sub = policy["substitution"]

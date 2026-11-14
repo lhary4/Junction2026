@@ -124,12 +124,18 @@ def _verify_quote_token(
     jwks: dict[str, Any],
     now: datetime,
 ) -> tuple[AimoCheckout, RuleResult]:
-    """Verify Valio's ES256 signature on `checkout_jwt` and return `(checkout, signature_rule)`."""
+    """Verify the merchant's ES256 signature on `checkout_jwt` and return `(checkout, signature_rule)`."""
     kid = _jwt_kid(checkout_jwt)
     try:
         verified = verify_checkout(checkout_jwt, jwks, now)
         if raw_checkout is not None:
-            outer = AimoCheckout.model_validate(raw_checkout)
+            try:
+                outer = AimoCheckout.model_validate(raw_checkout)
+            except ValidationError as val_err:
+                raise TrustError(
+                    f"outer checkout payload is invalid: {val_err.error_count()} validation error(s)",
+                    rule="quote-signature",
+                ) from val_err
             if outer != verified:
                 raise TrustError("outer checkout payload differs from signed checkout_jwt", rule="quote-signature")
         sig_rule = RuleResult(
@@ -153,6 +159,7 @@ def _verify_quote_token(
 
         # Bad signature or tampered quote: decode unverified payload only to report id/total in Verdict.
         untrusted = _fallback_untrusted_checkout(checkout_jwt, raw_checkout)
+        merchant_name = untrusted.merchant.name or untrusted.merchant.id
         evidence: dict[str, Any] = {"error": str(err)}
         if kid:
             evidence["kid"] = kid
@@ -160,7 +167,7 @@ def _verify_quote_token(
             rule_id="quote-signature",
             outcome="deny",
             message=(
-                "The quote does not match Valio Aimo's signature: it was changed after signing. "
+                f"The quote does not match {merchant_name}'s signature: it was changed after signing. "
                 "Nothing is signed, nothing is ordered."
             ),
             evidence=evidence,
@@ -212,22 +219,68 @@ def create_app(
                 yield client
 
     def _fetch_jwks(client: httpx.Client) -> dict[str, Any]:
-        resp = client.get("/.well-known/jwks.json")
+        try:
+            resp = client.get("/.well-known/jwks.json")
+        except httpx.HTTPError as err:
+            raise HTTPException(status_code=502, detail=f"merchant gateway unreachable while fetching JWKS: {err}") from err
         if resp.status_code != 200:
-            raise HTTPException(status_code=502, detail="could not fetch gateway JWKS")
-        return resp.json()
+            raise HTTPException(status_code=502, detail=f"could not fetch gateway JWKS (HTTP {resp.status_code})")
+        try:
+            return resp.json()
+        except ValueError as err:
+            raise HTTPException(status_code=502, detail="gateway JWKS response is not valid JSON") from err
 
     def _fetch_quote(client: httpx.Client, checkout_id: str) -> tuple[str, dict[str, Any] | None]:
-        resp = client.get(f"/checkouts/{checkout_id}")
+        try:
+            resp = client.get(f"/checkouts/{checkout_id}")
+        except httpx.HTTPError as err:
+            raise HTTPException(
+                status_code=502,
+                detail=f"merchant gateway unreachable while fetching quote {checkout_id}: {err}",
+            ) from err
         if resp.status_code == 404:
             raise HTTPException(status_code=404, detail=f"unknown checkout {checkout_id}")
         if resp.status_code != 200:
             raise HTTPException(status_code=502, detail=f"gateway returned HTTP {resp.status_code} for {checkout_id}")
-        body = resp.json()
+        try:
+            body = resp.json()
+        except ValueError as err:
+            raise HTTPException(status_code=502, detail="gateway quote response is not valid JSON") from err
         token = body.get("checkout_jwt")
         if not isinstance(token, str) or not token:
             raise HTTPException(status_code=502, detail="gateway response missing checkout_jwt")
         return token, body.get("checkout")
+
+    def _fetch_product_cards(client: httpx.Client, checkout: AimoCheckout) -> dict[str, dict[str, Any]]:
+        """Fetch structured catalog metadata (`nutritional_claims`, `brand`, `labels`, `size_per_sales_unit`)
+        for any original or substitute products on a substitution quote.
+
+        Best-effort enrichment: if `/products/search` is unavailable (e.g. a minimal test stub),
+        returns `{}` and `evaluate()` still enforces all signed quote fields cleanly.
+        """
+        targets: dict[str, str] = {}
+        titles = {item.id: item.item.title for item in checkout.line_items}
+        for lid, lc in checkout.aimo.lines.items():
+            if lc.substitute_for is not None:
+                targets[lc.substitute_for.product_id] = lc.substitute_for.name
+                targets[lc.product_id] = titles.get(lid, "")
+
+        cards: dict[str, dict[str, Any]] = {}
+        for pid, name in targets.items():
+            if not name or len(name.strip()) < 2:
+                continue
+            try:
+                resp = client.get("/products/search", params={"q": name, "limit": 20})
+                if resp.status_code != 200:
+                    continue
+                payload = resp.json()
+                for card in payload.get("products") or []:
+                    if isinstance(card, dict) and str(card.get("id")) == pid:
+                        cards[pid] = card
+                        break
+            except (httpx.HTTPError, ValueError):
+                continue
+        return cards
 
     def _submit_mandate_and_verify_receipt(
         client: httpx.Client,
@@ -235,19 +288,29 @@ def create_app(
         authorization: Authorization,
         jwks: dict[str, Any],
     ) -> tuple[Order | None, list[str]]:
-        """Send signed AP2 mandates to Valio's gateway and verify the signed receipt before trusting it.
+        """Send signed AP2 mandates to the merchant gateway and verify the signed receipt before trusting it.
 
         Core principle ("submission is not acceptance"): an order is only reported as `ordered`
-        if Valio's gateway returns HTTP 200 AND its `receipt_jwt` verifies against Valio's JWKS
+        if the gateway returns HTTP 200 AND its `receipt_jwt` verifies against the gateway's JWKS
         with matching `order_id`, `mandate_reference`, and `status == "Success"`.
         """
-        resp = client.post(
-            f"/checkouts/{checkout_id}/complete",
-            json=authorization.model_dump(mode="json"),
-        )
+        try:
+            resp = client.post(
+                f"/checkouts/{checkout_id}/complete",
+                json=authorization.model_dump(mode="json"),
+            )
+        except httpx.HTTPError as err:
+            raise HTTPException(
+                status_code=502,
+                detail=f"merchant gateway unreachable while completing {checkout_id}: {err}",
+            ) from err
+
         if resp.status_code == 403:
-            body = resp.json()
-            problems = body.get("problems") or ["gateway refused order"]
+            try:
+                body = resp.json()
+                problems = body.get("problems") or ["gateway refused order"]
+            except ValueError:
+                problems = ["gateway refused order"]
             return None, [str(p) for p in problems]
         if resp.status_code != 200:
             raise HTTPException(
@@ -255,7 +318,11 @@ def create_app(
                 detail=f"gateway complete returned HTTP {resp.status_code}",
             )
 
-        order = Order.model_validate(resp.json())
+        try:
+            order = Order.model_validate(resp.json())
+        except (ValidationError, ValueError) as err:
+            raise HTTPException(status_code=502, detail=f"gateway returned an invalid Order payload: {err}") from err
+
         if not order.receipt_jwt:
             raise HTTPException(status_code=502, detail="gateway order missing signed receipt_jwt")
         try:
@@ -284,7 +351,7 @@ def create_app(
         """Main entrypoint called by the agent (`authorize_checkout` MCP tool).
 
         The agent passes only `checkout_id` and `request_text`. The harness fetches the signed
-        quote directly from Valio's gateway, verifies Valio's signature, evaluates all rules,
+        quote directly from the merchant gateway, verifies the signature, evaluates all rules,
         and then either signs (`auto`), queues a human approval (`human`), or refuses (`deny`).
         """
         now = clock.now().astimezone(HELSINKI)
@@ -342,6 +409,12 @@ def create_app(
                     now=now,
                 )
 
+            product_cards = (
+                _fetch_product_cards(client, checkout)
+                if sig_rule.outcome == "pass" and any(lc.substitute_for is not None for lc in checkout.aimo.lines.values())
+                else None
+            )
+
             verdict = evaluate(
                 policy,
                 checkout,
@@ -349,6 +422,7 @@ def create_app(
                 sig_rule,
                 judge=active_judge,
                 checkout_hash=digest,
+                product_cards=product_cards,
             )
             # Align checkout_id with requested id if an untrusted quote had a different id
             if verdict.checkout_id != request.checkout_id:
@@ -403,18 +477,24 @@ def create_app(
                 )
                 return pending_status
 
-            # Verdict == "auto": sign inside manager's open mandates and complete on the gateway.
-            authorization = active_signer.sign_auto(checkout_jwt, policy=policy)
-            log.append(
-                "buyer",
-                "harness",
-                "mandate_signed",
-                "Mandate closed with the agent's key.",
-                "Verdict auto: the agent may sign inside the manager's open mandate.",
-                checkout_id=verdict.checkout_id,
-                checkout_hash=digest,
-                now=now,
-            )
+            # Verdict == "auto": reuse saved mandate on network retry so the gateway replays the same order,
+            # or sign a fresh agent mandate inside the manager's open mandates and persist it before sending.
+            cached_mandate = active_store.get_signed_mandate(verdict.checkout_id)
+            if cached_mandate is not None and cached_mandate.signed_by == "agent":
+                authorization = cached_mandate
+            else:
+                authorization = active_signer.sign_auto(checkout_jwt, policy=policy)
+                active_store.save_signed_mandate(verdict.checkout_id, authorization, checkout_jwt=checkout_jwt)
+                log.append(
+                    "buyer",
+                    "harness",
+                    "mandate_signed",
+                    "Mandate closed with the agent's key.",
+                    "Verdict auto: the agent may sign inside the manager's open mandate.",
+                    checkout_id=verdict.checkout_id,
+                    checkout_hash=digest,
+                    now=now,
+                )
 
             order, problems = _submit_mandate_and_verify_receipt(
                 client,
@@ -502,7 +582,7 @@ def create_app(
             )
             return rejected_status
 
-        # Approve: verify quote hash still matches, sign with manager's key, complete order, verify receipt.
+        # Approve: verify quote hash still matches, sign (or replay) human mandate, complete order, verify receipt.
         stored_jwt = active_store.get_checkout_jwt(approval.checkout_id)
         with _gateway_client() as client:
             jwks = _fetch_jwks(client)
@@ -515,17 +595,26 @@ def create_app(
                     detail="quote token changed since approval was requested; hash mismatch",
                 )
 
-            authorization = active_signer.sign_human(stored_jwt)
-            log.append(
-                "buyer",
-                "human",
-                "mandate_signed",
-                f"Mandate signed by human ({body.decided_by}).",
-                f"Approved {approval_id} for exact quote hash {approval.checkout_hash}.",
-                checkout_id=approval.checkout_id,
-                checkout_hash=approval.checkout_hash,
-                now=now,
-            )
+            quote_obj = read_checkout(stored_jwt)
+            merchant_id = quote_obj.merchant.id
+            merchant_label = quote_obj.merchant.name or merchant_id
+
+            cached_mandate = active_store.get_signed_mandate(approval.checkout_id)
+            if cached_mandate is not None and cached_mandate.signed_by == "human":
+                authorization = cached_mandate
+            else:
+                authorization = active_signer.sign_human(stored_jwt)
+                active_store.save_signed_mandate(approval.checkout_id, authorization, checkout_jwt=stored_jwt)
+                log.append(
+                    "buyer",
+                    "human",
+                    "mandate_signed",
+                    f"Mandate signed by human ({body.decided_by}).",
+                    f"Approved {approval_id} for exact quote hash {approval.checkout_hash}.",
+                    checkout_id=approval.checkout_id,
+                    checkout_hash=approval.checkout_hash,
+                    now=now,
+                )
 
             order, problems = _submit_mandate_and_verify_receipt(
                 client,
@@ -534,6 +623,16 @@ def create_app(
                 jwks,
             )
             if order is None:
+                # If the quote expired right as the decision arrived, transition the approval to `expired`.
+                if any("expired" in p.lower() for p in problems):
+                    exp_req, exp_status = active_store.record_expired(
+                        approval_id,
+                        reason="; ".join(problems),
+                        now=now,
+                    )
+                    _record_expired_audits([exp_req], now)
+                    return exp_status
+
                 log.append(
                     "buyer",
                     "harness",
@@ -556,8 +655,8 @@ def create_app(
                 "buyer",
                 "harness",
                 "order_confirmed",
-                f"Order {order.order_id} accepted by Valio Aimo.",
-                "Receipt signed by valio-aimo, reference matches human mandate.",
+                f"Order {order.order_id} accepted by {merchant_label}.",
+                f"Receipt signed by {merchant_id}, reference matches human mandate.",
                 checkout_id=approval.checkout_id,
                 checkout_hash=approval.checkout_hash,
                 now=now,

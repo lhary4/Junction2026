@@ -28,6 +28,21 @@ HELSINKI = ZoneInfo("Europe/Helsinki")
 Side = Literal["buyer", "merchant"]
 Actor = Literal["agent", "harness", "human", "merchant"]
 
+# One lock per resolved file path so separate `AuditLog(path)` objects created across
+# concurrent web requests never race and write the same `seq` number to one `.jsonl` file.
+_REGISTRY_LOCK = threading.Lock()
+_PATH_LOCKS: dict[Path, threading.Lock] = {}
+
+
+def _lock_for_path(path: Path) -> threading.Lock:
+    resolved = path.resolve()
+    with _REGISTRY_LOCK:
+        lock = _PATH_LOCKS.get(resolved)
+        if lock is None:
+            lock = threading.Lock()
+            _PATH_LOCKS[resolved] = lock
+        return lock
+
 
 def default_log_path(side: Side) -> Path:
     """Default JSONL path: state/buyer/audit.jsonl or state/merchant/audit.jsonl."""
@@ -55,8 +70,8 @@ class AuditLog:
 
     def __init__(self, path: str | Path) -> None:
         self.path = Path(path)
-        # A thread lock prevents two concurrent web requests from writing the same `seq` number.
-        self._lock = threading.Lock()
+        # Share one lock per file path so concurrent AuditLog(path) instances stay serialized.
+        self._lock = _lock_for_path(self.path)
 
     def append(
         self,

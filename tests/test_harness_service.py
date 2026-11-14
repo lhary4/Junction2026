@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import json
 import uuid
+from datetime import datetime
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
@@ -360,3 +362,198 @@ def test_real_gateway_and_harness_end_to_end_act1_and_act2(tmp_path, monkeypatch
             assert AuditLog(default_log_path("buyer")).verify() is None
             assert AuditLog(default_log_path("merchant")).verify() is None
             assert len(json.loads(merchant_client.get("/audit").text)) >= 6
+
+
+def test_real_gateway_act3_coffee_milk_calls_judge_and_deadline_matches_quote_expiry(tmp_path, monkeypatch):
+    """Covers Adrien's findings #1 and #2 against the real merchant.app in replay mode."""
+    monkeypatch.setenv("AIMO_STATE_DIR", str(tmp_path))
+    monkeypatch.setenv("VALIO_MODE", "replay")
+    monkeypatch.setenv("AIMO_FROZEN_NOW", FROZEN_NOW)
+
+    judge_calls: list[tuple[dict, dict]] = []
+
+    def recording_judge(original: dict, candidate: dict, _prefs: str, **_kw) -> list[dict]:
+        judge_calls.append((original, candidate))
+        # Valio UHT milk 464201 is accepted (0.95); Arla Cafe milk 463380 is sent to human (0.09)
+        prob = 0.95 if candidate["id"] == "464201" else 0.09
+        return [
+            {
+                "question_key": "within_preferences",
+                "type": "noul",
+                "instructions": "within preferences?",
+                "subject": {"original": original["id"], "candidate": candidate["id"]},
+                "probability": prob,
+                "confidence": 0.95,
+                "auto_threshold": 0.85,
+                "floor": 0.15,
+                "routed": "auto" if prob >= 0.85 else "human",
+                "model": "gemini-decision-1",
+            },
+            {
+                "question_key": "same_use",
+                "type": "noul",
+                "instructions": "same use?",
+                "subject": {"original": original["id"], "candidate": candidate["id"]},
+                "probability": prob,
+                "confidence": 0.95,
+                "auto_threshold": 0.85,
+                "floor": 0.15,
+                "routed": "auto" if prob >= 0.85 else "human",
+                "model": "gemini-decision-1",
+            },
+        ]
+
+    with TestClient(real_merchant_app) as merchant_client:
+        harness_app = create_app(http_client=merchant_client, judge_fn=recording_judge)
+        with TestClient(harness_app) as harness_client:
+            # 1) Default Valio Act 3 pick (469363 -> 464306, catalog-listed) stays `auto` with 0 judge calls
+            q_default = merchant_client.post(
+                "/checkouts",
+                json={
+                    "customer": "demo-hotel-chain",
+                    "delivery_date": "2026-11-16",
+                    "needs": [{"product_id": "469363", "amount": 500, "unit": "L"}],
+                },
+            ).json()
+            s_default = AuthorizationStatus.model_validate(
+                harness_client.post(
+                    "/authorize",
+                    json={"checkout_id": q_default["checkout_id"], "request_text": "500 L of Arla milk."},
+                ).json()
+            )
+            assert s_default.status == "ordered"
+            assert len(judge_calls) == 0
+
+            # 2) Agent picks Arla Cafe milk (463380) -> MUST call judge (with enriched claims) -> pending_approval!
+            q_cafe = merchant_client.post(
+                "/checkouts",
+                json={
+                    "customer": "demo-hotel-chain",
+                    "delivery_date": "2026-11-16",
+                    "needs": [{"product_id": "469363", "amount": 500, "unit": "L", "substitute_with": "463380"}],
+                },
+            ).json()
+            s_cafe = AuthorizationStatus.model_validate(
+                harness_client.post(
+                    "/authorize",
+                    json={"checkout_id": q_cafe["checkout_id"], "request_text": "500 L of Arla milk."},
+                ).json()
+            )
+            assert s_cafe.status == "pending_approval"
+            assert len(judge_calls) == 1
+            orig_sent, cand_sent = judge_calls[0]
+            assert "FREE_FROM_LACTOSE" in orig_sent.get("nutritional_claims", [])
+            assert "FREE_FROM_LACTOSE" in cand_sent.get("nutritional_claims", [])
+            assert "GOODS_FROM_FINLAND_BLUE_SWAN" in orig_sent.get("labels", [])
+
+            # 3) Approval deadline equals quote's `expires_at` (not 17:00), so at 15:00 next day it expires cleanly!
+            assert s_cafe.deadline == datetime.fromisoformat(q_cafe["checkout"]["expires_at"])
+            monkeypatch.setenv("AIMO_FROZEN_NOW", "2026-11-15T15:00:00+02:00")
+            dec = harness_client.post(
+                f"/approvals/{s_cafe.approval_id}/decision",
+                json={"decision": "approve", "decided_by": "procurement.manager@demo-hotel.example"},
+            )
+            assert dec.status_code == 200
+            assert dec.json()["status"] == "expired"
+
+            # 4) Agent picks Valio UHT milk (464201) -> calls judge -> judge approves (0.95) -> `ordered`!
+            monkeypatch.setenv("AIMO_FROZEN_NOW", FROZEN_NOW)
+            q_valio_uht = merchant_client.post(
+                "/checkouts",
+                json={
+                    "customer": "demo-hotel-chain",
+                    "delivery_date": "2026-11-16",
+                    "needs": [{"product_id": "469363", "amount": 500, "unit": "L", "substitute_with": "464201"}],
+                },
+            ).json()
+            s_valio_uht = AuthorizationStatus.model_validate(
+                harness_client.post(
+                    "/authorize",
+                    json={"checkout_id": q_valio_uht["checkout_id"], "request_text": "500 L of Arla milk."},
+                ).json()
+            )
+            assert s_valio_uht.status == "ordered"
+            assert s_valio_uht.signed_by == "agent"
+
+
+def test_network_error_malformed_outer_checkout_and_lost_complete_retry(tmp_path, monkeypatch):
+    """Covers Adrien's finding #3: HTTP 502 on gateway down, clean deny on malformed outer checkout,
+    and replaying the identical signed mandate when a `/complete` response was lost."""
+    monkeypatch.setenv("AIMO_STATE_DIR", str(tmp_path))
+    monkeypatch.setenv("VALIO_MODE", "replay")
+    monkeypatch.setenv("AIMO_FROZEN_NOW", FROZEN_NOW)
+
+    # 1) Unreachable gateway -> clean HTTP 502, never a bare 500
+    def unreachable_handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused", request=request)
+
+    down_app = create_app(http_client=httpx.Client(transport=httpx.MockTransport(unreachable_handler), base_url="http://gw"))
+    with TestClient(down_app) as down_client:
+        r_down = down_client.post("/authorize", json={"checkout_id": "chk_1", "request_text": "Order milk."})
+        assert r_down.status_code == 502
+        assert "unreachable" in r_down.json()["detail"]
+
+    # 2) Outer `checkout` missing required fields next to valid JWT -> clean `denied` (`quote-signature`), never 500
+    act1 = AimoCheckout.model_validate(json.loads((EXAMPLES / "checkout.act1.json").read_text(encoding="utf-8")))
+    act1_jwt = sign_checkout(act1, private_key("merchant"))
+
+    def broken_outer_handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/.well-known/jwks.json":
+            return httpx.Response(200, json=public_jwks())
+        if request.url.path == f"/checkouts/{act1.id}":
+            return httpx.Response(200, json={"checkout_id": act1.id, "checkout_jwt": act1_jwt, "checkout": {"id": act1.id}})
+        return httpx.Response(404)
+
+    broken_app = create_app(
+        http_client=httpx.Client(transport=httpx.MockTransport(broken_outer_handler), base_url="http://gw")
+    )
+    with TestClient(broken_app) as broken_client:
+        r_broken = broken_client.post("/authorize", json={"checkout_id": act1.id, "request_text": "Order milk."})
+        assert r_broken.status_code == 200
+        assert r_broken.json()["status"] == "denied"
+        assert any("quote-signature" in reason for reason in r_broken.json()["reasons"])
+
+    # 3) Answer lost after gateway accepted `/complete`: retry resends identical mandate and gets `ordered`!
+    with TestClient(real_merchant_app) as real_gw:
+        q = real_gw.post(
+            "/checkouts",
+            json={
+                "customer": "demo-hotel-chain",
+                "delivery_date": "2026-11-16",
+                "needs": [{"product_id": "464306", "amount": 1000, "unit": "L"}],
+            },
+        ).json()
+        chk_id = q["checkout_id"]
+
+        complete_attempts = 0
+
+        def flaky_complete_handler(request: httpx.Request) -> httpx.Response:
+            nonlocal complete_attempts
+            resp = real_gw.request(
+                request.method,
+                str(request.url.raw_path, "ascii"),
+                content=request.content,
+                headers=dict(request.headers),
+            )
+            if request.method == "POST" and request.url.path.endswith("/complete"):
+                complete_attempts += 1
+                if complete_attempts == 1:
+                    # Gateway ALREADY accepted & saved the order, then the network drops before harness sees it!
+                    assert resp.status_code == 200
+                    raise httpx.ReadTimeout("response lost in transit", request=request)
+            return httpx.Response(resp.status_code, content=resp.content, headers=dict(resp.headers))
+
+        flaky_client = httpx.Client(transport=httpx.MockTransport(flaky_complete_handler), base_url="http://gw")
+        retry_app = create_app(http_client=flaky_client)
+        with TestClient(retry_app) as retry_client:
+            first_try = retry_client.post("/authorize", json={"checkout_id": chk_id, "request_text": "1000 L milk."})
+            assert first_try.status_code == 502  # first call lost response
+
+            second_try = retry_client.post("/authorize", json={"checkout_id": chk_id, "request_text": "1000 L milk."})
+            assert second_try.status_code == 200
+            recovered = AuthorizationStatus.model_validate(second_try.json())
+            assert recovered.status == "ordered"
+            assert recovered.signed_by == "agent"
+            assert recovered.order_id is not None
+            assert complete_attempts == 2
+            assert AuditLog(default_log_path("buyer")).verify() is None
