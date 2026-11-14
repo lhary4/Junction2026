@@ -119,6 +119,8 @@ class Need(ContractModel):
     product_id: str
     amount: float = Field(gt=0)
     unit: BuyerUnit
+    # To cover a shortfall with one of the alternatives the gateway offered in an earlier quote, instead of its own pick.
+    substitute_with: str | None = None
 
 
 class QuoteRequest(ContractModel):

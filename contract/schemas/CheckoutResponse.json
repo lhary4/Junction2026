@@ -954,6 +954,18 @@
           ],
           "title": "Unit",
           "type": "string"
+        },
+        "substitute_with": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Substitute With"
         }
       },
       "required": [
