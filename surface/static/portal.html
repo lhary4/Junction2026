@@ -28,26 +28,42 @@
       </div>
     </header>
 
-    <!-- The chef's three steps, like a checkout, and the button of the current step. -->
-    <nav class="flow" aria-label="Order steps">
-      <div class="wrap">
-        <ol class="flow__steps" id="flow"></ol>
-        <div class="flow__cta" id="cta"></div>
-      </div>
-    </nav>
-
-    <!-- Who signs: the seven steps of the order, lit one by one while the agent works. -->
-    <section class="trail" aria-label="Who signs, step by step">
-      <div class="wrap" id="trail"></div>
-    </section>
-
-    <main class="work wrap">
-      <div class="work__main" id="main" aria-live="polite"><p class="loading">Loading…</p></div>
-      <aside class="work__side">
-        <section class="menu" id="menu" aria-label="This week's menu"></section>
-        <section class="agent" id="agent" aria-label="Buying agent"></section>
+    <div class="shell wrap">
+      <!-- Who signs: the steps of the order, always on the left, lit one by one while the assistant works. -->
+      <aside class="trail" id="trail" aria-label="Who signs, step by step">
+        <h2 class="trail__title display">Who signs</h2>
+        <div class="limit" id="limit"></div>
+        <ol class="steps" id="steps"></ol>
+        <div id="seal"></div>
       </aside>
-    </main>
+
+      <main class="work">
+        <!-- The chef's three steps, like a checkout, and the button of the current step. -->
+        <nav class="flow" aria-label="Order steps">
+          <ol class="flow__steps" id="flow"></ol>
+          <div class="flow__cta" id="cta"></div>
+        </nav>
+        <div class="work__main" id="main"><p class="loading">Loading…</p></div>
+      </main>
+
+      <aside class="side">
+        <section class="menu" id="menu" aria-label="This week's menu" hidden></section>
+        <section class="agent" aria-label="Aimo Personal Assistant">
+          <h2 class="side__title display" id="agent-title">Aimo Personal Assistant</h2>
+          <ol class="talk" id="talk" aria-live="polite"></ol>
+          <form class="ask" id="ask" autocomplete="off">
+            <label class="visually-hidden" for="ask-text">Message to Aimo Personal Assistant</label>
+            <input class="ask__text" id="ask-text" name="text" type="text" maxlength="500" placeholder="Ask, or say what changed in the stock" />
+            <button class="ask__send" id="ask-send" type="submit" aria-label="Send"></button>
+          </form>
+          <p class="ask__note" id="ask-note"></p>
+        </section>
+      </aside>
+    </div>
+
+    <!-- A short confirmation after each step, and the window that asks before a signature. -->
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <dialog class="dialog" id="dialog" aria-labelledby="dialog-title"></dialog>
 
     <!-- For the team only: not part of the customer's page. -->
     <footer class="demo" id="demo" aria-label="Demo controls"></footer>
