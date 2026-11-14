@@ -174,16 +174,8 @@ class _Builder:
 
     def _offer(self, product_id: str, answers: valio_client.Answers) -> tuple[Offer | None, str]:
         availability, price = answers.availability.get(product_id), answers.prices.get(product_id)
-        comp_price = (price or {}).get("comparisonPrice") or {}
         cat_price = (price or {}).get("catalogPrice") or {}
-        if (
-            not availability
-            or not price
-            or price.get("error")
-            or cat_price.get("value") is None
-            or comp_price.get("value") is None
-            or not price.get("comparisonUnit")
-        ):
+        if not availability or not price or price.get("error") or cat_price.get("value") is None:
             return None, "not_found"
         schedule = availability.get("scheduleLines") or []
         if availability.get("salesBlock") or not schedule or any(s.get("salesBlock") for s in schedule):

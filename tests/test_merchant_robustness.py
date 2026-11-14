@@ -182,7 +182,7 @@ def test_recorded_cards_agree_with_the_price_per_litre():
     assert cards.card("474929").size_per_sales_unit.value == 3.0
 
 
-def test_quote_builder_guards_missing_comparison_price_closing_at_now_and_st_substitute_with():
+def test_quote_builder_guards_closing_at_now_and_st_substitute_with():
     from datetime import date, datetime
     from zoneinfo import ZoneInfo
 
@@ -197,22 +197,13 @@ def test_quote_builder_guards_missing_comparison_price_closing_at_now_and_st_sub
     )
     cards = catalog.load("replay")
 
-    # Missing comparisonPrice should return "not_found" instead of KeyError
-    answers_missing_comp = valio_client.Answers(
-        availability={"469363": {"logisticModel": "Stock", "scheduleLines": [{"availableAmount": 10, "availableDate": "2026-11-16"}], "closingTime": "2026-11-15T17:00:00+02:00"}},
-        prices={"469363": {"catalogPrice": {"value": 2.48}}},
-        as_of=now,
-    )
-    builder = quotes._Builder(req, cards, answers_missing_comp, now)
-    offer, reason = builder._offer("469363", answers_missing_comp)
-    assert offer is None and reason == "not_found"
-
     # closingTime == now should be rejected as late_delivery
     answers_at_cutoff = valio_client.Answers(
         availability={"469363": {"logisticModel": "Stock", "scheduleLines": [{"availableAmount": 10, "availableDate": "2026-11-16"}], "closingTime": now.isoformat()}},
         prices={"469363": {"catalogPrice": {"value": 2.48}, "comparisonPrice": {"value": 2.48}, "comparisonUnit": "L"}},
         as_of=now,
     )
+    builder = quotes._Builder(req, cards, answers_at_cutoff, now)
     offer_cutoff, reason_cutoff = builder._offer("469363", answers_at_cutoff)
     assert offer_cutoff is None and reason_cutoff == "late_delivery"
 
