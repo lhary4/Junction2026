@@ -166,7 +166,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - The restaurant's menu, a second recording: the video runs on the restaurant case, whose products are not among the 157 and whose delivery is on Thursday 19/11. So a second set of answers was recorded on 14/11 at 22:19 for that date, in its own folder (`contract/fixtures/valio/2026-11-19/`): the 22 products of the menu and the 25 other products of the squeaky cheese's category, 47 in all. The first recording was left as it is, because the tests and the frozen clock stand on it. A quote reads the recording made for its delivery date, and only that one. The clock stays frozen at 13:29 for both, and each recorded price says when Valio really gave it. The two recordings weigh 0.90 MB together, under the 1 MB limit. Tests run the three buttons of the demo on the second recording.
 - If we change it: a new recording changes prices or stock in the demo, so tell everyone before merging one.
 - Alternatives we looked at: recording only the five demo products (too few for a real search and for substitutes); adding the menu's products to the first recording (it changed what the milk case finds: a cheese "from cow's milk" joined the lactose-free milks, and Valio has no answer for it on 16/11); asking the restaurant's delivery for 16/11 in replay (the page says "needed by Thursday 19").
-- Decided in: PR #10, 14/11/2026. The restaurant's recording: PR for step A11 (`feat/fixtures-restaurant`), 14/11/2026.
+- Decided in: PR #10, 14/11/2026. The restaurant's recording: PR #35, 14/11/2026.
 
 ## Pack sizes: read in the product name, and the price per litre has the last word
 - Status: decided
