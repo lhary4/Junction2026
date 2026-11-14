@@ -214,12 +214,12 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Running it locally: one command starts both services
 - Status: decided
-- What it is: `uv run python scripts/dev.py` starts Valio's gateway (port 8001) and the buyer's harness (port 8002), and stops both with Ctrl+C. It hands the values of `.env` to both.
-- Why: three people on macOS and Windows should not have to remember two commands and export keys by hand.
-- What it changes for us: a value typed in the terminal wins over `.env`. A service that is not in the repo yet is skipped. If one service dies, the other is stopped and the error is shown.
+- What it is: `uv run python scripts/dev.py` starts Valio's gateway (port 8001) and the buyer's harness (port 8002), and stops both with Ctrl+C. It hands the values of `.env` to both. With `--fresh` it first empties what earlier runs left in `state/`: quotes, orders, approvals and both audit logs.
+- Why: three people on macOS and Windows should not have to remember two commands and export keys by hand. And a rehearsal must not leave things on the screen of the next one.
+- What it changes for us: a value typed in the terminal wins over `.env`. A service that is not in the repo yet is skipped. If one service dies, the other is stopped and the error is shown. Start a rehearsal or the demo with `--fresh`: in replay mode the clock does not move, so an approval nobody answered never reaches its cut-off and stays on the approval page. `--fresh` removes nothing while a service is still running, and says so.
 - If we change it: only this script.
-- Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon).
-- Decided in: PR #13, 14/11/2026.
+- Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon); a separate clean-up script (the harness keeps its approvals in memory, so run under a live harness it would empty the files and the harness would write the old approvals back).
+- Decided in: PR #13, 14/11/2026. `--fresh`: PR #18, 14/11/2026.
 
 ## Buyer harness: rules in plain code, one-use approvals with a cut-off, and receipt verification
 - Status: decided
@@ -234,10 +234,10 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Status: decided
 - What it is: the buyer's harness and Valio's gateway each write one line per decision (`state/buyer/audit.jsonl` and `state/merchant/audit.jsonl`): what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited, deleted or swapped line is caught at its exact line number.
 - Why: the brief asks for a readable record for both the buyer and Valio.
-- What it changes for us: the chain shows tampering, it does not prevent it. The stronger proof is that each side also keeps pieces signed by the other. Both logs use the exact same canonical fingerprint formula so a check tool works on both files.
-- If we change it: `common/audit.py` is now shared in the repo and used by the buyer's harness; `merchant/audit.py` uses the identical formula and can point to `common/audit.py` in one line.
+- What it changes for us: the chain shows tampering, it does not prevent it. The stronger proof is that each side also keeps pieces signed by the other. Both logs are written and checked by the same code, so one check works on both files. When two requests reach the gateway at the same moment, it makes them write one after the other, so two lines never get the same number.
+- If we change it: only `common/audit.py`. The buyer's harness uses it directly. Valio's gateway uses it through `merchant/audit.py`, which only says where the gateway's file is.
 - Alternatives we looked at: a database table; a single shared log.
-- Decided in: PR #7, 14/11/2026. Shared verifier in `common/audit.py`: PR for L1–L4 (`feat/harness-service`), 14/11/2026.
+- Decided in: PR #7, 14/11/2026. Shared verifier in `common/audit.py`: PR for L1–L4 (`feat/harness-service`), 14/11/2026. Gateway moved to the shared code: PR #18, 14/11/2026.
 
 ## Payments: none, the spend cap travels in an AP2 payment mandate
 - Status: decided

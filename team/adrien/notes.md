@@ -2,6 +2,16 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## The gateway's log uses `common/audit.py`, and `dev.py --fresh` (14/11, PR #18)
+
+For everyone: `uv run python scripts/dev.py --fresh` empties the local state (quotes, orders, approvals, both audit logs), then starts both services. Use it before a rehearsal or the demo. Why: in replay mode the clock is frozen at the recording time, so an approval left pending never reaches its cut-off and stays on the approval page. It removes nothing while a service still answers on 8001 or 8002, and says so: the harness keeps its approvals in memory and would write the old ones back.
+
+Checked over real HTTP with both services: act 2 leaves 1 pending approval, 4 lines in the buyer's log and 1 in the gateway's. A plain restart keeps all of it. A restart with `--fresh` shows 0, 0 and 0.
+
+`merchant/audit.py` no longer chains its own lines: `record()` and `events()` call the shared `AuditLog`. Same file (`state/merchant/audit.jsonl`), same lines, same fingerprints. `GET /audit` on 8001 answers as before.
+
+For Léon, one thing in `common/audit.py` that I worked around and did not change, because it is your file: the lock of an `AuditLog` belongs to the object, and `harness/app.py` builds a new object on every request (`_audit()`), so two requests at the same moment are not kept apart. Measured: 8 threads writing 200 lines through separate objects break the chain at the second line (`verify()` returns 1). Through one shared object the chain stays whole. This is why the gateway holds one lock of its own in `merchant/audit.py`. Two ways to fix it on your side: one lock per file path inside `common/audit.py` (then the gateway's lock can go), or one `AuditLog` kept for the life of the harness.
+
 ## Lookup: `GET /offers`, prices and availability before any quote (14/11, PR #16)
 
 The brief's first must-have ("product, price and availability lookup") had no route. Now: `GET /offers?q=&delivery_date=&amount=&unit=&limit=` on the gateway (8001). Fields and rules: `docs/contract.md`, section "The lookup". Example: `contract/examples/offers.act1.json`.
