@@ -310,3 +310,48 @@ def test_a_product_off_the_menu_takes_its_name_from_the_quote(services):
     named = claims.substitute_for.name if claims.substitute_for else issued.checkout.line_items[0].item.title
     line = request_of(chat, issued)["lines"][0]
     assert (line["name"], line["dish"]) == (named, "Asked in the chat")
+
+
+def test_add_to_the_order_makes_one_quote_with_every_line_and_withdraws_the_earlier_approval(services):
+    """'Add this too' in a chat: one order for the chef to sign, never two side by side."""
+    driver, harness = services
+    page = TestClient(create_app(driver))
+    first = page.post(
+        "/agent/checkouts",
+        json={"needs": [{"product_id": "464306", "amount": 2000, "unit": "L"}], "delivery_date": MONDAY},
+    ).json()["checkout_id"]
+    waiting = page.post("/agent/authorize", json={"checkout_id": first, "request_text": "2,000 litres of milk."}).json()
+    assert waiting["status"] == "pending_approval"
+
+    added = {"product_id": "469363", "amount": 100, "unit": "L"}
+    more = {"product_id": "464306", "amount": 500, "unit": "L"}
+    second = page.post(
+        "/agent/checkouts", json={"needs": [added, more], "delivery_date": MONDAY, "add_to": first}
+    ).json()
+    asked = {(need["product_id"], need["amount"]) for need in second["checkout"]["aimo"]["requested"]}
+    assert asked == {("464306", 2500), ("469363", 100)}  # the same product adds up, a new one becomes a line
+
+    status = page.post(
+        "/agent/authorize", json={"checkout_id": second["checkout_id"], "request_text": "Add oat drink."}
+    )
+    assert status.json()["status"] == "pending_approval"
+    earlier = harness.get(f"/authorizations/{first}").json()
+    assert earlier["status"] == "rejected"  # the chef can no longer sign the first one
+    state = driver.state()
+    assert state.scenario.id == "chat-order" and state.quote.id == second["checkout_id"]
+    assert state.request.text == "2,000 litres of milk. Then: Add oat drink."
+
+
+def test_nothing_is_added_to_an_order_already_placed(services):
+    driver, _ = services
+    page = TestClient(create_app(driver))
+    needs = [{"product_id": "464306", "amount": 1000, "unit": "L"}]
+    first = page.post("/agent/checkouts", json={"needs": needs, "delivery_date": MONDAY}).json()["checkout_id"]
+    assert (
+        page.post("/agent/authorize", json={"checkout_id": first, "request_text": "1,000 L."}).json()["status"]
+        == "ordered"
+    )
+    refused = page.post("/agent/checkouts", json={"needs": needs, "delivery_date": MONDAY, "add_to": first})
+    assert refused.status_code == 409 and "already ordered" in refused.json()["detail"]
+    unknown = page.post("/agent/checkouts", json={"needs": needs, "delivery_date": MONDAY, "add_to": "chk_nobody"})
+    assert unknown.status_code == 404

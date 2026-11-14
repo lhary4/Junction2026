@@ -53,7 +53,11 @@ SERVER_INSTRUCTIONS = (
     "(order cut-off), and the `approval_url` where the approver must review and sign.\n"
     "5. For the menu, recipes, bookings, stock, or 'order what is missing', call `get_kitchen` first. Its "
     "`order_needs` is what to quote, exactly as given, with `needed_by` as the delivery date: no search is needed.\n"
-    "6. Keep answers short: what was ordered, the total, who signed, the order id."
+    "6. 'Add X to the order' adds to the chat's last quote if it is not ordered yet: call `request_quote` with only the "
+    "new items and `add_to` set to that quote's `checkout_id`, then `authorize_checkout` on the new quote. It has every "
+    "line, and the earlier quote's pending approval is withdrawn: there is one order to sign, never two. If the earlier "
+    "quote is already ordered, the tool says so: quote the new items alone and say it is a second order.\n"
+    "7. Keep answers short: what was ordered, the total, who signed, the order id."
 )
 
 server = MCPServer("valio-aimo", instructions=SERVER_INSTRUCTIONS)
@@ -274,12 +278,14 @@ def lookup_offers(
 
 
 @server.tool()
-def request_quote(needs: list[NeedInput], delivery_date: str) -> dict[str, Any]:
+def request_quote(needs: list[NeedInput], delivery_date: str, add_to: str | None = None) -> dict[str, Any]:
     """Request a Valio Aimo ES256-signed quote for the buyer's product needs and target delivery date.
 
     Args:
         needs: List of `{product_id, amount, unit}` items (`unit` is `'L'`, `'KG'`, or `'ST'`).
         delivery_date: Requested delivery date in ISO format `YYYY-MM-DD` (for example `'2026-11-19'`).
+        add_to: Optional `checkout_id` of an earlier quote in this chat that is not ordered yet. The new quote then has
+            the earlier lines plus `needs` (amounts of the same product add up) and replaces it once authorized.
 
     Returns `checkout_id` and a readable summary of the signed quote (unit and per-litre/kg prices,
     total in EUR excluding tax, stock and certainty, delivery date, order cut-off `closing_time`,
@@ -288,7 +294,10 @@ def request_quote(needs: list[NeedInput], delivery_date: str) -> dict[str, Any]:
     """
     if not needs:
         raise ToolError("needs must contain at least one item")
-    issued = driver("POST", "/agent/checkouts", json={"needs": needs, "delivery_date": delivery_date})
+    body: dict[str, Any] = {"needs": needs, "delivery_date": delivery_date}
+    if add_to:
+        body["add_to"] = add_to
+    issued = driver("POST", "/agent/checkouts", json=body)
     return _summarize_checkout(issued["checkout_id"], issued["checkout"])
 
 

@@ -216,6 +216,9 @@ class Driver:
         self._current: _Run | None = None
         # What an outside agent asked for each quote it got through the driver: needs and delivery date, by checkout id.
         self._asked: dict[str, tuple[tuple[tuple[str, float, str], ...], str]] = {}
+        # A quote that adds to an earlier chat quote, and that earlier quote, by checkout id.
+        self._replaces: dict[str, str] = {}
+        self._said: dict[str, str] = {}  # the human's sentences behind each authorized quote, by checkout id
 
     # ---------- the three things the page asks ----------
 
@@ -254,8 +257,15 @@ class Driver:
 
     # ---------- an outside agent, through MCP ----------
 
-    def agent_quote(self, needs: list[Need], delivery_date: str) -> CheckoutResponse:
-        """A signed quote for an outside agent. The driver remembers what was asked, to show it if it is authorized."""
+    def agent_quote(self, needs: list[Need], delivery_date: str, add_to: str | None = None) -> CheckoutResponse:
+        """A signed quote for an outside agent. The driver remembers what was asked, to show it if it is authorized.
+
+        `add_to` is an earlier chat quote that is not ordered yet: "add the pork ribs to the order". A signed quote
+        never changes, so the new one asks for everything at once, the earlier lines and the new ones, and replaces
+        the earlier quote when it is authorized. An order already placed cannot change: then the driver refuses.
+        """
+        if add_to is not None:
+            needs = self._added_to(add_to, needs)
         body = {
             "customer": CUSTOMER,
             "delivery_date": delivery_date,
@@ -265,7 +275,34 @@ class Driver:
         asked = tuple((need.product_id, need.amount, need.unit) for need in needs)
         with self._lock:
             self._asked[issued.checkout_id] = (asked, delivery_date)
+            if add_to is not None:
+                self._replaces[issued.checkout_id] = add_to
         return issued
+
+    def _added_to(self, earlier_id: str, needs: list[Need]) -> list[Need]:
+        """The earlier quote's needs plus the new ones, one need per product and unit (amounts add up)."""
+        with self._lock:
+            earlier = self._asked.get(earlier_id)
+        if earlier is None:
+            raise DriverError(404, f"no quote {earlier_id!r} was asked through the driver: nothing to add to")
+        status = self._get(self.harness, "harness", f"/authorizations/{earlier_id}", AuthorizationStatus)
+        if status is not None and status.status == "ordered":
+            raise DriverError(
+                409,
+                f"{earlier_id} is already ordered ({status.order_id}): a placed order cannot change, quote the new "
+                "items on their own, as a second order",
+            )
+        if status is not None and status.status in ("denied", "rejected", "expired"):
+            raise DriverError(409, f"{earlier_id} was {status.status}: nothing to add to, quote the items again")
+        merged: dict[tuple[str, str], Need] = {}
+        for product_id, amount, unit in earlier[0]:
+            merged[(product_id, unit)] = Need(product_id=product_id, amount=amount, unit=unit)
+        for need in needs:
+            key = (need.product_id, need.unit)
+            if key in merged:
+                need = need.model_copy(update={"amount": merged[key].amount + need.amount})
+            merged[key] = need
+        return list(merged.values())
 
     def agent_authorize(self, checkout_id: str, request_text: str) -> AuthorizationStatus:
         """The outside agent asks the harness to order a quote: that order becomes the scenario on screen."""
@@ -277,11 +314,16 @@ class Driver:
         if issued is None:
             raise DriverError(404, f"the gateway has no quote {checkout_id!r}")
         needs, delivery_date = asked
+        with self._lock:
+            replaced = self._replaces.get(checkout_id)
+            earlier_said = self._said.get(replaced) if replaced else None
+        # The approver reads every sentence behind the order, not only the last "add this too".
+        said = f"{earlier_said} Then: {request_text}" if earlier_said else request_text
         scenario = Scenario(
             id=CHAT_ORDER,
             title="Chat order",
             hint="Asked by an outside agent, in a chat, through MCP.",
-            text=request_text,
+            text=said,
             needs=needs,
             delivery_date=delivery_date,
         )
@@ -292,7 +334,7 @@ class Driver:
             self._current = run
         try:
             answer = self._post(
-                self.harness, "harness", "/authorize", {"checkout_id": checkout_id, "request_text": request_text}
+                self.harness, "harness", "/authorize", {"checkout_id": checkout_id, "request_text": said}
             )
         except DriverError:
             with self._lock:
@@ -301,7 +343,22 @@ class Driver:
             raise
         finally:
             run.running = False
+        with self._lock:
+            self._said[checkout_id] = said
+        if replaced:
+            self._withdraw(replaced, checkout_id)
         return AuthorizationStatus.model_validate(answer)
+
+    def _withdraw(self, earlier_id: str, by_id: str):
+        """The replaced quote's approval, if it still waits, is rejected: the chef must never sign both."""
+        status = self._get(self.harness, "harness", f"/authorizations/{earlier_id}", AuthorizationStatus)
+        if status is None or status.status != "pending_approval" or not status.approval_id:
+            return
+        decision = {"decision": "reject", "decided_by": f"driver: replaced by {by_id}, which has every line"}
+        try:
+            self._post(self.harness, "harness", f"/approvals/{status.approval_id}/decision", decision)
+        except DriverError:
+            pass  # the chef decided it in the meantime: the new quote stays authorized, the harness log has both
 
     def state(self) -> DemoState:
         with self._lock:
@@ -750,6 +807,7 @@ class AgentQuoteRequest(BaseModel):
 
     needs: list[Need]
     delivery_date: date
+    add_to: str | None = None  # an earlier chat quote not ordered yet: the new quote has its lines and the new ones
 
 
 def create_app(driver: Driver | None = None) -> FastAPI:
@@ -781,7 +839,7 @@ def create_app(driver: Driver | None = None) -> FastAPI:
     @api.post("/agent/checkouts")
     def agent_quote(request: AgentQuoteRequest) -> dict:
         """For the MCP server: a signed quote, without its token (the agent never sees one)."""
-        issued = active.agent_quote(request.needs, request.delivery_date.isoformat())
+        issued = active.agent_quote(request.needs, request.delivery_date.isoformat(), request.add_to)
         return {"checkout_id": issued.checkout_id, "checkout": issued.checkout.model_dump(mode="json")}
 
     @api.post("/agent/authorize")
