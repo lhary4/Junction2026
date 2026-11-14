@@ -12,13 +12,17 @@ Routes (docs/contract.md):
 - GET  /approvals/{approval_id}
 - POST /approvals/{approval_id}/decision
 - GET  /policy
+- GET  /mandates/open
 - GET  /audit
 - /    serves `surface/static` (and `/contract/examples` for rehearsal mock links)
 """
 
 from __future__ import annotations
 
+import base64
+import inspect
 import json
+import logging
 import os
 from contextlib import contextmanager
 from datetime import datetime
@@ -27,7 +31,6 @@ from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
 import httpx
-from ap2.sdk.utils import b64url_decode
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -56,6 +59,7 @@ from harness.approvals import (
     expired_reason,
 )
 from harness.judge import judge_substitution
+from harness.notify import NotifyFn, notify_approval
 from harness.policy import load_policy
 from harness.rules import JudgeFn, evaluate
 from harness.signer import HarnessSigner
@@ -63,6 +67,7 @@ from trust import TrustError
 from trust.checkout import checkout_hash, read_checkout, verify_checkout
 from trust.receipts import verify_receipt
 
+logger = logging.getLogger(__name__)
 ROOT = Path(__file__).resolve().parent.parent
 HELSINKI = ZoneInfo("Europe/Helsinki")
 SURFACE_STATIC = ROOT / "surface" / "static"
@@ -90,7 +95,9 @@ def harness_url() -> str:
 
 def _jwt_kid(token: str) -> str | None:
     try:
-        header = json.loads(b64url_decode(token.split(".")[0]))
+        raw_header = token.split(".")[0]
+        padded = raw_header + "=" * (-len(raw_header) % 4)
+        header = json.loads(base64.urlsafe_b64decode(padded))
         kid = header.get("kid")
         return str(kid) if kid is not None else None
     except Exception:  # noqa: BLE001
@@ -198,6 +205,33 @@ def _verdict_audit_summary(verdict: Verdict) -> tuple[str, str, str | None]:
     return what, why, (spend.rule_id if spend else None)
 
 
+def _invoke_notify(
+    notify_fn: NotifyFn,
+    approval: ApprovalRequest,
+    approval_url: str | None,
+) -> None:
+    """Trigger chef notification without ever letting a notification error affect the verdict."""
+    try:
+        sig = inspect.signature(notify_fn)
+        accepts_url = "approval_url" in sig.parameters or any(
+            p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+        )
+    except (TypeError, ValueError):
+        accepts_url = False
+
+    try:
+        if accepts_url:
+            notify_fn(approval, approval_url=approval_url)
+        else:
+            notify_fn(approval)
+    except Exception as err:  # noqa: BLE001
+        logger.warning(
+            "Notification callback failed for approval %s (%s)",
+            approval.approval_id,
+            type(err).__name__,
+        )
+
+
 def create_app(
     *,
     http_client: httpx.Client | None = None,
@@ -205,10 +239,12 @@ def create_app(
     judge_fn: JudgeFn | None = None,
     signer: HarnessSigner | None = None,
     store: ApprovalStore | None = None,
+    notify_fn: NotifyFn | None = None,
 ) -> FastAPI:
     active_judge = judge_fn if judge_fn is not None else judge_substitution
     active_store = store if store is not None else ApprovalStore()
     active_signer = signer if signer is not None else HarnessSigner()
+    active_notify = notify_fn if notify_fn is not None else notify_approval
 
     @contextmanager
     def _gateway_client():
@@ -437,6 +473,7 @@ def create_app(
                     rule=approval.reasons[0].rule_id if approval.reasons else None,
                     now=now,
                 )
+                _invoke_notify(active_notify, approval, pending_status.approval_url)
                 return pending_status
 
             # Verdict == "auto": reuse saved mandate on network retry so the gateway replays the same order,
@@ -665,6 +702,10 @@ def create_app(
     @api.get("/policy")
     def get_policy() -> BuyerPolicy:
         return load_policy(policy_path)
+
+    @api.get("/mandates/open")
+    def get_open_mandate_proofs() -> dict[str, str]:
+        return active_signer.open_mandate_proofs(load_policy(policy_path))
 
     @api.get("/audit")
     def get_audit() -> list[AuditEvent]:
