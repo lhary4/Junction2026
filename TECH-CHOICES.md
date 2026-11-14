@@ -176,12 +176,30 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none).
 - Decided in: PR #11, 14/11/2026.
 
+## Orders: one per quote, and a repeated request gets the same order back
+- Status: decided
+- What it is: to order, the harness sends the signed permissions for one quote to Valio's gateway. The gateway checks three things in a fixed order: the quote is one it signed and has not expired, the permissions are valid for exactly this quote and this amount, and the quote has not been ordered yet. If all three pass, it creates the order and signs a receipt.
+- Why: "no signature, no order" has to be enforced by the seller, not only by the buyer's software. And a network hiccup must never create two orders.
+- What it changes for us: sending the same permission twice returns the same order, with the same receipt. A second, different permission for a quote that is already ordered is refused. A refusal lists every problem in readable sentences and creates nothing. The spend cap is checked by Valio too: an order signed by the agent above the cap is refused even if the buyer's harness were bypassed. Valio knows the manager's public key in advance (in real life, from the day the customer account is opened; in the demo, from the keys folder).
+- If we change it: `merchant/orders.py` and the harness's reading of a refusal. The gateway does not ask Valio's stock again when the order arrives: the quote's price and stock hold until it expires.
+- Alternatives we looked at: refusing any repeated request (a retry after a lost answer would look like an attack); checking stock again at order time (one more live call, and the brief asks for prices that hold).
+- Decided in: PR #13, 14/11/2026.
+
+## Running it locally: one command starts both services
+- Status: decided
+- What it is: `uv run python scripts/dev.py` starts Valio's gateway (port 8001) and the buyer's harness (port 8002), and stops both with Ctrl+C. It hands the values of `.env` to both.
+- Why: three people on macOS and Windows should not have to remember two commands and export keys by hand.
+- What it changes for us: a value typed in the terminal wins over `.env`. A service that is not in the repo yet is skipped. If one service dies, the other is stopped and the error is shown.
+- If we change it: only this script.
+- Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon).
+- Decided in: PR #13, 14/11/2026.
+
 ## Audit log: one chained file on each side
 - Status: decided
 - What it is: the buyer's harness and Valio's gateway each write one line per decision: what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited line is detected.
 - Why: the brief asks for a readable record for both the buyer and Valio.
 - What it changes for us: the chain shows tampering, it does not prevent it. The stronger proof is that each side also keeps pieces signed by the other.
-- If we change it: only `common/audit.py`.
+- If we change it: only `common/audit.py`. Until that shared file is merged, Valio's gateway chains its own lines in `merchant/audit.py`, which is the one place to switch over.
 - Alternatives we looked at: a database table; a single shared log.
 - Decided in: PR #7, 14/11/2026.
 
