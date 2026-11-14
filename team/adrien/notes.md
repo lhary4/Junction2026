@@ -2,7 +2,7 @@
 
 Results, numbers and open questions for the others. Newest first.
 
-## A10: button 3, the attack (14/11, 22:15)
+## A10: button 3, the attack (14/11, 22:00)
 
 The driver has its third scenario. It plays an agent whose key leaked: it asks Valio for a quote above the cap, never asks the harness, and sends three bad mandates straight to the gateway. The gateway needed no change: it already refused all three.
 
@@ -20,7 +20,7 @@ The driver has its third scenario. It plays an agent whose key leaked: it asks V
 
 To decide for the video: Valio's sentences are the SDK's own words. They are true and they are on screen as they are. If the pitch wants plain words ("the quote was changed after Valio signed it"), the place is `trust/mandates.py`, where the problems are written, not the page.
 
-## A9: the sandbox payment (14/11, 22:00)
+## A9: the sandbox payment (14/11, 21:55)
 
 Once the mandates verify, the gateway books the order's amount on a simulated invoice account, and the order comes back with its payment. No real money moves, and every sentence about it says "sandbox".
 
