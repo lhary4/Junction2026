@@ -57,6 +57,8 @@ def verify(token: str, jwks: dict) -> dict:
         header = json.loads(b64url_decode(token.split(".")[0]))
     except ValueError as e:
         raise TrustError("not a JWT") from e
+    if not isinstance(header, dict):
+        raise TrustError("malformed JWT header")
     keys = [k for k in jwks.get("keys", []) if k.get("kid") == header.get("kid")]
     if header.get("alg") != "ES256" or len(keys) != 1:
         raise TrustError(f"no single ES256 key for kid {header.get('kid')!r}")
@@ -64,6 +66,6 @@ def verify(token: str, jwks: dict) -> dict:
     try:
         jws.deserialize(token)
         jws.verify(JWK(**keys[0]), alg="ES256")
+        return json.loads(jws.payload)
     except Exception as e:  # jwcrypto raises several types for a bad token or signature
         raise TrustError(f"bad signature ({type(e).__name__})") from e
-    return json.loads(jws.payload)

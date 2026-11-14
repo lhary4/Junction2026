@@ -78,6 +78,55 @@ def test_recipes_and_bookings_match_the_demo_kitchen():
     assert [f"{service['date']} {service['meal']}" for service in bookings["services"]] == kitchen["services"]
 
 
+def test_every_rule_of_the_harness_has_a_plain_sentence():
+    """A chef reads the checks: each rule the harness can report needs its words in portal.js (CHECK_WORDS)."""
+    harness = (ROOT / "harness" / "rules.py").read_text(encoding="utf-8") + (ROOT / "harness" / "app.py").read_text(
+        encoding="utf-8"
+    )
+    rule_ids = set(re.findall(r'rule_id="([a-z-]+)"', harness))
+    script = (STATIC / "portal.js").read_text(encoding="utf-8")
+    table = script[script.index("const CHECK_WORDS = {") : script.index("const OUTCOME_WORDS")]
+    worded = set(re.findall(r'^  "([a-z-]+)": \{', table, flags=re.MULTILINE))
+
+    assert rule_ids, "no rule found in the harness: has the code moved?"
+    assert rule_ids <= worded, f"rules without plain words on the page: {sorted(rule_ids - worded)}"
+    for rule_id in worded:
+        entry = table[table.index(f'"{rule_id}"') :]
+        entry = entry[: entry.index("\n  },")]
+        for outcome in ("pass", "human", "deny"):
+            assert f"{outcome}: " in entry, f"{rule_id} has no sentence for {outcome}"
+
+
+def test_every_step_of_the_trail_has_the_chefs_words():
+    from typing import get_args
+
+    from contract.models import StepKey
+
+    script = (STATIC / "portal.js").read_text(encoding="utf-8")
+    table = script[script.index("const STEP_WORDS = {") : script.index("};", script.index("const STEP_WORDS = {"))]
+    worded = set(re.findall(r"^  ([a-z_]+): ", table, flags=re.MULTILINE))
+
+    # The seven steps of the contract, and the eighth the page reads from the accepted order.
+    assert worded == set(get_args(StepKey)) | {"delivery"}
+
+
+def test_the_page_calls_the_ai_by_one_name():
+    """The buying agent and the judge are both shown as Aimo Personal Assistant."""
+    html = (STATIC / "portal.html").read_text(encoding="utf-8")
+    script = (STATIC / "portal.js").read_text(encoding="utf-8")
+
+    assert "Aimo Personal Assistant" in html
+    assert 'const ASSISTANT = "Aimo Personal Assistant";' in script
+    for old_name in ("Buying agent", "The judge, threshold", "Agent order"):
+        assert old_name not in html + script
+
+
+def test_bookings_show_booked_and_projected_covers():
+    for service in load(KITCHEN / "bookings.json")["services"]:
+        assert {"booked", "projected"} <= set(service)
+        assert "planned" not in service
+
+
 def test_the_script_has_no_syntax_error():
     node = shutil.which("node")
     if node is None:

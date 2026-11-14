@@ -16,7 +16,7 @@ def sign_receipt(order_id: str, reference: str, merchant_key: JWK) -> str:
     receipt = Receipt(
         status="Success", iss=MERCHANT_ID, iat=int(clock.now().timestamp()), reference=reference, order_id=order_id
     )
-    return sign(receipt.model_dump(mode="json"), merchant_key)
+    return sign(receipt.model_dump(mode="json", exclude_none=True), merchant_key)
 
 
 def verify_receipt(receipt_jwt: str, merchant_jwks: dict) -> dict:

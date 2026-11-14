@@ -78,6 +78,7 @@ def issue_open_mandates(policy: BuyerPolicy, manager_key: JWK, agent_public_jwk:
 
 def close_as_agent(open_mandates: OpenMandates, agent_key: JWK, checkout_jwt: str) -> Authorization:
     checkout, closed_checkout, closed_payment = _closed_mandates(checkout_jwt)
+    assert checkout.merchant is not None
     bind = {"holder_key": agent_key, "aud": checkout.merchant.id, "nonce": checkout.id}
     return Authorization(
         signed_by="agent",
@@ -95,13 +96,20 @@ def close_as_human(manager_key: JWK, checkout_jwt: str) -> Authorization:
     )
 
 
+def mandate_reference(authorization: Authorization) -> str:
+    """SHA-256 base64url of the closed checkout mandate JWT, used to bind orders and receipts."""
+    return compute_sha256_b64url(_client.get_closed_mandate_jwt(authorization.checkout_mandate))
+
+
 def verify_mandates(authorization: Authorization, checkout_jwt: str, manager_public_jwk: dict) -> MandateCheck:
     """Gateway side. Pass the quote exactly as the gateway issued it. `ok` is True only when `problems` is empty."""
-    reference = compute_sha256_b64url(_client.get_closed_mandate_jwt(authorization.checkout_mandate))
+    reference = mandate_reference(authorization)
     try:
         checkout = read_checkout(checkout_jwt)
     except TrustError as e:
         return MandateCheck(ok=False, signed_by=None, problems=[str(e)], reference=reference)
+    if checkout.merchant is None:
+        return MandateCheck(ok=False, signed_by=None, problems=["The quote names no merchant."], reference=reference)
 
     chained = {CHAIN in authorization.checkout_mandate, CHAIN in authorization.payment_mandate}
     if len(chained) != 1:
@@ -134,6 +142,8 @@ def verify_mandates(authorization: Authorization, checkout_jwt: str, manager_pub
 
 def _closed_mandates(checkout_jwt: str) -> tuple[AimoCheckout, CheckoutMandate, PaymentMandate]:
     checkout, digest = read_checkout(checkout_jwt), checkout_hash(checkout_jwt)
+    if checkout.merchant is None:
+        raise TrustError("The quote names no merchant.")
     closed_checkout = CheckoutMandate(checkout_jwt=checkout_jwt, checkout_hash=digest)
     closed_payment = PaymentMandate(
         transaction_id=digest,
@@ -149,6 +159,8 @@ Verified = tuple[list[str], PaymentMandate, int | None]  # problems, the closed 
 
 def _verify_agent(authorization: Authorization, checkout: AimoCheckout, checkout_jwt: str, manager: JWK) -> Verified:
     """Both chains must start with the manager's key, end with the key the manager bound, and target this quote."""
+    if checkout.merchant is None:  # verify_mandates refuses this case first
+        raise TrustError("The quote names no merchant.")
     bind = {
         "key_or_provider": lambda _token: manager,
         "expected_aud": checkout.merchant.id,
@@ -183,7 +195,9 @@ def _payment_matches(payment: PaymentMandate, checkout: AimoCheckout, checkout_j
     if paid != (checkout.total_minor(), checkout.currency):
         total = money(checkout.total_minor(), checkout.currency)
         problems.append(f"The payment mandate is for {money(*paid)}, the quote's total is {total}.")
-    if payment.payee.id != checkout.merchant.id:
+    if checkout.merchant is None:
+        problems.append("The quote names no merchant.")
+    elif payment.payee.id != checkout.merchant.id:
         problems.append(f"The payment mandate pays {payment.payee.id}, not the merchant of this quote.")
     return problems
 

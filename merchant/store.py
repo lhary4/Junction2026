@@ -6,6 +6,7 @@ what Valio signed.
 
 import os
 import re
+import uuid
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -49,7 +50,9 @@ def order_for_checkout(checkout_id: str) -> Order | None:
 def _save(folder: str, identifier: str, record: BaseModel) -> None:
     path = state_dir() / folder / f"{identifier}.json"
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(record.model_dump_json(exclude_none=True), encoding="utf-8")
+    tmp = path.with_name(f".{path.name}.{uuid.uuid4().hex[:8]}.tmp")
+    tmp.write_text(record.model_dump_json(exclude_none=True), encoding="utf-8")
+    tmp.replace(path)
 
 
 def _load[Record: BaseModel](folder: str, identifier: str, model: type[Record]) -> Record | None:
