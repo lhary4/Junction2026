@@ -162,7 +162,13 @@ async function call(url, options = {}, timeoutMs = 4000) {
   try {
     const answer = await fetch(url, { ...options, signal: stop.signal });
     if (!answer.ok) {
-      const body = await answer.text().catch(() => "");
+      let body = await answer.text().catch(() => "");
+      try {
+        const detail = JSON.parse(body).detail; // our services explain a refusal in `detail`
+        if (typeof detail === "string") body = detail;
+      } catch {
+        /* not JSON: keep the text */
+      }
       const error = new Error(`${answer.status} ${body.slice(0, 200)}`.trim());
       error.status = answer.status;
       throw error;
@@ -1029,8 +1035,8 @@ function drawDemo() {
     ${buttons}
     <button class="demo__btn" type="button" data-action="reset">Reset</button>
     <span class="demo__src">
-      ${light(app.mode === "live", "driver", `live (${DRIVER_URL})`, "not started, replaying the runs recorded on 14/11", "scenarios/run.py on port 8003, started by scripts/dev.py")}
-      ${light(app.up.harness, "harness", "live", "not started", "uv run python scripts/dev.py starts the gateway (8001) and the harness (8002)")}
+      ${light(app.mode === "live", "driver", `live (${DRIVER_URL})`, app.up.driver ? "could not run, replaying a recorded run" : "not started, replaying the runs recorded on 14/11", "scenarios/run.py on port 8003, started by scripts/dev.py. It needs VALIO_MODE=live.")}
+      ${light(app.up.harness, "harness", "live", "not started", "uv run python scripts/dev.py starts the gateway (8001), the harness (8002) and the driver (8003)")}
       ${light(app.up.assistant, "assistant", "live", "not started", "uv run uvicorn surface.assistant:app --port 8004")}
       <span>kitchen data: synthetic</span>
     </span>
@@ -1199,6 +1205,21 @@ function startOver() {
 
 const idleState = () => (app.mode === "live" ? driver.reset() : recorded("idle"));
 
+/*
+ * The driver is there but could not run the scenario (for example the gateway is in replay mode, which has no
+ * answers for the menu's products). The page shows the recorded run instead, and says so.
+ */
+async function liveOrRecorded(run, replay) {
+  if (app.mode !== "live") return replay();
+  try {
+    return await run();
+  } catch (error) {
+    app.mode = "replay";
+    app.problem = `The demo driver could not run this: ${error.name === "AbortError" ? "no answer in time" : error.message}. What you see is the recorded run.`;
+    return replay();
+  }
+}
+
 async function chooseScenario(id) {
   await guarded(async () => {
     app.state = await idleState();
@@ -1209,7 +1230,10 @@ async function chooseScenario(id) {
       // The attack is not something the chef does: it runs at once.
       app.step = 3;
       draw();
-      app.state = app.mode === "live" ? await driver.run("attack") : await recorded("attack");
+      app.state = await liveOrRecorded(
+        () => driver.run("attack"),
+        () => recorded("attack")
+      );
       app.sentKey = linesKey(app.state.request?.lines);
       reveal();
       watch();
@@ -1239,7 +1263,10 @@ async function runScenario() {
   app.detailsOpen = false;
   app.mismatch = false;
   draw();
-  app.state = app.mode === "live" ? await driver.run(app.scenarioId, { lines, delivery_date: deliveryDate }) : await replayRun(lines);
+  app.state = await liveOrRecorded(
+    () => driver.run(app.scenarioId, { lines, delivery_date: deliveryDate }),
+    () => replayRun(lines)
+  );
   app.sentKey = linesKey(lines);
   app.mismatch = linesKey(app.state.request?.lines) !== app.sentKey;
   reveal();

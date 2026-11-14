@@ -6,7 +6,9 @@ Results, numbers and open questions for the others. Newest first.
 
 What changed, point by point: `surface/README.md`. In short: the stock can be changed (table and chat), the signing steps moved to a panel on the left with an eighth step for the delivery, the checks are written for a chef, the chat answers with Gemini, a signature is confirmed in a window, and the chef can go back after an order.
 
-Tested on 14/11 in headless Chrome at 1920x1080: the three scenarios end to end, a stock change by hand and by chat, approve, reject, the attack then the corrected order, in replay mode and against a stand-in for the driver and the harness. The chat was tested against the real Gemini API. **Still not tested against the real demo driver** (step A8 is not merged).
+Tested on 14/11 in headless Chrome at 1920x1080: the three scenarios end to end, a stock change by hand and by chat, approve, reject, the attack then the corrected order. Three ways: in replay mode, against a stand-in for the driver and the harness, and at 22:25 against the real driver, gateway and harness of `main` at `80eaff2` in live mode (`VALIO_MODE=live`). The chat was tested against the real Gemini API. No error from the page in any of them.
+
+With the gateway in replay mode the driver answers 502 (the menu's products are not in the recorded answers, Adrien's A11). The page then shows the recorded run and says why.
 
 ### Why the page said "harness not reached"
 
@@ -34,16 +36,15 @@ The team asked that the chef can change the spending limit on the page. The page
 >
 > The page already calls this route (`harness.setLimit` in `surface/static/portal.js`). Nothing to change in `surface/`.
 
-### For Adrien: the demo driver takes the chef's lines
+### For Adrien: the demo driver takes the chef's lines (after the video)
 
-The chef can now change the stock table, and the page sends what is missing with the order: `POST /scenarios/{id}/run` with the body `{"lines": [{"product_id", "name", "amount", "unit", "dish"}], "delivery_date": "2026-11-19"}`. A driver that ignores the body still works: the page then shows a red line saying the quote is not for the changed quantities. Message to paste into the session that writes `scenarios/run.py`:
+Your notes say "not tonight", and I agree for the video. For later: the chef can now change the stock table, and the page already sends what is missing with the order: `POST /scenarios/{id}/run` with the body `{"lines": [{"product_id", "name", "amount", "unit", "dish"}], "delivery_date": "2026-11-19"}`. The driver ignores the body today, which works: the page shows a red line saying the quote is not for the changed quantities. Message to paste into a session on `scenarios/run.py`:
 
 > In `scenarios/run.py`, let `POST /scenarios/{id}/run` take an optional JSON body: `{"lines": [DemoRequestLine, ...], "delivery_date": "YYYY-MM-DD"}`, the same line shape as `DemoState.request.lines`. For `normal-order` and `substitution`, when `lines` is given, ask the gateway for a quote for these lines instead of the scenario's own, and put them in `DemoState.request.lines`. Without a body, nothing changes. `attack` ignores the body. Refuse a line with an amount of zero or less. Add the body to the driver's table in `docs/contract.md`.
 >
 > Two facts the page relies on, to keep: the page reads `request.lines` to know whether the quote is for what the chef asked, and after a rejection it reads `GET /state` again and expects `scenario.status` to be `refused`.
 
 Other points for Adrien:
-- In replay mode a changed quantity cannot be quoted: I tried `POST /checkouts` on the gateway in replay mode with two products of the menu and the customer `demo-restaurant-helsinki`, and got "nothing can be quoted: not_found". I did not look further, it may be my request.
 - The page shows an eighth step, "Delivery scheduled", that it reads from `order.delivery_date` and `order.status`. It is not in `DemoState` (seven steps, checked by the model). If you would rather have it in the contract, tell me and I remove the page's own step.
 - The page is now served by `surface/assistant.py` on port 8004, so port 8003 is free for the driver. `scripts/dev.py` could start it as a fourth service: `("assistant", "surface.assistant:app", 8004)`.
 

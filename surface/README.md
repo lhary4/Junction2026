@@ -13,11 +13,14 @@ Three files in `surface/static/`, no framework, no build step, no internet neede
 From the root of the repo, in two terminals:
 
 ```bash
-uv run python scripts/dev.py                          # the gateway (8001) and the harness (8002)
-uv run uvicorn surface.assistant:app --port 8004      # the page and its chat
+uv run python scripts/fetch_data.py                     # once: the Valio data files, into data/
+VALIO_MODE=live uv run python scripts/dev.py --fresh    # the gateway (8001), the harness (8002) and the demo driver (8003)
+uv run uvicorn surface.assistant:app --port 8004        # the page and its chat
 ```
 
-Then open <http://localhost:8004/>. The second command alone is enough to see the page: without the other services it replays recorded runs. The strip at the bottom shows a green light for each service that answers, and the page looks again every five seconds, so a service started later shows up without a reload.
+Then open <http://localhost:8004/>. The last command alone is enough to see the page: without the other services it replays recorded runs. The strip at the bottom shows a green light for each service that answers, and the page looks again every five seconds, so a service started later shows up without a reload.
+
+The demo driver needs the gateway in live mode: in replay mode (`VALIO_MODE=replay`, the value in `.env.example`) the gateway has no recorded answers for the menu's products. The page then shows the recorded run instead, with a line that says why.
 
 ### What the chef does, like a checkout
 
@@ -45,12 +48,12 @@ The buyer is a chef, not an engineer. The buying agent and the judge are both sh
 
 | Source | What | Calls |
 |---|---|---|
-| Demo driver, port 8003 | the demo state: quote, verdict, approval, order, attacks, the seven steps | `GET /state`, `POST /scenarios/{id}/run` (the page sends `lines` and `delivery_date` in the body), `POST /reset` |
+| Demo driver, port 8003 | the demo state: quote, verdict, approval, order, attacks, the seven steps | `GET /state`, `POST /scenarios/{id}/run` (the page sends `lines` and `delivery_date` in the body; the driver does not read them yet), `POST /reset` |
 | Harness, port 8002 | the spending limit, the chef's signature | `GET /policy`, `POST /approvals/{id}/decision`, and `PUT /policy/autonomous-limit` (asked, not there yet) |
 | Assistant, port 8004 (`surface/assistant.py`) | the chat, and the page's files | `GET /health`, `POST /chat` |
 | Kitchen (synthetic) | recipes, stock count, bookings | `kitchen/recipes.json`, `kitchen/stock.<scenario>.json`, `kitchen/bookings.json` |
 
-- **Replay**: when the demo driver does not answer, the page replays the runs recorded on 14/11 (`contract/examples/demo-state.*.json`). `?replay=1` forces it. If the quantities in the table are exactly those of a recorded run, that run is replayed (this is how a corrected attack becomes the normal order). If they are not, the page says that the quote on screen is not for the changed quantities. No run was recorded for a rejection: in replay the page draws it itself (nobody signs, no order).
+- **Replay**: when the demo driver does not answer, or cannot run a scenario, the page replays the runs recorded on 14/11 (`contract/examples/demo-state.*.json`). `?replay=1` forces it. If the quantities in the table are exactly those of a recorded run, that run is replayed (this is how a corrected attack becomes the normal order). If they are not, the page says that the quote on screen is not for the changed quantities. No run was recorded for a rejection: in replay the page draws it itself (nobody signs, no order).
 - **Other addresses**: `?driver=http://host:port&harness=http://host:port&assistant=http://host:port`.
 - The page never works out a fact of Valio's. Prices, Valio's stock, totals, verdicts and signatures come from the demo state. The only arithmetic on the page is the kitchen's own: to order = need - in stock.
 - The kitchen files are written so that what is missing is exactly what each recorded scenario asks Valio for. They are synthetic and say so.
@@ -69,7 +72,7 @@ A small service that answers the chef with Gemini (`GEMINI_API_KEY` in `.env`, m
 ### Not built yet
 
 - **Changing the spending limit.** The window is there and sends `PUT /policy/autonomous-limit` to the harness. The harness has no such route yet, so the page says the limit has not changed. The page never keeps a limit of its own: only the harness enforces it. What to build is in `team/colette/notes.md`.
-- **A quote for changed quantities.** The page sends the chef's lines to the demo driver. Until the driver uses them, the quote is for the scenario's own lines and the page says so.
+- **A quote for changed quantities.** The page sends the chef's lines to the demo driver. The driver plays each scenario's own lines (decided on 14/11, `team/adrien/notes.md`), so the quote is for those lines and the page says so. One case works today: the attack asks for twelve weeks at once, the chef corrects the quantities back to what the recipes need, and that is exactly the normal order.
 
 This page has its own files (`portal.html`, `portal.css`, `portal.js`) and does not use `app.js` or `style.css`.
 
