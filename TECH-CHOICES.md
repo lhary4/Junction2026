@@ -183,7 +183,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: sending the same permission twice returns the same order, with the same receipt. A second, different permission for a quote that is already ordered is refused. A refusal lists every problem in readable sentences and creates nothing. The spend cap is checked by Valio too: an order signed by the agent above the cap is refused even if the buyer's harness were bypassed. Valio knows the manager's public key in advance (in real life, from the day the customer account is opened; in the demo, from the keys folder).
 - If we change it: `merchant/orders.py` and the harness's reading of a refusal. The gateway does not ask Valio's stock again when the order arrives: the quote's price and stock hold until it expires.
 - Alternatives we looked at: refusing any repeated request (a retry after a lost answer would look like an attack); checking stock again at order time (one more live call, and the brief asks for prices that hold).
-- Decided in: PR for step A5, 14/11/2026.
+- Decided in: PR #13, 14/11/2026.
 
 ## Running it locally: one command starts both services
 - Status: decided
@@ -192,7 +192,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: a value typed in the terminal wins over `.env`. A service that is not in the repo yet is skipped. If one service dies, the other is stopped and the error is shown.
 - If we change it: only this script.
 - Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon).
-- Decided in: PR for step A5, 14/11/2026.
+- Decided in: PR #13, 14/11/2026.
 
 ## Audit log: one chained file on each side
 - Status: decided
