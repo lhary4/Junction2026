@@ -5,10 +5,11 @@ from datetime import datetime
 import pytest
 from fastapi.testclient import TestClient
 
+from common import clock
 from contract.models import CheckoutResponse, QuoteRequest, SearchResponse
-from merchant import catalog
+from merchant import catalog, valio_client
 from merchant.app import app
-from merchant.quotes import QuoteError, build_quote
+from merchant.quotes import QuoteError, _Builder, _closeness, build_quote
 from merchant.units import to_sales_units
 from trust.checkout import verify_checkout
 from trust.keys import public_jwks
@@ -118,6 +119,52 @@ def test_no_substitute_breaks_the_lactose_free_promise():
     checkout = quote("469363", 600)
     for alternative in checkout.aimo.alternatives:
         assert catalog.lactose_free(catalog.load().card(alternative.product_id))
+
+
+def test_the_closest_name_ranks_before_the_cheapest():
+    """Live on 14/11 the cheapest product of the category was offered: a cheddar cream for a squeaky cheese."""
+    cheese = "Riitan Herkku Squeaky cheese ca.670g lactose-free"
+    assert _closeness(cheese, "Haapalan lactose-free bread cheese 500g") > _closeness(
+        cheese, "Nacho&Taco Cheddar cheese creme 1,5kg"
+    )
+    jam = "Marjex lingonberryjam 3kg"  # one word here, two words in the other name
+    assert _closeness(jam, "Dronningholm Lingonberry jam 1kg") > 0
+    assert _closeness(jam, "Saarioinen Apple filling bake stable 6kg") == 0
+    assert _closeness("Valio butter 500g", "Arla cream 500g") == 0  # a pack size is not a resemblance
+
+
+def test_substitutes_are_ranked_listed_first_then_by_name_then_by_price():
+    request = QuoteRequest(
+        customer="demo", delivery_date=MONDAY, needs=[{"product_id": "469363", "amount": 600, "unit": "L"}]
+    )
+    products = catalog.load()
+    builder = _Builder(request, products, valio_client.fetch(["469363"], request.delivery_date), clock.now())
+    original = products.card("469363")
+    ranked = builder._rank(original, 216, "L")
+    assert sum(len(found) for found in ranked.values()) > 3
+    for found in ranked.values():
+        order = [
+            (not listed, -_closeness(original.name, offer.card.name), offer.comparison_price_minor)
+            for _, offer, _, listed in found
+        ]
+        assert order == sorted(order)
+
+
+def test_a_product_without_a_comparison_price_is_still_quoted(monkeypatch):
+    """Valio's price API gives none for the caster sugar 460325: the quote answered HTTP 500."""
+    recorded = valio_client.fetch
+
+    def without_comparison_price(product_ids, requested_date):
+        answers = recorded(product_ids, requested_date)
+        prices = {
+            pid: {k: v for k, v in price.items() if k not in ("comparisonPrice", "comparisonUnit")}
+            for pid, price in answers.prices.items()
+        }
+        return valio_client.Answers(answers.availability, prices, answers.as_of)
+
+    monkeypatch.setattr(valio_client, "fetch", without_comparison_price)
+    line = quote("464306", 1000).aimo.lines["li-1"]  # EUR 1.01 for one litre in the product file
+    assert (line.comparison_price_minor, line.comparison_unit) == (101, "L")
 
 
 def test_terminal_product_with_a_past_cut_off_is_a_late_delivery():
