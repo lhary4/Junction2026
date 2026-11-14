@@ -200,7 +200,7 @@ A step is `key`, `title`, `signer` (`manager`, `agent`, `merchant` or `none`), `
 
 An attack's `status` is `pending`, `refused` (the expected end) or `accepted`, which would mean Valio let a bad mandate through: the page must show it as a failure.
 
-The examples are recorded by `scripts/record_demo_states.py`: it runs the demo driver through the gateway and the harness in live mode and writes what `GET /state` answers. They were recorded with the restaurant's policy (limit EUR 1,500) and the gateway's own pick of substitute, the bread cheese 475072 for the squeaky cheese 474880. The attack example is older: the driver gets that scenario in step A10.
+The examples are recorded by `scripts/record_demo_states.py`: it runs the demo driver through the gateway and the harness in live mode and writes what `GET /state` answers. They were recorded with the restaurant's policy (limit EUR 1,500) and the gateway's own pick of substitute, the bread cheese 475072 for the squeaky cheese 474880.
 
 ## Routes
 
@@ -240,9 +240,19 @@ Demo driver, port 8003 (`scenarios/run.py`):
 | `GET /state` | | `DemoState` |
 | `POST /reset` | | `DemoState`, idle |
 
-The driver plays the buying agent with the two calls of the MCP tools: `POST /checkouts` on the gateway, then `POST /authorize` on the harness. It holds no key. It only remembers which scenario is on screen and which quote it asked for: every `GET /state` reads the quote, the verdict, the approval, the order and both audit logs again from the two services. The scenarios it knows are in `state.scenarios`: `normal-order` and `substitution` today, the attack comes with step A10.
+The driver plays the buying agent with the two calls of the MCP tools: `POST /checkouts` on the gateway, then `POST /authorize` on the harness. For an order it holds no key. It only remembers which scenario is on screen and which quote it asked for: every `GET /state` reads the quote, the verdict, the approval, the order and both audit logs again from the two services. The scenarios it knows are in `state.scenarios`: `normal-order`, `substitution` and `attack`.
 
 The chef's decision does not go through the driver: the page sends it to the harness (`POST /approvals/{id}/decision`), then reads `GET /state` again.
+
+**The attack.** The driver plays an agent whose key leaked, with a copy of the open mandates. It asks Valio for a quote above the agent's cap (twelve weeks of the normal order, EUR 1,783.15), never asks the harness, and sends three bad mandates straight to `POST /checkouts/{id}/complete`:
+
+| `attacks[].key` | What the agent tries | Why Valio refuses |
+|---|---|---|
+| `above-cap` | signs the quote itself | the amount exceeds the cap of the open mandate the manager signed |
+| `changed-quote` | halves a price in the quote and signs that | the mandate is for a token Valio never signed: the quote hash does not match |
+| `mandate-for-another-quote` | reuses a mandate signed for another, smaller quote | a mandate is bound to one quote |
+
+The state then has no verdict, no approval and no order. Its `attacks` carry Valio's own sentences, the `verdict` step is `skipped`, `merchant_verifies` is `refused`, and the buyer's audit side is empty: the harness never heard of it. The driver builds these mandates from the demo keys of the repo, as the gateway's tests do. It never attacks a quote that is under the cap, because Valio would rightly accept an agent's mandate for it: that run stops with HTTP 500 before anything is sent.
 
 | Case | Answer |
 |---|---|
