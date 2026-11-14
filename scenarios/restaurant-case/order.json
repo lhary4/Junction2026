@@ -1,0 +1,1208 @@
+{
+  "case_id": "restaurant-helsinki-nov-2026",
+  "description": "A 50-cover Helsinki restaurant orders the ingredients of its set menu for three dinner services (Thursday 19, Friday 20, Saturday 21 November 2026). Product facts come from the Valio Aimo data files; price and availability from the live mock API, called on 14/11/2026 with requestedDate 2026-11-19.",
+  "covers_per_service": 50,
+  "services": [
+    "2026-11-19 dinner",
+    "2026-11-20 dinner",
+    "2026-11-21 dinner"
+  ],
+  "requested_delivery_date": "2026-11-19",
+  "facts_source": {
+    "product_facts": "data/valio_aimo_junction26_product_data.json, carbon_footprint.csv, delivery_reliability.csv",
+    "live": "POST /api/price and /api/availability, customer 'demo', called 2026-11-14",
+    "note": "Prices and stock change: re-run before a demo. 'available_amount' null means unknown (Terminal product) or very large."
+  },
+  "order_total_eur_excl_vat": 1523.51,
+  "lines": [
+    {
+      "dish": "starter",
+      "ingredient": "Rainbow trout fillet",
+      "need_per_service": 3.3,
+      "need_unit": "kg",
+      "order_quantity": 10,
+      "order_note": "Lot size is 10 kg: one 10 kg box covers the three services (3.3 kg a service).",
+      "line_total_eur_excl_vat": 164.8,
+      "product": {
+        "product_id": "461921",
+        "name": "Kalavapriikki rainbow trout fillet A",
+        "vendor": "KALAVAPRIIKKI OY TUORE",
+        "sales_unit": "KG",
+        "country_of_origin": "no",
+        "storage": "chilled",
+        "allergens_contains": [
+          "AF"
+        ],
+        "allergens_may_contain": [],
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "6.375",
+        "delivery_reliability": null,
+        "live": {
+          "unit_price_eur_excl_vat": 16.48,
+          "comparison_price_eur": 16.48,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Terminal",
+          "sales_block": false,
+          "order_cutoff": "2026-11-12T12:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "462016",
+          "name": "RAINBOW TROUT FILLET C",
+          "vendor": "VALIO OY / VALIO AIMO",
+          "sales_unit": "KG",
+          "country_of_origin": "fi",
+          "storage": "chilled",
+          "allergens_contains": "unknown",
+          "allergens_may_contain": "unknown",
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "4.9350000000000005",
+          "delivery_reliability": "1.0",
+          "live": {
+            "unit_price_eur_excl_vat": 15.77,
+            "comparison_price_eur": 15.77,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": 40.0,
+            "available_date": "2026-11-16"
+          }
+        },
+        {
+          "product_id": "461868",
+          "name": "Benella Rainbow trout ",
+          "vendor": "KALAVAPRIIKKI OY TUORE",
+          "sales_unit": "KG",
+          "country_of_origin": "fi",
+          "storage": "chilled",
+          "allergens_contains": [
+            "AF"
+          ],
+          "allergens_may_contain": [],
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "6.375",
+          "delivery_reliability": null,
+          "live": {
+            "unit_price_eur_excl_vat": 10.52,
+            "comparison_price_eur": 10.52,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": null,
+            "sales_block": false,
+            "order_cutoff": null,
+            "deliverable": false,
+            "available_amount": null,
+            "available_date": null
+          }
+        }
+      ]
+    },
+    {
+      "dish": "starter",
+      "ingredient": "Red beetroot",
+      "need_per_service": 4.0,
+      "need_unit": "kg",
+      "order_quantity": 12,
+      "order_note": null,
+      "line_total_eur_excl_vat": 12.0,
+      "product": {
+        "product_id": "460837",
+        "name": "RED BEETROOT WASHED FINLAND",
+        "vendor": "MATTI TUOMOLA OY",
+        "sales_unit": "KG",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.37",
+        "delivery_reliability": "0.994",
+        "live": {
+          "unit_price_eur_excl_vat": 1.0,
+          "comparison_price_eur": 1.0,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": 76.0,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "starter",
+      "ingredient": "Yellow beetroot",
+      "need_per_service": 1.5,
+      "need_unit": "kg",
+      "order_quantity": 5,
+      "order_note": "Sold in 5 kg cases.",
+      "line_total_eur_excl_vat": 9.6,
+      "product": {
+        "product_id": "460810",
+        "name": "BEETROOT YELLOW WASHED FINLAND",
+        "vendor": "OY VAASAN VIHANNES - VASA GRÖNSAKER",
+        "sales_unit": "KG",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.37",
+        "delivery_reliability": "0.993",
+        "live": {
+          "unit_price_eur_excl_vat": 1.92,
+          "comparison_price_eur": 1.92,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": null,
+          "sales_block": false,
+          "order_cutoff": null,
+          "deliverable": false,
+          "available_amount": null,
+          "available_date": null
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "460787",
+          "name": "BEETROOT CHIOGGIA WASHED FINLAND",
+          "vendor": "OY VAASAN VIHANNES - VASA GRÖNSAKER",
+          "sales_unit": "KG",
+          "country_of_origin": "fi",
+          "storage": "chilled",
+          "allergens_contains": "unknown",
+          "allergens_may_contain": "unknown",
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "0.37",
+          "delivery_reliability": "0.975",
+          "live": {
+            "unit_price_eur_excl_vat": 2.1,
+            "comparison_price_eur": 2.1,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": null,
+            "sales_block": false,
+            "order_cutoff": null,
+            "deliverable": false,
+            "available_amount": null,
+            "available_date": null
+          }
+        }
+      ]
+    },
+    {
+      "dish": "starter",
+      "ingredient": "Smetana, lactose free",
+      "need_per_service": 0.75,
+      "need_unit": "tub of 2 kg",
+      "order_quantity": 3,
+      "order_note": "1.5 kg a service = 4.5 kg, rounded up to 3 tubs.",
+      "line_total_eur_excl_vat": 39.18,
+      "product": {
+        "product_id": "476890",
+        "name": "Valio smetana 2 kg lactose free",
+        "vendor": "VALIO OY TUORE",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": [
+          "AM"
+        ],
+        "allergens_may_contain": [],
+        "labels": [
+          "GOODS_FROM_FINLAND_BLUE_SWAN"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "1.93",
+        "delivery_reliability": "0.997",
+        "live": {
+          "unit_price_eur_excl_vat": 13.06,
+          "comparison_price_eur": 6.53,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "starter",
+      "ingredient": "Fresh horseradish",
+      "need_per_service": 0.15,
+      "need_unit": "kg",
+      "order_quantity": 0.5,
+      "order_note": null,
+      "line_total_eur_excl_vat": 7.66,
+      "product": {
+        "product_id": "460727",
+        "name": "HORSERADISH HUNGARY",
+        "vendor": "VEIKKO LAINE OY",
+        "sales_unit": "KG",
+        "country_of_origin": "hu",
+        "storage": "chilled",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.37",
+        "delivery_reliability": "0.998",
+        "live": {
+          "unit_price_eur_excl_vat": 15.32,
+          "comparison_price_eur": 15.32,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "461229",
+          "name": "Felix horseradish 200g",
+          "vendor": "ORKLA SUOMI FINLAND OY AB SK",
+          "sales_unit": "PRK",
+          "country_of_origin": "lv",
+          "storage": "ambient",
+          "allergens_contains": [
+            "AU"
+          ],
+          "allergens_may_contain": [],
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "8.135",
+          "delivery_reliability": "0.995",
+          "live": {
+            "unit_price_eur_excl_vat": 2.2,
+            "comparison_price_eur": 11.0,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": 372.0,
+            "available_date": "2026-11-16"
+          }
+        }
+      ]
+    },
+    {
+      "dish": "starter",
+      "ingredient": "Dill",
+      "need_per_service": 2,
+      "need_unit": "bunch of 100 g",
+      "order_quantity": 6,
+      "order_note": "3 bunches in the cure for the whole box of trout, 1 bunch a service to garnish.",
+      "line_total_eur_excl_vat": 12.72,
+      "product": {
+        "product_id": "460395",
+        "name": "TAMSIN 100G DILL BUNCH FINLAND",
+        "vendor": "TAMSIN OY",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.38",
+        "delivery_reliability": "0.999",
+        "live": {
+          "unit_price_eur_excl_vat": 2.12,
+          "comparison_price_eur": 21.2,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "starter",
+      "ingredient": "Thin rye crispbread",
+      "need_per_service": 2,
+      "need_unit": "pack of 300 g",
+      "order_quantity": 6,
+      "order_note": null,
+      "line_total_eur_excl_vat": 10.2,
+      "product": {
+        "product_id": "467958",
+        "name": "VAASAN Original Thin Rye Crispbread 300g",
+        "vendor": "LANTMÄNNEN CEREALIA OY KOTKA",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "ambient",
+        "allergens_contains": [
+          "AW",
+          "NR"
+        ],
+        "allergens_may_contain": [
+          "AS"
+        ],
+        "labels": [
+          "FINNISH_HEART_SYMBOL",
+          "MADE_IN_FINLAND_FLAG_WITH_KEY"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "1.62",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 1.7,
+          "comparison_price_eur": 5.67,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": 160.0,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "main",
+      "ingredient": "Reindeer strips for sautéing, frozen",
+      "need_per_service": 1.5,
+      "need_unit": "pack of 5 kg",
+      "order_quantity": 5,
+      "order_note": "7.5 kg a service = 22.5 kg, rounded up to 5 packs (25 kg).",
+      "line_total_eur_excl_vat": 793.55,
+      "product": {
+        "product_id": "465607",
+        "name": "Rönkä Lapinukon Reindeer roast strips for a stew 5kg frozen",
+        "vendor": "VELJEKSET RÖNKÄ OY/PAKASTE",
+        "sales_unit": "PAK",
+        "country_of_origin": "fi",
+        "storage": "frozen",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "3.49",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 158.71,
+          "comparison_price_eur": 31.74,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Terminal",
+          "sales_block": false,
+          "order_cutoff": "2026-11-12T15:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "465853",
+          "name": "Rönkä Lapinukon Reindeer roast strips for a stew 5kg frozen",
+          "vendor": "VELJEKSET RÖNKÄ OY/PAKASTE",
+          "sales_unit": "PAK",
+          "country_of_origin": "fi",
+          "storage": "frozen",
+          "allergens_contains": "unknown",
+          "allergens_may_contain": "unknown",
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "3.49",
+          "delivery_reliability": "0.994",
+          "live": {
+            "unit_price_eur_excl_vat": 149.12,
+            "comparison_price_eur": 29.82,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Terminal",
+            "sales_block": false,
+            "order_cutoff": "2026-11-12T15:00:00+0200",
+            "deliverable": true,
+            "available_amount": null,
+            "available_date": "2026-11-16"
+          }
+        },
+        {
+          "product_id": "465887",
+          "name": "Rönkä Reindeer strips for a stew 3 kg frozen",
+          "vendor": "VELJEKSET RÖNKÄ OY/PAKASTE",
+          "sales_unit": "PAK",
+          "country_of_origin": "fi",
+          "storage": "frozen",
+          "allergens_contains": "unknown",
+          "allergens_may_contain": "unknown",
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "3.49",
+          "delivery_reliability": null,
+          "live": {
+            "unit_price_eur_excl_vat": 97.13,
+            "comparison_price_eur": 32.38,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Terminal",
+            "sales_block": false,
+            "order_cutoff": "2026-11-12T15:00:00+0200",
+            "deliverable": true,
+            "available_amount": null,
+            "available_date": "2026-11-16"
+          }
+        }
+      ]
+    },
+    {
+      "dish": "main",
+      "ingredient": "Almond potatoes",
+      "need_per_service": 11,
+      "need_unit": "kg",
+      "order_quantity": 33,
+      "order_note": null,
+      "line_total_eur_excl_vat": 30.69,
+      "product": {
+        "product_id": "460078",
+        "name": "PP ALMOND POTATO WASHED",
+        "vendor": "PIETILÄN PERUNA OY",
+        "sales_unit": "KG",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.20500000000000002",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 0.93,
+          "comparison_price_eur": 0.93,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "main",
+      "ingredient": "Lactose-free semi-skimmed milk",
+      "need_per_service": 2.5,
+      "need_unit": "l",
+      "order_quantity": 8,
+      "order_note": null,
+      "line_total_eur_excl_vat": 8.08,
+      "product": {
+        "product_id": "464306",
+        "name": "Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free",
+        "vendor": "VALIO OY TUORE",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": [
+          "AM"
+        ],
+        "allergens_may_contain": [],
+        "labels": [
+          "GOODS_FROM_FINLAND_BLUE_SWAN"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "1.1",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 1.01,
+          "comparison_price_eur": 1.01,
+          "comparison_unit": "L",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "main",
+      "ingredient": "Onions",
+      "need_per_service": 0.15,
+      "need_unit": "sack of 10 kg",
+      "order_quantity": 1,
+      "order_note": "1.5 kg a service; one sack covers the three services.",
+      "line_total_eur_excl_vat": 15.34,
+      "product": {
+        "product_id": "460195",
+        "name": "ONION 10KG 50-70MM FI",
+        "vendor": "VIHANNES-LAITILA OY",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.3",
+        "delivery_reliability": "0.984",
+        "live": {
+          "unit_price_eur_excl_vat": 15.34,
+          "comparison_price_eur": 1.53,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "main",
+      "ingredient": "Lingonberry jam",
+      "need_per_service": 0.5,
+      "need_unit": "tub of 3 kg",
+      "order_quantity": 2,
+      "order_note": "1.5 kg a service = 4.5 kg, rounded up to 2 tubs.",
+      "line_total_eur_excl_vat": 39.84,
+      "product": {
+        "product_id": "465815",
+        "name": "Marjex lingonberryjam 3kg",
+        "vendor": "ARCTIC INTERNATIONAL OY",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "ambient",
+        "allergens_contains": [],
+        "allergens_may_contain": [],
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "1.215",
+        "delivery_reliability": null,
+        "live": {
+          "unit_price_eur_excl_vat": 19.92,
+          "comparison_price_eur": 6.64,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": null,
+          "sales_block": false,
+          "order_cutoff": null,
+          "deliverable": false,
+          "available_amount": null,
+          "available_date": null
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "462198",
+          "name": "Dronningholm Lingonberry jam 1kg",
+          "vendor": "SAARIOINEN OY KUIVA",
+          "sales_unit": "PRK",
+          "country_of_origin": "fi",
+          "storage": "ambient",
+          "allergens_contains": [],
+          "allergens_may_contain": [],
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "1.215",
+          "delivery_reliability": null,
+          "live": {
+            "unit_price_eur_excl_vat": 6.54,
+            "comparison_price_eur": 6.54,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": 276.0,
+            "available_date": "2026-11-16"
+          }
+        },
+        {
+          "product_id": "460157",
+          "name": "Saarioinen Lingonberry jam 500g",
+          "vendor": "SAARIOINEN OY KUIVA",
+          "sales_unit": "PRK",
+          "country_of_origin": "fi",
+          "storage": "ambient",
+          "allergens_contains": "unknown",
+          "allergens_may_contain": "unknown",
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "1.215",
+          "delivery_reliability": "1.0",
+          "live": {
+            "unit_price_eur_excl_vat": 3.62,
+            "comparison_price_eur": 7.24,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": 300.0,
+            "available_date": "2026-11-16"
+          }
+        },
+        {
+          "product_id": "460748",
+          "name": "Saarioinen Lingonberry jam 6kg",
+          "vendor": "SAARIOINEN OY KUIVA",
+          "sales_unit": "ST",
+          "country_of_origin": "fi",
+          "storage": "ambient",
+          "allergens_contains": "unknown",
+          "allergens_may_contain": "unknown",
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "1.215",
+          "delivery_reliability": null,
+          "live": {
+            "unit_price_eur_excl_vat": 36.42,
+            "comparison_price_eur": 6.07,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": null,
+            "sales_block": false,
+            "order_cutoff": null,
+            "deliverable": false,
+            "available_amount": null,
+            "available_date": null
+          }
+        }
+      ]
+    },
+    {
+      "dish": "main",
+      "ingredient": "Pickled cucumbers",
+      "need_per_service": 0.5,
+      "need_unit": "jar of 4.5 kg",
+      "order_quantity": 2,
+      "order_note": "About 1.25 kg drained a service; one jar lasts two services.",
+      "line_total_eur_excl_vat": 34.44,
+      "product": {
+        "product_id": "468513",
+        "name": "Myrttisen Pickled cucumber 4500g",
+        "vendor": "ARHO FOODS OY",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "ambient",
+        "allergens_contains": [],
+        "allergens_may_contain": [],
+        "labels": [
+          "MADE_IN_FINLAND_FLAG_WITH_KEY"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "8.025",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 17.22,
+          "comparison_price_eur": 3.83,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": 37.0,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "dessert",
+      "ingredient": "Squeaky cheese (leipäjuusto), lactose free",
+      "need_per_service": 3.5,
+      "need_unit": "kg",
+      "order_quantity": 13.4,
+      "order_note": "Lot size is 6.7 kg: 10.5 kg needed, rounded up to 2 lots.",
+      "line_total_eur_excl_vat": 172.32,
+      "product": {
+        "product_id": "474880",
+        "name": "Riitan Herkku Squeaky cheese ca.670g lactose-free",
+        "vendor": "RIITAN HERKKU OY TUORE",
+        "sales_unit": "KG",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": [
+          "AM"
+        ],
+        "allergens_may_contain": [],
+        "labels": [
+          "GOODS_FROM_FINLAND_BLUE_SWAN"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": null,
+        "delivery_reliability": null,
+        "live": {
+          "unit_price_eur_excl_vat": 12.86,
+          "comparison_price_eur": 12.86,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Terminal",
+          "sales_block": false,
+          "order_cutoff": "2026-11-11T13:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "475072",
+          "name": "Haapalan lactose-free bread cheese 500g",
+          "vendor": "VAALAN JUUSTOLA OY",
+          "sales_unit": "ST",
+          "country_of_origin": "fi",
+          "storage": "chilled",
+          "allergens_contains": [
+            "AM"
+          ],
+          "allergens_may_contain": [],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ],
+          "carbon_kg_co2e_per_kg_group_avg": null,
+          "delivery_reliability": "1.0",
+          "live": {
+            "unit_price_eur_excl_vat": 5.47,
+            "comparison_price_eur": 10.94,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": 100.0,
+            "available_date": "2026-11-16"
+          }
+        },
+        {
+          "product_id": "467148",
+          "name": "Riitan Herkku Squeaky cheese c.670g lactose-free frozen",
+          "vendor": "RIITAN HERKKU OY PAKASTE",
+          "sales_unit": "KG",
+          "country_of_origin": "fi",
+          "storage": "frozen",
+          "allergens_contains": [
+            "AM"
+          ],
+          "allergens_may_contain": [],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ],
+          "carbon_kg_co2e_per_kg_group_avg": "5.21",
+          "delivery_reliability": "0.991",
+          "live": {
+            "unit_price_eur_excl_vat": 12.69,
+            "comparison_price_eur": 12.69,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": 177.0,
+            "available_date": "2026-11-16"
+          }
+        }
+      ]
+    },
+    {
+      "dish": "dessert",
+      "ingredient": "Cloudberry jam",
+      "need_per_service": 0.6,
+      "need_unit": "tub of 2.5 kg",
+      "order_quantity": 2,
+      "order_note": "1.5 kg a service = 4.5 kg, rounded up to 2 tubs.",
+      "line_total_eur_excl_vat": 61.6,
+      "product": {
+        "product_id": "469044",
+        "name": "Valio cloudberry jam 2,5 kg",
+        "vendor": "VALIO OY TUORE",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": "unknown",
+        "allergens_may_contain": "unknown",
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "1.215",
+        "delivery_reliability": null,
+        "live": {
+          "unit_price_eur_excl_vat": 30.8,
+          "comparison_price_eur": 12.32,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": null,
+          "sales_block": false,
+          "order_cutoff": null,
+          "deliverable": false,
+          "available_amount": null,
+          "available_date": null
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "466574",
+          "name": "KALAS 1,5KG CLOUDBERRY JAM",
+          "vendor": "SWED-JAM AB",
+          "sales_unit": "ST",
+          "country_of_origin": "se",
+          "storage": "ambient",
+          "allergens_contains": "unknown",
+          "allergens_may_contain": "unknown",
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "1.215",
+          "delivery_reliability": "0.989",
+          "live": {
+            "unit_price_eur_excl_vat": 24.28,
+            "comparison_price_eur": 16.19,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": 401.0,
+            "available_date": "2026-11-16"
+          }
+        },
+        {
+          "product_id": "463569",
+          "name": "Meritalo Cloudberry jam 310g",
+          "vendor": "MARJAJALOSTE MERITALO OY",
+          "sales_unit": "KI",
+          "country_of_origin": "fi",
+          "storage": "ambient",
+          "allergens_contains": [],
+          "allergens_may_contain": [],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN",
+            "PUHTAASTI_KOTIMAINEN"
+          ],
+          "carbon_kg_co2e_per_kg_group_avg": "1.215",
+          "delivery_reliability": "0.898",
+          "live": {
+            "unit_price_eur_excl_vat": 52.85,
+            "comparison_price_eur": 21.31,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-13T13:00:00+0200",
+            "deliverable": true,
+            "available_amount": 11.0,
+            "available_date": "2026-11-16"
+          }
+        }
+      ]
+    },
+    {
+      "dish": "dessert",
+      "ingredient": "Whipping cream, lactose free",
+      "need_per_service": 1.25,
+      "need_unit": "l",
+      "order_quantity": 4,
+      "order_note": null,
+      "line_total_eur_excl_vat": 15.64,
+      "product": {
+        "product_id": "464194",
+        "name": "Valio whipping cream 1 l UHT lactose free",
+        "vendor": "VALIO OY TUORE",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": [
+          "AM"
+        ],
+        "allergens_may_contain": [],
+        "labels": [
+          "GOODS_FROM_FINLAND_BLUE_SWAN"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "1.81",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 3.91,
+          "comparison_price_eur": 3.91,
+          "comparison_unit": "L",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "dessert",
+      "ingredient": "Wholegrain oat flakes",
+      "need_per_service": 0.5,
+      "need_unit": "bag of 1 kg",
+      "order_quantity": 2,
+      "order_note": null,
+      "line_total_eur_excl_vat": 5.52,
+      "product": {
+        "product_id": "460200",
+        "name": "Elovena 1kg wholegrain oat flakes",
+        "vendor": "RAVINTORAISIO OY KUIVA",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "ambient",
+        "allergens_contains": [
+          "AW",
+          "GO"
+        ],
+        "allergens_may_contain": [
+          "GB",
+          "NR",
+          "UW"
+        ],
+        "labels": [
+          "FINNISH_HEART_SYMBOL",
+          "GOODS_FROM_FINLAND_BLUE_SWAN"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "0.995",
+        "delivery_reliability": null,
+        "live": {
+          "unit_price_eur_excl_vat": 2.76,
+          "comparison_price_eur": 2.76,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": 137.0,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "shared",
+      "ingredient": "Butter, lactose free, salted",
+      "need_per_service": 4.3,
+      "need_unit": "pack of 500 g",
+      "order_quantity": 13,
+      "order_note": "2.15 kg a service: 0.75 sauté, 1.0 mash, 0.25 crumble, 0.15 cheese.",
+      "line_total_eur_excl_vat": 43.03,
+      "product": {
+        "product_id": "463437",
+        "name": "Valio Eila® butter 500 g salted lactose free",
+        "vendor": "VALIO OY TUORE",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "chilled",
+        "allergens_contains": [
+          "AM"
+        ],
+        "allergens_may_contain": [],
+        "labels": [
+          "GOODS_FROM_FINLAND_BLUE_SWAN"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "6.635",
+        "delivery_reliability": "0.999",
+        "live": {
+          "unit_price_eur_excl_vat": 3.31,
+          "comparison_price_eur": 6.62,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": [
+        {
+          "product_id": "464076",
+          "name": "Valio Eila® butter 4x5 kg lactose free",
+          "vendor": "VALIO OY TUORE",
+          "sales_unit": "ST",
+          "country_of_origin": "fi",
+          "storage": "chilled",
+          "allergens_contains": [
+            "AM"
+          ],
+          "allergens_may_contain": [],
+          "labels": [],
+          "carbon_kg_co2e_per_kg_group_avg": "6.635",
+          "delivery_reliability": "1.0",
+          "live": {
+            "unit_price_eur_excl_vat": 37.33,
+            "comparison_price_eur": 7.47,
+            "comparison_unit": "KG",
+            "vat_rate": 13.5,
+            "logistic_model": "Stock",
+            "sales_block": false,
+            "order_cutoff": "2026-11-15T17:00:00+0200",
+            "deliverable": true,
+            "available_amount": null,
+            "available_date": "2026-11-16"
+          }
+        }
+      ]
+    },
+    {
+      "dish": "shared",
+      "ingredient": "Fine sea salt",
+      "need_per_service": 0.4,
+      "need_unit": "pack of 800 g",
+      "order_quantity": 2,
+      "order_note": "Cure 400 g for the box of trout plus about 180 g of seasoning a service.",
+      "line_total_eur_excl_vat": 2.68,
+      "product": {
+        "product_id": "468172",
+        "name": "Meira Sea salt fine 800g",
+        "vendor": "MEIRA OY",
+        "sales_unit": "ST",
+        "country_of_origin": "es",
+        "storage": "ambient",
+        "allergens_contains": [],
+        "allergens_may_contain": [],
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.42",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 1.34,
+          "comparison_price_eur": 1.68,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": 2633.0,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "shared",
+      "ingredient": "Caster sugar",
+      "need_per_service": 0.35,
+      "need_unit": "bag of 1 kg",
+      "order_quantity": 2,
+      "order_note": "Cure 400 g plus 200 g a service for the crumble.",
+      "line_total_eur_excl_vat": 3.1,
+      "product": {
+        "product_id": "460325",
+        "name": "Dansukker Caster Sugar 1kg",
+        "vendor": "SUOMEN SOKERI OY",
+        "sales_unit": "BAG",
+        "country_of_origin": "fi",
+        "storage": "ambient",
+        "allergens_contains": [],
+        "allergens_may_contain": [],
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "0.885",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 1.55,
+          "comparison_price_eur": null,
+          "comparison_unit": null,
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "shared",
+      "ingredient": "Ground black pepper",
+      "need_per_service": 0.03,
+      "need_unit": "pack of 480 g",
+      "order_quantity": 1,
+      "order_note": null,
+      "line_total_eur_excl_vat": 16.5,
+      "product": {
+        "product_id": "461009",
+        "name": "Meira Black pepper ground 480g",
+        "vendor": "MEIRA OY",
+        "sales_unit": "ST",
+        "country_of_origin": "vn",
+        "storage": "ambient",
+        "allergens_contains": [],
+        "allergens_may_contain": [],
+        "labels": [],
+        "carbon_kg_co2e_per_kg_group_avg": "4.975",
+        "delivery_reliability": null,
+        "live": {
+          "unit_price_eur_excl_vat": 16.5,
+          "comparison_price_eur": 34.38,
+          "comparison_unit": "KG",
+          "vat_rate": 13.5,
+          "logistic_model": "Terminal",
+          "sales_block": false,
+          "order_cutoff": "2026-11-12T12:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    },
+    {
+      "dish": "shared",
+      "ingredient": "Rapeseed oil",
+      "need_per_service": 0.02,
+      "need_unit": "can of 10 l",
+      "order_quantity": 1,
+      "order_note": "0.2 l a service for the beetroot; the can lasts weeks.",
+      "line_total_eur_excl_vat": 25.02,
+      "product": {
+        "product_id": "466608",
+        "name": "Apetit Rapeseed oil 10L",
+        "vendor": "APETIT KASVIÖLJY OY",
+        "sales_unit": "ST",
+        "country_of_origin": "fi",
+        "storage": "ambient",
+        "allergens_contains": [],
+        "allergens_may_contain": [],
+        "labels": [
+          "FINNISH_HEART_SYMBOL"
+        ],
+        "carbon_kg_co2e_per_kg_group_avg": "2.425",
+        "delivery_reliability": "1.0",
+        "live": {
+          "unit_price_eur_excl_vat": 25.02,
+          "comparison_price_eur": 2.5,
+          "comparison_unit": "L",
+          "vat_rate": 13.5,
+          "logistic_model": "Stock",
+          "sales_block": false,
+          "order_cutoff": "2026-11-15T17:00:00+0200",
+          "deliverable": true,
+          "available_amount": null,
+          "available_date": "2026-11-16"
+        }
+      },
+      "alternatives": []
+    }
+  ]
+}
