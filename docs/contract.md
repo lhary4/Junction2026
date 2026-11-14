@@ -23,8 +23,8 @@ Every fact Valio states about a product travels with where it comes from and how
 
 | `certainty` | Meaning | Example |
 |---|---|---|
-| `measured` | Valio counted or recorded it | stock of a `Stock` product, a price from the price API, delivery reliability |
-| `declared` | A supplier or data pool states it | country of origin and allergens from GS1 Synkka |
+| `measured` | Valio counted or recorded it | stock of a `Stock` product, a price from the price API, an order cut-off, delivery reliability |
+| `declared` | A supplier or data pool states it, or Valio promises it | country of origin and allergens from GS1 Synkka, the delivery date of an offer |
 | `estimated` | Derived, not specific to this product | carbon footprint, an average of the product group |
 | `unknown` | No data. `value` is `null` | stock of a `Terminal` product, a missing reliability figure |
 
@@ -32,6 +32,7 @@ Every fact Valio states about a product travels with where it comes from and how
 |---|---|
 | `aimo_stock_count` | `/api/availability`, `logisticModel` = `Stock` |
 | `supplier_warehouse` | `/api/availability`, `logisticModel` = `Terminal` (quantity unknown) |
+| `aimo_availability_api` | `/api/availability`: the delivery date and the order cut-off of an offer |
 | `aimo_price_api` | `/api/price` |
 | `gs1_synkka` | the product file |
 | `aimo_delivery_history` | the delivery reliability file |
@@ -45,6 +46,7 @@ Allergens are not a claim but have the same idea: `{"contains": [...], "free_fro
 | Object | Example file | Who produces it | Who reads it |
 |---|---|---|---|
 | `ProductCard` | `product-cards.json` | gateway (`GET /products/search`) | agent, surface |
+| `OffersResponse` (a list of `Offer`) | `offers.act1.json` | gateway (`GET /offers`) | agent, surface |
 | `QuoteRequest` | `quote-request.json` | agent | gateway |
 | `AimoCheckout` (the signed quote) | `checkout.act1.json`, `.act2`, `.act3` | gateway (`POST /checkouts`) | harness, surface |
 | `BuyerPolicy` | `policy.demo.json` | Colette writes it, the harness loads it | harness, surface |
@@ -54,6 +56,28 @@ Allergens are not a claim but have the same idea: `{"contains": [...], "free_fro
 | `Authorization` (the mandates) | `authorization.json` | harness | gateway |
 | `Order` | `order.json` | gateway | harness, agent, surface |
 | `AuditEvent` | `audit-events.json` | both sides | surface |
+
+### The lookup
+
+`GET /offers` is the brief's "product, price and availability lookup": what matches a query, at what price, and whether it can be ordered for a date. The example `offers.act1.json` is what the gateway really answers in replay mode to "1,000 litres of lactose-free milk by Monday". One `Offer` per product:
+
+| Field | Meaning |
+|---|---|
+| `product` | the `ProductCard`, unchanged |
+| `orderable`, `reason` | whether a quote for this request would get a line of this product. When it would not, `reason` says why: `late_delivery` (the order cut-off has passed), `out_of_stock` (Valio cannot deliver it, or its sales are blocked), `not_found` (Valio has no price or no availability for it), `unit_mismatch` (kilos asked for a product sold by the litre, or the other way round) |
+| `price`, `comparison_price`, `comparison_unit` | claims, in cents and excluding tax: the price of one sales unit, and the price per litre or kilo (`comparison_unit` is `L` or `KG`) |
+| `stock` | claim, in sales units, with the same rules as in a quote. An offer that is not orderable states no stock (`unknown`): `reason` says why |
+| `available_date`, `closing_time` | claims: the day Valio would deliver, and the time until which the order must be in |
+| `logistic_model` | `Stock` or `Terminal` |
+| `to_order` | only when `amount` and `unit` are given and the offer is orderable: `quantity` in sales units (rounded up), `base_quantity` and `base_unit` (what those units hold), `total_minor`, `how` the size of one sales unit is known, and `stock_covers` |
+
+`stock_covers` is `true` when Valio counted at least `quantity` units, `false` when it counted fewer (a quote would take what there is and propose substitutes for the rest), and `null` when Valio gives no count. In that last case the `stock` claim says which: "available, count not given" or unknown.
+
+How the answer is built: the gateway searches the product file locally, keeps the 100 names closest to the query, and asks Valio for price and availability for those only, in one call to each API. `matched` says how many products the words found, `priced` how many were sent to Valio: when `matched` is larger, narrow the query. Offers are sorted: orderable first, then those whose counted stock covers the amount, then the cheapest per litre or kilo. `limit` (10 by default, 50 at most) cuts the list after sorting.
+
+Search words, for this route and for `GET /products/search`: case, hyphens and punctuation do not count ("lactose-free" finds "lactose free"), Finnish letters do ("täysmaito" is not "taysmaito"), and a word may sit inside a longer one ("milk" finds "milkdrink"). Names with the query words as whole words come first, then the names with the fewest other words. Every category is returned, the card says which one: a search for "butter" also finds butter buns and peanut butter, so add a word to narrow it.
+
+The answer is informative and not signed (`"binding": false`). Nothing in it commits Valio or the buyer, and a price can change until a quote is signed. To order, the agent asks `POST /checkouts` for the product it picked: the signed quote stays the only object a verdict, a mandate or a receipt can refer to. `GET /offers` answers HTTP 422 when the request has to change (an amount without its unit, a date replay mode has no answers for) and HTTP 503 when Valio's own API gives no usable answer.
 
 ### The signed quote
 
@@ -124,6 +148,7 @@ Valio gateway, port 8001 (`merchant/`):
 | Route | Input | Output |
 |---|---|---|
 | `GET /products/search?q=&limit=` | text query | `{"query", "count", "products": [ProductCard]}` |
+| `GET /offers?q=&delivery_date=&amount=&unit=&limit=` | text query, delivery date, and optionally what is needed (`amount` with `unit`: `L`, `KG` or `ST`) | `OffersResponse`: `{"query", "delivery_date", "amount", "unit", "as_of", "binding": false, "matched", "priced", "count", "offers": [Offer]}`. Not signed |
 | `POST /checkouts` | `QuoteRequest` | `{"checkout_id", "checkout_jwt", "checkout": AimoCheckout}` |
 | `GET /checkouts/{id}` | | same as above |
 | `POST /checkouts/{id}/complete` | `Authorization` | `Order`, or HTTP 403 with `{"problems": [...]}` |
@@ -146,11 +171,12 @@ Both services allow cross-origin calls from `localhost`, so the page can read bo
 
 ## MCP tools (`agent_mcp/`)
 
-What the external agent sees. Five tools, short identifiers only, never a token.
+What the external agent sees. Six tools, short identifiers only, never a token. `lookup_offers` is in the contract since 14/11 and still has to be added to `agent_mcp/` (what to plug: `team/adrien/notes.md`).
 
 | Tool | Arguments | Returns |
 |---|---|---|
 | `search_products` | `query`, `limit` | product cards, without prices |
+| `lookup_offers` | `query`, `delivery_date`, optional `amount` with `unit`, `limit` | the offers of `GET /offers`: cards with price, stock, delivery date, cut-off, and orderable or not. Informative, not signed |
 | `request_quote` | `needs` (list of `product_id`, `amount`, `unit`, optional `substitute_with`), `delivery_date` | `checkout_id` and a readable summary of the quote |
 | `authorize_checkout` | `checkout_id`, `request_text` (the human's original sentence) | `AuthorizationStatus` |
 | `get_authorization_status` | `checkout_id` | `AuthorizationStatus` |

@@ -380,6 +380,7 @@
           "enum": [
             "aimo_stock_count",
             "supplier_warehouse",
+            "aimo_availability_api",
             "aimo_price_api",
             "gs1_synkka",
             "aimo_delivery_history",

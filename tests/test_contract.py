@@ -15,6 +15,9 @@ from contract.models import (
     AuthorizationStatus,
     BuyerPolicy,
     Claim,
+    Offer,
+    OffersRequest,
+    OffersResponse,
     Order,
     ProductCard,
     QuoteRequest,
@@ -27,6 +30,7 @@ CHECKOUTS = ["checkout.act1.json", "checkout.act2.json", "checkout.act3.json"]
 SINGLE = {
     "approval-request.pending.json": ApprovalRequest,
     "authorization.json": Authorization,
+    "offers.act1.json": OffersResponse,
     "order.json": Order,
     "policy.demo.json": BuyerPolicy,
     "quote-request.json": QuoteRequest,
@@ -94,3 +98,21 @@ def test_unknown_claim_has_no_value():
     claim = {"value": 0.9, "unit": "share_delivered", "source": "none", "as_of": "2026-11-14T11:21:00+02:00"}
     with pytest.raises(ValidationError, match="certainty is 'unknown'"):
         Claim.model_validate(claim | {"certainty": "unknown"})
+
+
+def test_an_offer_that_cannot_be_ordered_says_why():
+    offer = load("offers.act1.json")["offers"][0]
+    Offer.model_validate(offer | {"orderable": False, "reason": "late_delivery"})
+    with pytest.raises(ValidationError, match="reason must be null exactly when orderable is true"):
+        Offer.model_validate(offer | {"orderable": False})
+    with pytest.raises(ValidationError, match="reason must be null exactly when orderable is true"):
+        Offer.model_validate(offer | {"reason": "out_of_stock"})
+
+
+def test_a_lookup_amount_comes_with_its_unit():
+    lookup = {"q": "lactose-free milk", "delivery_date": "2026-11-16"}
+    assert OffersRequest.model_validate(lookup).limit == 10
+    OffersRequest.model_validate(lookup | {"amount": 1000, "unit": "L"})
+    for half in ({"amount": 1000}, {"unit": "L"}):
+        with pytest.raises(ValidationError, match="amount and unit go together"):
+            OffersRequest.model_validate(lookup | half)

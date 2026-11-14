@@ -1,7 +1,7 @@
 """The product catalog as ProductCards: the product file joined with delivery reliability and carbon footprint.
 
 Live mode reads the full files in AIMO_DATA_DIR. Replay mode reads the recorded subset in contract/fixtures/valio/.
-Search is local, never through the API: every name word must match, and only the most common category is kept.
+Search is local, never through the API: every query word must be in the name, whatever the category.
 """
 
 import csv
@@ -9,7 +9,7 @@ import io
 import json
 import os
 import re
-from collections import Counter
+import unicodedata
 from dataclasses import dataclass
 from datetime import datetime
 from functools import cache
@@ -71,20 +71,35 @@ class Catalog:
         )
 
     def search(self, query: str, limit: int) -> list[ProductCard]:
-        """Products whose English or Finnish name has every word of the query, in the most common category,
-        closest names first (fewest extra words)."""
-        terms = query.lower().split()
-        matches = []
-        for product in self.products.values():
-            hits = [n.lower() for n in names(product).values() if terms and all(t in n.lower() for t in terms)]
-            if hits and not _deleted(product):
-                extra = min(sum(not any(t in word for t in terms) for word in hit.split()) for hit in hits)
-                matches.append((extra, product["id"], product["category"]))
-        if not matches:
-            return []
-        top = Counter(category for _, _, category in matches).most_common(1)[0][0]
-        ranked = sorted((extra, pid) for extra, pid, category in matches if category == top)
-        return [self.card(pid) for _, pid in ranked[:limit]]
+        """The cards of the `limit` best matches."""
+        return [self.card(pid) for pid in self.matches(query)[:limit]]
+
+    def matches(self, query: str) -> list[str]:
+        """Ids of the products whose English or Finnish name has every word of the query, best match first.
+
+        Case, hyphens and punctuation do not count: "lactose-free" finds "lactose free" and "Lactose- and fatfree".
+        A query word may sit inside a longer name word: "milk" finds "milkdrink", "maito" finds "kevytmaitojuoma".
+        Best match: the most query words found as whole words, then the fewest other words in the name.
+        Every category is kept: the caller sees each card's category and narrows the query itself.
+        """
+        terms = self.words(query)
+        ranked = []
+        for product in self.products.values() if terms else []:
+            if _deleted(product):
+                continue
+            scores = [
+                (-sum(t in words for t in terms), sum(not any(t in word for t in terms) for word in words))
+                for words in map(self.words, names(product).values())
+                if all(any(t in word for word in words) for t in terms)
+            ]
+            if scores:  # the better of the two names
+                ranked.append((*min(scores), product["id"]))
+        return [pid for *_, pid in sorted(ranked)]
+
+    @staticmethod
+    def words(text: str) -> list[str]:
+        """Lower-case words of a name or a query. Letters and digits stay together, Finnish ä and ö included."""
+        return re.findall(r"\w+", unicodedata.normalize("NFC", text).casefold())
 
     def listed_substitutes(self, product_id: str) -> set[str]:
         """Valio's own suggestions, both ways: what this product lists, and what lists this product."""
