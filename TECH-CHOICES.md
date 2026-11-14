@@ -102,7 +102,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: we send only structured catalog facts (name, brand, category, allergens, claims) and never marketing descriptions, because marketing text could try to talk the judge into saying yes. The judge gives no explanation, so we log both questions, the probabilities and the thresholds ourselves. It can only make a verdict stricter: if the key is missing, the network fails or an answer takes more than five seconds, a human decides.
 - If we change it: one function in `harness/judge.py`.
 - Alternatives we looked at: Gemini Flash with structured output (our fallback if the ranking had failed); rules only (cannot read a buyer's plain-English note like "no coffee creamers").
-- Decided in: PR #7, 14/11/2026. Tested and confirmed on the real substitution case: PR for L1–L4 (`feat/harness-service`), 14/11/2026.
+- Decided in: PR #7, 14/11/2026. Tested and confirmed on the real substitution case: PR #17, 14/11/2026.
 
 ## Stack: Python 3.14 with uv, FastAPI, Pydantic, a plain web page
 - Status: decided
@@ -228,7 +228,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: an unsigned or edited quote stops right away before any rule reads its numbers. Human approval cards sit in `state/buyer/` tied to that quote's exact fingerprint, expire automatically once the order cut-off passes, and can only be answered once (a second click is refused). In the demo, clicking Approve signs with the manager's key kept on the buyer side; in real life, that click would use a passkey in the browser. The harness also serves the approval page directly at `http://localhost:8002/`.
 - If we change it: `harness/` only. Valio's gateway still checks every signature and spend cap on its own side.
 - Alternatives we looked at: stopping at the first failed rule (hides other warnings from the approver); letting the agent pass the quote data to the harness (the agent could alter numbers); trusting HTTP 200 without checking the receipt signature.
-- Decided in: PR for L1–L4 (`feat/harness-service`), 14/11/2026.
+- Decided in: PR #17, 14/11/2026.
 
 ## Audit log: one chained file on each side
 - Status: decided
@@ -237,7 +237,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: the chain shows tampering, it does not prevent it. The stronger proof is that each side also keeps pieces signed by the other. Both logs use the exact same canonical fingerprint formula so a check tool works on both files.
 - If we change it: `common/audit.py` is now shared in the repo and used by the buyer's harness; `merchant/audit.py` uses the identical formula and can point to `common/audit.py` in one line.
 - Alternatives we looked at: a database table; a single shared log.
-- Decided in: PR #7, 14/11/2026. Shared verifier in `common/audit.py`: PR for L1–L4 (`feat/harness-service`), 14/11/2026.
+- Decided in: PR #7, 14/11/2026. Shared verifier in `common/audit.py`: PR #17, 14/11/2026.
 
 ## Payments: none, the spend cap travels in an AP2 payment mandate
 - Status: decided
