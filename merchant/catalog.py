@@ -1,6 +1,7 @@
 """The product catalog as ProductCards: the product file joined with delivery reliability and carbon footprint.
 
-Live mode reads the full files in AIMO_DATA_DIR. Replay mode reads the recorded subset in contract/fixtures/valio/.
+Live mode reads the full files in AIMO_DATA_DIR. Replay mode reads the recorded subsets in contract/fixtures/valio/:
+the first recording and every later one, put together.
 Search is local, never through the API: every query word must be in the name, whatever the category.
 """
 
@@ -11,7 +12,7 @@ import os
 import re
 import unicodedata
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from functools import cache
 from pathlib import Path
 from typing import Literal
@@ -134,21 +135,52 @@ class Catalog:
         )
 
 
+def recordings() -> list[Path]:
+    """The folders replay mode reads: the first recording, then one sub-folder per later one, named after the
+    delivery date it was recorded for (scripts/record_fixtures.py). A product in two recordings has the same record."""
+    return [REPLAY_DIR, *sorted(folder for folder in REPLAY_DIR.iterdir() if folder.is_dir())]
+
+
+def recorded_for(folder: Path) -> str:
+    """The delivery date a recording was made for."""
+    return json.loads((folder / "request.json").read_text(encoding="utf-8"))["requestedDate"]
+
+
 @cache
 def load(which: Literal["live", "replay"] | None = None) -> Catalog:
+    """The whole catalog: the full files in live mode, every recording put together in replay mode.
+    This is what a plain search reads, because a search has no delivery date."""
     which = which or mode()
-    folder = valio_api.data_dir() if which == "live" else REPLAY_DIR
-    products = json.loads((folder / "products.json").read_bytes())
-    if which == "live":
-        as_of = datetime.fromtimestamp((folder / "products.json").stat().st_mtime, HELSINKI).replace(microsecond=0)
+    return _read([valio_api.data_dir()] if which == "live" else recordings(), live=which == "live")
+
+
+def for_delivery(delivery_date: date) -> Catalog:
+    """The catalog a lookup or a quote for that delivery date reads.
+
+    Live mode: the whole catalog. Replay mode: only the products of the recording made for that date, because Valio
+    was only asked about those on that day. A product of another recording has no price and no stock for this date:
+    counting it would show a product Valio sells as "not found".
+    """
+    return load() if mode() == "live" else _recorded_catalog(delivery_date.isoformat())
+
+
+@cache
+def _recorded_catalog(delivery_date: str) -> Catalog:
+    dated = [folder for folder in recordings() if recorded_for(folder) == delivery_date]
+    return _read(dated, live=False) if dated else load("replay")  # no recording for that date: the quote will say so
+
+
+def _read(folders: list[Path], live: bool) -> Catalog:
+    if live:
+        as_of = datetime.fromtimestamp((folders[0] / "products.json").stat().st_mtime, HELSINKI).replace(microsecond=0)
     else:
         as_of = datetime.fromisoformat((REPLAY_DIR / "frozen_now.txt").read_text(encoding="utf-8").strip())
-    return Catalog(
-        products={p["id"]: p for p in products},
-        reliability=_table(folder / "delivery-reliability.csv"),
-        carbon=_table(folder / "carbon-footprint.csv"),
-        as_of=as_of,
-    )
+    products, reliability, carbon = {}, {}, {}
+    for folder in reversed(folders):  # the first recording is read last, so it wins where two recordings overlap
+        products |= {p["id"]: p for p in json.loads((folder / "products.json").read_bytes())}
+        reliability |= _table(folder / "delivery-reliability.csv")
+        carbon |= _table(folder / "carbon-footprint.csv")
+    return Catalog(products=products, reliability=reliability, carbon=carbon, as_of=as_of)
 
 
 def name(product: dict) -> str:

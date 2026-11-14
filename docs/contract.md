@@ -319,6 +319,15 @@ verify_receipt(receipt_jwt: str, merchant_jwks) -> dict
 | `GEMINI_API_KEY` | harness | key for Gemini Decision (AI Studio) |
 | `VALIO_MODE` | both | `live` calls the Valio APIs on the real clock. `replay` (the default) reads `contract/fixtures/valio/` and freezes the clock at the recording time (`frozen_now.txt` in that folder, 14/11 at 13:29). Give both services the same value |
 | `AIMO_FROZEN_NOW` | both | optional: an ISO time with its offset that replaces the clock, in both modes |
+
+**What replay mode knows.** Two recordings of real Valio answers, one per delivery date:
+
+| Delivery date | Folder | Products | Asked on |
+|---|---|---|---|
+| 2026-11-16, the milk case | `contract/fixtures/valio/` | 157: the lactose-free milks, the plant-based drinks and their listed substitutes | 14/11 at 13:29:07 |
+| 2026-11-19, the restaurant's menu | `contract/fixtures/valio/2026-11-19/` | 47: the 22 products of the menu, and every product of the squeaky cheese's category | 14/11 at 22:19:22 |
+
+A lookup or a quote reads the recording made for its delivery date, and only that one: Valio was not asked about the other products for that day. Any other date is refused with HTTP 422 and the two dates it knows. A search has no date and reads both. The clock stays frozen at the time of the first recording for everything. Each price and each stock figure keeps the time Valio really gave it in its `as_of`, so a quote for the restaurant is issued "at 13:29" with facts "as of 22:19": the clock is the replay's, the facts are Valio's. `scripts/record_fixtures.py restaurant` records the second one again and never touches the first.
 | `MERCHANT_URL` | harness, agent tools | default `http://localhost:8001` |
 | `HARNESS_URL` | agent tools, surface | default `http://localhost:8002` |
 | `AIMO_DATA_DIR` | gateway, scripts | where the three data files live, default `data/` |
