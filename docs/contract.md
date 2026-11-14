@@ -281,7 +281,9 @@ The three services allow cross-origin calls from `localhost`, so the page can re
 
 ## MCP tools (`agent_mcp/`)
 
-What the external agent sees. Seven tools, short identifiers only, never a token. When a service refuses (out of stock, a date replay mode has no answers for), the tool fails with the service's own words, so the agent can say why.
+What the external agent sees. Nine tools, short identifiers only, never a token. When a service refuses (out of stock, a date replay mode has no answers for), the tool fails with the service's own words, so the agent can say why.
+
+Every tool answers with two text blocks: first a short Markdown summary (tables, euros, weekdays, Helsinki times) that the chat can show as it is, then the JSON of the "Returns" column, with every source and certainty.
 
 | Tool | Arguments | Returns |
 |---|---|---|
@@ -292,6 +294,8 @@ What the external agent sees. Seven tools, short identifiers only, never a token
 | `authorize_checkout` | `checkout_id`, `request_text` (the human's original sentence) | `AuthorizationStatus` |
 | `get_authorization_status` | `checkout_id` | `AuthorizationStatus` |
 | `get_order` | `order_id` | `Order` without the receipt token |
+| `list_pending_approvals` | none | the `AuthorizationStatus` of every quote waiting for the chef (harness `GET /authorizations`, filtered on `pending_approval`) |
+| `get_policy` | none | `BuyerPolicy` (harness `GET /policy`): the spending limit, blocked allergens, what the chef signs, substitution preferences |
 
 ## The `trust/` library (step A2)
 
