@@ -2,6 +2,56 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## C6: the kitchen order page, V2 (the team's review of 14/11)
+
+What changed, point by point: `surface/README.md`. In short: the stock can be changed (table and chat), the signing steps moved to a panel on the left with an eighth step for the delivery, the checks are written for a chef, the chat answers with Gemini, a signature is confirmed in a window, and the chef can go back after an order.
+
+Tested on 14/11 in headless Chrome at 1920x1080: the three scenarios end to end, a stock change by hand and by chat, approve, reject, the attack then the corrected order. Three ways: in replay mode, against a stand-in for the driver and the harness, and at 22:25 against the real driver, gateway and harness of `main` at `80eaff2` in live mode (`VALIO_MODE=live`). The chat was tested against the real Gemini API. No error from the page in any of them.
+
+With the gateway in replay mode the driver answers 502 (the menu's products are not in the recorded answers, Adrien's A11). The page then shows the recorded run and says why.
+
+### Why the page said "harness not reached"
+
+Nothing is wrong in the harness. I started it on 14/11 with `uv run python scripts/dev.py` and asked `GET /policy` the way the page does, from another port: it answers, with the cross-origin header the page needs. Two things on the page's side:
+
+- The harness was not running when the page was opened. Nothing was listening on port 8002.
+- The page looked for the harness once, when it loaded. A harness started afterwards stayed "not reached" until a reload.
+
+Fixed in the page: it looks again every five seconds and each service has its own light in the strip at the bottom. Nothing to change in `harness/` for this.
+
+### For Léon: a route to change the spending limit
+
+The team asked that the chef can change the spending limit on the page. The page has the window. It cannot work until the harness has a route: the limit must live where it is enforced, and the open mandate carries it. Until then the page says "The limit has not changed". Message to paste into a session in `harness/`:
+
+> Read `harness/app.py`, `harness/policy.py`, `harness/signer.py` and `docs/contract.md`. Add a route so the chef can change the spending limit from the page.
+>
+> - Route: `PUT /policy/autonomous-limit`, body `{"autonomous_limit_minor": <whole number of cents, 1 or more>, "decided_by": "<who>"}`. Answer: the full `BuyerPolicy`, with the new limit. Refuse anything else with 422.
+> - The new limit applies to the next `POST /authorize`: the spend rule uses it, and the open mandate signed for the agent carries it (the gateway refuses a mandate above its cap, so both must agree).
+> - `GET /policy` returns the limit in force.
+> - Keep the change where the harness keeps its state (not in `scenarios/policy.demo.json`, which is a file of the repo), so that `scripts/dev.py --fresh` goes back to the file's limit.
+> - Write one line in the buyer audit log: who changed the limit, from what to what.
+> - An approval that is already pending keeps the verdict it had.
+> - Tests in `tests/test_harness_service.py`: the route changes what `GET /policy` returns; an order above the new limit goes to `human`; a body without a positive whole number is refused.
+> - Update `docs/contract.md` (the harness routes table) with Adrien's agreement, and `TECH-CHOICES.md`.
+>
+> The page already calls this route (`harness.setLimit` in `surface/static/portal.js`). Nothing to change in `surface/`.
+
+### For Adrien: the demo driver takes the chef's lines (after the video)
+
+Your notes say "not tonight", and I agree for the video. For later: the chef can now change the stock table, and the page already sends what is missing with the order: `POST /scenarios/{id}/run` with the body `{"lines": [{"product_id", "name", "amount", "unit", "dish"}], "delivery_date": "2026-11-19"}`. The driver ignores the body today, which works: the page shows a red line saying the quote is not for the changed quantities. Message to paste into a session on `scenarios/run.py`:
+
+> In `scenarios/run.py`, let `POST /scenarios/{id}/run` take an optional JSON body: `{"lines": [DemoRequestLine, ...], "delivery_date": "YYYY-MM-DD"}`, the same line shape as `DemoState.request.lines`. For `normal-order` and `substitution`, when `lines` is given, ask the gateway for a quote for these lines instead of the scenario's own, and put them in `DemoState.request.lines`. Without a body, nothing changes. `attack` ignores the body. Refuse a line with an amount of zero or less. Add the body to the driver's table in `docs/contract.md`.
+>
+> Two facts the page relies on, to keep: the page reads `request.lines` to know whether the quote is for what the chef asked, and after a rejection it reads `GET /state` again and expects `scenario.status` to be `refused`.
+
+Other points for Adrien:
+- The page shows an eighth step, "Delivery scheduled", that it reads from `order.delivery_date` and `order.status`. It is not in `DemoState` (seven steps, checked by the model). If you would rather have it in the contract, tell me and I remove the page's own step.
+- The page is now served by `surface/assistant.py` on port 8004, so port 8003 is free for the driver. `scripts/dev.py` could start it as a fourth service: `("assistant", "surface.assistant:app", 8004)`.
+
+Open, for the three of us:
+- The words the services write for the team ("the agent", "the judge", "the harness") are reworded by the page into "your assistant", "Aimo Personal Assistant" and "the safety checks". If the driver's sentences change, the page's rewording may need a look.
+- The synthetic numbers in `surface/static/kitchen/` (stock counts, 38/46/50 booked covers) are mine. Tell me if the video needs others.
+
 ## C5: the kitchen order page, V1 of the front end
 
 - `surface/static/portal.html`: three steps for the chef (recipes, stock, order), the seven signing steps at the top, the agent's conversation on the side, demo buttons in a strip of their own. How to open it and where its data comes from: `surface/README.md`.
