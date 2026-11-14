@@ -2,7 +2,7 @@
 
 Results, numbers and open questions for the others. Newest first.
 
-## A8: the demo driver, buttons 1 and 2 (14/11, 22:00)
+## A8: the demo driver, buttons 1 and 2 (14/11, 21:45)
 
 `scenarios/run.py`, port 8003. `uv run python scripts/dev.py` now starts three services, and the page is on `http://localhost:8002/portal.html` (the harness serves it, with `kitchen/` and the example files: checked, HTTP 200 for the three).
 
@@ -18,7 +18,13 @@ Results, numbers and open questions for the others. Newest first.
 
 With the hotel policy the judge gives 0.52. With Léon's restaurant policy it gave 0.64 (A7). Both end `human`. The number on screen changes when his policy is merged.
 
-**Not checked: the page itself in a browser against the driver.** Colette tested it against a stand-in that follows the contract. The first click-through with the three services is still to do.
+**The page, clicked through in Chrome against the three services** (`portal.html` served by the harness, live mode, 21:42). The strip says "driver live, harness live". Button 1: recipes, stock, "Agent order", then the quote table with its ten lines, the trail lit to the receipt, the receipt card. Button 2: the verdict card, the card with both cheeses side by side, "Approve and sign", then "Signed by chef" and the receipt. No error from the page in the console.
+
+Three things show on screen and are not the driver's to fix:
+
+- "Delivery Mon 16 Nov" next to "Needed by Thu 19 Nov". The quote's `delivery_date` is the day Valio can deliver. To decide before the video.
+- The account name, top right, is `kitchen.name`: "Demo Restaurant Helsinki", still a placeholder.
+- The payment line of the receipt card reads "No payment is booked yet: the sandbox payment is not built." Right for tonight, gone with A9. Do not record the final video before A9.
 
 **For Colette, answers to your questions.**
 
