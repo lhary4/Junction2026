@@ -137,6 +137,13 @@ const app = {
   problem: null,
   // Valio's estimate of the order's carbon footprint, for the lines in `key`, and the offers the chef put off this week
   eco: { data: null, key: null, loading: false, dismissed: new Set() },
+  trends: [], // cached Google News foodservice trends
+  trendId: null,
+  recommendation: null, // { trend, recipe, source, model }
+  recBusy: false,
+  recPortions: 50,
+  recAdded: false,
+  spotlightOpen: false,
 };
 
 /* ---------- Small helpers ---------- */
@@ -288,6 +295,7 @@ const harness = {
 const assistant = {
   health: () => call(`${ASSISTANT_URL}/health`, {}, 1200),
   chat: (turns, state) => postJson(`${ASSISTANT_URL}/chat`, { turns, state }, 30000),
+  recommend: (payload) => postJson(`${ASSISTANT_URL}/recommend`, payload, 25000),
 };
 
 // The page sits in surface/static/. Served by the harness, the same path reaches /contract/examples/.
@@ -298,6 +306,7 @@ const kitchenApi = {
   recipes: () => call("kitchen/recipes.json"),
   bookings: () => call("kitchen/bookings.json"),
   stock: (scenarioId) => call(`kitchen/stock.${STOCK_FILE[scenarioId] ?? "normal-order"}.json`),
+  trends: () => call("kitchen/trends.json"),
 };
 
 /* ---------- What is on screen right now ---------- */
@@ -796,10 +805,21 @@ function recipesView() {
       (item) => `<tr><td>${esc(item.name)}</td><td class="num">${esc(item.per_service)}</td><td class="muted num">${esc(item.product_id)}</td></tr>`
     )
     .join("");
-  return `<div class="head">
-      <h2 class="display">Recipes on the menu</h2>
-      <p class="head__meta">Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.</p>
+  const activeTrend = (app.trends ?? []).find((t) => t.id === app.trendId) ?? (app.trends ?? [])[0];
+  const bubble = activeTrend
+    ? `<button class="spotlight-bubble${app.spotlightOpen ? " is-open" : ""}" type="button" data-action="toggle-spotlight" aria-expanded="${app.spotlightOpen}">
+        <span class="spotlight-bubble__dot"></span>
+        <span>Spotlight: Seasonal Dessert</span>
+      </button>`
+    : "";
+  return `<div class="head head--with-spotlight">
+      <div>
+        <h2 class="display">Recipes on the menu</h2>
+        <p class="head__meta">Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.</p>
+      </div>
+      ${bubble}
     </div>
+    ${app.spotlightOpen ? trendRecommendationView() : ""}
     <div class="split">
       <table class="tbl">
         <thead><tr><th>Course</th><th>Recipe</th><th class="num">Ingredients</th></tr></thead>
@@ -813,6 +833,82 @@ function recipesView() {
         </table>
       </div>
     </div>`;
+}
+
+function trendRecommendationView() {
+  const trends = app.trends ?? [];
+  if (!trends.length && !app.recommendation) return "";
+  const activeTrend = trends.find((t) => t.id === app.trendId) ?? trends[0];
+  const rec = app.recommendation;
+  const portions = Math.max(1, Number(app.recPortions) || 50);
+
+  const trendPills = trends
+    .map((t) => {
+      const selected = activeTrend && t.id === activeTrend.id;
+      return `<button class="chip${selected ? " is-active" : ""}" type="button" data-action="select-trend" data-trend-id="${esc(t.id)}">${esc(t.title)}</button>`;
+    })
+    .join("");
+
+  let body = "";
+  if (app.recBusy) {
+    body = `<p class="trend-card__loading">Generating recipe grounded in Valio Aimo catalog…</p>`;
+  } else if (rec?.recipe) {
+    const r = rec.recipe;
+    const rows = (r.ingredients ?? [])
+      .map((ing) => {
+        const total = round3(Number(ing.amount_per_portion) * portions);
+        const meta = [ing.origin ? `Origin ${ing.origin}` : null, ing.carbon_kg_per_kg != null ? `${ing.carbon_kg_per_kg} kg CO2e/kg` : null]
+          .filter(Boolean)
+          .join(" · ");
+        return `<tr>
+          <td><b>${esc(ing.name)}</b>${meta ? `<div class="trend-ing-meta">${esc(meta)}</div>` : ""}</td>
+          <td class="num">${esc(qty(ing.amount_per_portion, ing.unit))}</td>
+          <td class="num"><b>${esc(qty(total, ing.unit))}</b></td>
+          <td class="muted num">#${esc(ing.product_id)}</td>
+        </tr>`;
+      })
+      .join("");
+    const sourceBadge = rec.source === "live_llm" ? `live · ${esc(rec.model)}` : "cached fallback";
+    body = `
+      <div class="trend-recipe">
+        <div class="trend-recipe__head">
+          <div>
+            <span class="tag">${esc(r.course)}</span>
+            <h4 class="trend-recipe__title">${esc(r.name)}</h4>
+            <p class="trend-recipe__with">${esc(r.with_text)}</p>
+          </div>
+          <span class="trend-source-tiny">${sourceBadge}</span>
+        </div>
+        <p class="trend-recipe__why">${esc(r.trend_reason)}</p>
+        <table class="tbl tbl--tight">
+          <thead><tr><th>Valio Ingredient</th><th class="num">Per portion</th><th class="num">For ${portions} portions</th><th class="num">Product</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="trend-recipe__actions">
+          <label class="trend-portions">
+            <span>Portions</span>
+            <input id="rec-portions" class="field__input" type="number" min="1" max="2000" value="${portions}" ${canEdit() ? "" : "disabled"} />
+          </label>
+          <button class="btn btn--primary" type="button" data-action="add-recommended" ${canEdit() && !app.recAdded ? "" : "disabled"}>
+            ${app.recAdded ? "Added to menu & order" : `Add to menu & order (${portions} portions)`}
+          </button>
+        </div>
+      </div>`;
+  } else {
+    body = `<p class="trend-card__prompt">Click <b>Generate recipe</b> to match this Google News food trend against Valio Aimo's catalog.</p>`;
+  }
+
+  return `<div class="panel trend-card">
+    <div class="trend-card__head">
+      <div>
+        <span class="tag">Valio Aimo Spotlight · Google News Trend</span>
+        <h3 class="panel__title">${esc(activeTrend?.title ?? "Seasonal Food Trend")}</h3>
+        <p class="trend-card__headline">${esc(activeTrend?.headline ?? "")} <span class="muted">(${esc(activeTrend?.source ?? "Google News")} · ${esc(activeTrend?.published_at ?? "")})</span></p>
+      </div>
+    </div>
+    ${trends.length > 1 ? `<div class="trend-card__pills">${trendPills}</div>` : ""}
+    ${body}
+  </div>`;
 }
 
 /* ---------- Drawing: step 2, stock ---------- */
@@ -1764,13 +1860,106 @@ document.addEventListener("click", (event) => {
   } else if (action === "undo") {
     undoChanges();
     draw();
+  } else if (action === "toggle-spotlight") {
+    app.spotlightOpen = !app.spotlightOpen;
+    drawMain();
+    if (app.spotlightOpen && !app.recommendation && !app.recBusy) {
+      fetchRecommendation();
+    }
+  } else if (action === "select-trend") {
+    const tid = event.target.closest("[data-trend-id]")?.dataset.trendId;
+    if (tid && tid !== app.trendId) {
+      app.trendId = tid;
+      app.recommendation = null;
+      app.recAdded = false;
+      fetchRecommendation();
+    }
+  } else if (action === "add-recommended") {
+    addRecommendedDish();
   } else if (action === "reset") {
     chooseScenario(app.scenarioId === "attack" ? "normal-order" : app.scenarioId);
   }
 });
 
+async function fetchRecommendation() {
+  if (app.recBusy) return;
+  app.recBusy = true;
+  app.recAdded = false;
+  drawMain();
+  try {
+    const existing = (app.kitchen.recipes?.recipes ?? []).map((r) => r.name);
+    const data = await assistant.recommend({
+      trend_id: app.trendId,
+      portions: Math.max(1, Number(app.recPortions) || 50),
+      existing_recipes: existing,
+    });
+    app.recommendation = data;
+    toast(`Recipe ready (${data.source === "live_llm" ? "Gemini" : "cached"})`);
+  } catch (error) {
+    toast(`Could not load recommendation: ${error.message}`, true);
+  } finally {
+    app.recBusy = false;
+    drawMain();
+  }
+}
+
+function addRecommendedDish() {
+  const rec = app.recommendation?.recipe;
+  if (!rec || !canEdit() || app.recAdded) return;
+  const portions = Math.max(1, Number(app.recPortions) || 50);
+  const recipes = app.kitchen.recipes?.recipes ?? [];
+  const newId = `trend-${app.trendId || "spotlight"}-${recipes.length + 1}`;
+  recipes.push({
+    id: newId,
+    course: rec.course,
+    name: rec.name,
+    with: rec.with_text,
+    ingredients: (rec.ingredients ?? []).map((ing) => ({
+      product_id: ing.product_id,
+      name: ing.name,
+      per_service: `${round3(Number(ing.amount_per_portion) * portions)} ${ing.unit.toLowerCase()} (${portions} portions)`,
+    })),
+  });
+  for (const ing of rec.ingredients ?? []) {
+    const addNeed = round3(Number(ing.amount_per_portion) * portions);
+    const existing = app.lines.find((line) => line.product_id === ing.product_id);
+    if (existing) {
+      existing.need = round3(existing.need + addNeed);
+      existing.to_order = neededNow(existing);
+      existing.by.to_order = "you";
+      if (!existing.dishes.includes(rec.course)) existing.dishes.push(rec.course);
+    } else {
+      app.lines.push({
+        product_id: ing.product_id,
+        name: ing.name,
+        dishes: [rec.course],
+        unit: ing.unit,
+        need: addNeed,
+        in_stock: 0,
+        counted: 0,
+        to_order: addNeed,
+        by: { to_order: "you" },
+      });
+    }
+  }
+  app.recipeId = newId;
+  app.recAdded = true;
+  if (app.confirmed.recipes) app.confirmed.recipes = null;
+  if (app.confirmed.stock && !orderOnScreen()) app.confirmed.stock = null;
+  say("chef", `Add "${rec.name}" for ${portions} portions.`);
+  say("agent", `Added "${rec.name}" and scaled ${rec.ingredients.length} Valio ingredients for ${portions} portions into your stock ledger.`);
+  toast(`Added "${rec.name}" (${portions} portions)`);
+  draw();
+}
+
 /* A number typed in the stock table. The field that has the focus keeps it when the table is drawn again. */
 document.addEventListener("change", (event) => {
+  if (event.target.id === "rec-portions") {
+    const val = Math.max(1, Math.min(2000, Math.round(Number(event.target.value) || 50)));
+    app.recPortions = val;
+    drawMain();
+    return;
+  }
   const cell = event.target.closest("[data-cell]");
   if (!cell) return;
   const [productId, name] = cell.dataset.cell.split(":");
@@ -1815,13 +2004,17 @@ document.addEventListener("keydown", (event) => {
     app.up.driver = app.mode === "live";
     app.state = app.mode === "live" ? state : await recorded("idle");
 
-    const [recipes, bookings, stock, policy] = await Promise.all([
+    const [recipes, bookings, stock, policy, trendsData] = await Promise.all([
       kitchenApi.recipes(),
       kitchenApi.bookings(),
       kitchenApi.stock(app.state.scenario.id ?? app.scenarioId),
       harness.policy().catch(() => null),
+      kitchenApi.trends().catch(() => ({ trends: [] })),
     ]);
     app.kitchen = { recipes, bookings, stock };
+    app.trends = trendsData?.trends ?? [];
+    app.trendId = app.trends[0]?.id ?? null;
+    app.recPortions = recipes?.covers_per_service ?? 50;
     app.up.harness = Boolean(policy);
     // Without the harness, the limit is read from the policy file the harness loads.
     app.policy = policy ?? (await call("../../scenarios/policy.demo.json").catch(() => null));

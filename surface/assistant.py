@@ -43,6 +43,7 @@ CONTRACT_EXAMPLES = ROOT / "contract" / "examples"
 DEMO_POLICY = ROOT / "scenarios" / "policy.demo.json"
 
 DEFAULT_MODEL = "gemini-3.5-flash-lite"  # about one second an answer, which a live demo needs
+TRENDS_FILE = SURFACE_STATIC / "kitchen" / "trends.json"
 TIMEOUT_SECONDS = 20
 MAX_STATE_CHARACTERS = 60_000  # the page state is small: anything bigger is not from our page
 
@@ -124,7 +125,38 @@ class ChatAnswer(BaseModel):
     model: str
 
 
+class RecommendRequest(BaseModel):
+    trend_id: str | None = None
+    portions: int = Field(default=50, ge=1, le=2000)
+    existing_recipes: list[str] = []
+
+
+class RecommendedIngredient(BaseModel):
+    product_id: str
+    name: str
+    amount_per_portion: float
+    unit: Literal["KG", "L", "ST"]
+    origin: str | None = None
+    carbon_kg_per_kg: float | None = None
+
+
+class RecipeProposal(BaseModel):
+    name: str
+    course: str
+    with_text: str
+    trend_reason: str
+    ingredients: list[RecommendedIngredient]
+
+
+class RecommendResponse(BaseModel):
+    trend: dict[str, Any]
+    recipe: RecipeProposal
+    source: Literal["live_llm", "cached_fallback"]
+    model: str
+
+
 AskFn = Callable[[list[Turn], dict[str, Any]], ModelAnswer]
+RecommendFn = Callable[[RecommendRequest], RecommendResponse]
 
 
 class AssistantUnavailableError(Exception):
@@ -220,8 +252,175 @@ def checked_swaps(swaps: list[ProductSwap], state: dict[str, Any]) -> list[Produ
     return kept
 
 
-def create_app(*, ask: AskFn | None = None) -> FastAPI:
+def load_trends() -> dict[str, Any]:
+    if not TRENDS_FILE.exists():
+        return {"trends": []}
+    return json.loads(TRENDS_FILE.read_text(encoding="utf-8"))
+
+
+def _pick_trend(trend_id: str | None) -> dict[str, Any]:
+    trends = load_trends().get("trends") or []
+    if not trends:
+        return {
+            "id": "nordic-warm-cheese",
+            "title": "Warm Finnish Leipäjuusto & Cloudberry Revival",
+            "headline": "Nordic kitchens lean into hyper-local winter comfort: warm bread cheese and Arctic berries top seasonal bistro menus",
+            "source": "Google News · Foodservice & Hospitality",
+            "published_at": "2026-11-14",
+            "tags": ["Seasonal", "Finnish Origin"],
+        }
+    if trend_id:
+        for t in trends:
+            if t.get("id") == trend_id:
+                return t
+    return trends[0]
+
+
+def _catalog_unit(card: Any) -> Literal["KG", "L", "ST"]:
+    if card.size_per_sales_unit and card.size_per_sales_unit.unit in ("KG", "L"):
+        return card.size_per_sales_unit.unit
+    if card.base_unit in ("KG", "L", "ST"):
+        return card.base_unit
+    return "ST"
+
+
+def _catalog_candidates(catalog: Any, limit: int = 80) -> list[dict[str, Any]]:
+    by_cat: dict[str, list[dict[str, Any]]] = {}
+    for pid in sorted(catalog.products):
+        card = catalog.card(pid)
+        cat = str(card.category or "other")
+        by_cat.setdefault(cat, []).append(
+            {
+                "product_id": pid,
+                "name": card.name,
+                "unit": _catalog_unit(card),
+                "origin": card.origin.value if card.origin.certainty != "unknown" else None,
+            }
+        )
+    items: list[dict[str, Any]] = []
+    buckets = list(by_cat.values())
+    idx = 0
+    while len(items) < limit and buckets:
+        next_buckets = []
+        for bucket in buckets:
+            if idx < len(bucket) and len(items) < limit:
+                items.append(bucket[idx])
+            if idx + 1 < len(bucket):
+                next_buckets.append(bucket)
+        buckets = next_buckets
+        idx += 1
+    return items
+
+
+def _ground_ingredients(raw: list[RecommendedIngredient], catalog: Any) -> list[RecommendedIngredient]:
+    grounded: list[RecommendedIngredient] = []
+    seen: set[str] = set()
+    for item in raw:
+        if item.product_id in seen or item.product_id not in catalog.products or item.amount_per_portion <= 0:
+            continue
+        card = catalog.card(item.product_id)
+        seen.add(item.product_id)
+        carbon_val = card.carbon_footprint.value if card.carbon_footprint.certainty != "unknown" else None
+        origin_val = card.origin.value if card.origin.certainty != "unknown" else None
+        grounded.append(
+            RecommendedIngredient(
+                product_id=item.product_id,
+                name=card.name,
+                amount_per_portion=round(float(item.amount_per_portion), 4),
+                unit=_catalog_unit(card),
+                origin=origin_val,
+                carbon_kg_per_kg=float(carbon_val) if carbon_val is not None else None,
+            )
+        )
+    return grounded
+
+
+def _fallback_proposal(trend: dict[str, Any], catalog: Any) -> RecipeProposal:
+    if trend.get("id") == "oat-comfort-bowl":
+        raw = [
+            RecommendedIngredient(product_id="460837", name="Red beetroot", amount_per_portion=0.14, unit="KG"),
+            RecommendedIngredient(product_id="460810", name="Yellow beetroot", amount_per_portion=0.08, unit="KG"),
+            RecommendedIngredient(product_id="460200", name="Elovena oat flakes", amount_per_portion=0.06, unit="ST"),
+            RecommendedIngredient(product_id="460825", name="Oatly Oat Drink Organic 1L", amount_per_portion=0.1, unit="ST"),
+        ]
+        return RecipeProposal(
+            name="Roasted Nordic Root & Oat Risotto",
+            course="Plant Main",
+            with_text="honey-roasted Finnish red & yellow beetroot, creamy oat emulsion",
+            trend_reason=f"Matches '{trend.get('title', 'Nordic trend')}' using low-carbon Finnish roots and Nordic oats.",
+            ingredients=_ground_ingredients(raw, catalog),
+        )
+    raw = [
+        RecommendedIngredient(product_id="470438", name="Leipäjuusto squeaky cheese", amount_per_portion=0.12, unit="KG"),
+        RecommendedIngredient(product_id="469044", name="Valio cloudberry jam", amount_per_portion=0.05, unit="ST"),
+        RecommendedIngredient(product_id="464194", name="Valio whipping cream 1 l", amount_per_portion=0.06, unit="ST"),
+    ]
+    return RecipeProposal(
+        name="Warm Leipäjuusto & Cloudberry",
+        course="Seasonal Dessert",
+        with_text="griddled Finnish squeaky cheese, whipped lactose-free cream, Arctic cloudberry compote",
+        trend_reason=f"Matches '{trend.get('title', 'Nordic trend')}' with 100% Finnish-origin Valio dairy & Arctic berries.",
+        ingredients=_ground_ingredients(raw, catalog),
+    )
+
+
+def recommend_recipe(request: RecommendRequest) -> RecommendResponse:
+    from merchant import catalog as merchant_catalog
+
+    catalog = merchant_catalog.load()
+    trend = _pick_trend(request.trend_id)
+    key = setting("GEMINI_API_KEY")
+    if not key:
+        return RecommendResponse(trend=trend, recipe=_fallback_proposal(trend, catalog), source="cached_fallback", model="cached")
+
+    from google import genai
+    from google.genai import types
+
+    candidates = _catalog_candidates(catalog)
+    prompt = (
+        f"Food trend from Google News:\n{json.dumps(trend, ensure_ascii=False)}\n\n"
+        f"Existing menu dishes (avoid duplicating): {json.dumps(request.existing_recipes, ensure_ascii=False)}\n"
+        f"Target portions: {request.portions}\n\n"
+        f"Allowed Valio catalog products (pick 3 to 5 ONLY from this list, using their exact product_id and unit):\n"
+        f"{json.dumps(candidates, ensure_ascii=False)}"
+    )
+    system = (
+        "You are a Nordic culinary R&D chef for Valio Aimo. Given a Google News food trend, design ONE practical "
+        "restaurant dish using ONLY product_ids from the allowed Valio catalog list. Use realistic per-portion quantities "
+        "(e.g. 0.05 to 0.25 KG/L/ST per portion) and the exact unit of each chosen product."
+    )
+    try:
+        client = genai.Client(api_key=key, http_options={"timeout": TIMEOUT_SECONDS * 1000})
+        response = client.models.generate_content(
+            model=model_name(),
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=system,
+                response_mime_type="application/json",
+                response_schema=RecipeProposal,
+                temperature=0.3,
+            ),
+        )
+        parsed = RecipeProposal.model_validate_json(response.text or "")
+        grounded = _ground_ingredients(parsed.ingredients, catalog)
+        if not grounded:
+            raise ValueError("no grounded ingredients")
+        course = "Seasonal Dessert" if trend.get("id") == "nordic-warm-cheese" else parsed.course.strip()
+        proposal = RecipeProposal(
+            name=parsed.name.strip(),
+            course=course,
+            with_text=parsed.with_text.strip(),
+            trend_reason=parsed.trend_reason.strip(),
+            ingredients=grounded,
+        )
+        return RecommendResponse(trend=trend, recipe=proposal, source="live_llm", model=model_name())
+    except Exception:
+        return RecommendResponse(trend=trend, recipe=_fallback_proposal(trend, catalog), source="cached_fallback", model="cached")
+
+
+def create_app(*, ask: AskFn | None = None, recommend: RecommendFn | None = None) -> FastAPI:
     active_ask = ask if ask is not None else ask_gemini
+    active_recommend = recommend if recommend is not None else recommend_recipe
 
     api = FastAPI(title="Aimo Personal Assistant", version="0.1")
     api.add_middleware(
@@ -258,6 +457,14 @@ def create_app(*, ask: AskFn | None = None) -> FastAPI:
             dropped=len(answer.stock_changes) - len(kept) + len(answer.swaps) - len(swaps),
             model=model_name(),
         )
+
+    @api.get("/trends")
+    def get_trends() -> dict[str, Any]:
+        return load_trends()
+
+    @api.post("/recommend")
+    def recommend_dish(request: RecommendRequest) -> RecommendResponse:
+        return active_recommend(request)
 
     @api.get("/scenarios/policy.demo.json")
     def demo_policy() -> FileResponse:

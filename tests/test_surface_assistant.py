@@ -168,3 +168,38 @@ def test_no_swap_while_an_order_is_open_or_without_offers():
 
 def test_the_model_is_told_to_offer_only_listed_swaps():
     assert "Never suggest" in assistant.SYSTEM_PROMPT and "state.eco.alternatives" in assistant.SYSTEM_PROMPT
+
+
+def test_trends_and_recommend_fallback_are_grounded(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "")
+    monkeypatch.setattr(assistant, "_from_env_file", lambda _name: None)
+    client = TestClient(create_app())
+
+    trends_resp = client.get("/trends")
+    assert trends_resp.status_code == 200
+    trends = trends_resp.json()["trends"]
+    assert len(trends) >= 1
+
+    rec_resp = client.post("/recommend", json={"trend_id": trends[0]["id"], "portions": 40})
+    assert rec_resp.status_code == 200
+    body = rec_resp.json()
+    assert body["source"] == "cached_fallback"
+    assert body["trend"]["id"] == trends[0]["id"]
+    assert len(body["recipe"]["ingredients"]) >= 2
+    for ing in body["recipe"]["ingredients"]:
+        assert ing["product_id"]
+        assert ing["unit"] in ("KG", "L", "ST")
+        assert ing["amount_per_portion"] > 0
+
+
+def test_ground_ingredients_drops_unknown_skus():
+    from merchant import catalog as merchant_catalog
+
+    cat = merchant_catalog.load()
+    raw = [
+        assistant.RecommendedIngredient(product_id="999999999", name="Fake", amount_per_portion=0.5, unit="KG"),
+        assistant.RecommendedIngredient(product_id="469044", name="Cloudberry", amount_per_portion=0.05, unit="KG"),
+    ]
+    grounded = assistant._ground_ingredients(raw, cat)
+    assert [g.product_id for g in grounded] == ["469044"]
+    assert "cloudberry" in grounded[0].name.lower()
