@@ -153,6 +153,11 @@
         "chosen": {
           "title": "Chosen",
           "type": "boolean"
+        },
+        "catalog_listed": {
+          "default": false,
+          "title": "Catalog Listed",
+          "type": "boolean"
         }
       },
       "required": [
@@ -355,6 +360,18 @@
           "title": "Category",
           "type": "string"
         },
+        "brand": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brand"
+        },
         "sales_unit": {
           "title": "Sales Unit",
           "type": "string"
@@ -371,6 +388,17 @@
           ],
           "title": "Base Unit",
           "type": "string"
+        },
+        "size_per_sales_unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SizePerSalesUnit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         },
         "comparison_price_minor": {
           "title": "Comparison Price Minor",
@@ -442,6 +470,14 @@
         },
         "carbon_footprint": {
           "$ref": "#/$defs/Claim"
+        },
+        "nutritional_claims": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Nutritional Claims",
+          "type": "array"
         },
         "labels": {
           "default": [],
@@ -915,6 +951,44 @@
       "title": "Shortfall",
       "type": "object"
     },
+    "SizePerSalesUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "how": {
+          "title": "How",
+          "type": "string"
+        }
+      },
+      "required": [
+        "how"
+      ],
+      "title": "SizePerSalesUnit",
+      "type": "object"
+    },
     "Status": {
       "description": "Checkout state indicating the current phase.",
       "enum": [
@@ -946,6 +1020,80 @@
         },
         "allergens": {
           "$ref": "#/$defs/AllergenInfo"
+        },
+        "brand": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brand"
+        },
+        "sales_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sales Unit"
+        },
+        "base_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Unit"
+        },
+        "size_per_sales_unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SizePerSalesUnit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "nutritional_claims": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Nutritional Claims",
+          "type": "array"
+        },
+        "labels": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "array"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Claim"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
         }
       },
       "required": [

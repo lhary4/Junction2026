@@ -445,6 +445,10 @@ def test_real_gateway_act3_coffee_milk_calls_judge_and_deadline_matches_quote_ex
             assert "FREE_FROM_LACTOSE" in orig_sent.get("nutritional_claims", [])
             assert "FREE_FROM_LACTOSE" in cand_sent.get("nutritional_claims", [])
             assert "GOODS_FROM_FINLAND_BLUE_SWAN" in orig_sent.get("labels", [])
+            assert (orig_sent.get("brand") or "").strip() == "Arla"
+            assert (cand_sent.get("brand") or "").strip() == "Arla"
+            assert orig_sent.get("size_per_sales_unit", {}).get("unit") == "L"
+            assert cand_sent.get("size_per_sales_unit", {}).get("unit") == "L"
 
             # 3) Approval deadline equals quote's `expires_at` (not 17:00), so at 15:00 next day it expires cleanly!
             assert s_cafe.deadline == datetime.fromisoformat(q_cafe["checkout"]["expires_at"])

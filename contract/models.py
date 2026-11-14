@@ -212,6 +212,13 @@ class SubstituteFor(ContractModel):
     name: str
     category: str
     allergens: AllergenInfo
+    brand: str | None = None
+    sales_unit: str | None = None
+    base_unit: str | None = None
+    size_per_sales_unit: SizePerSalesUnit | None = None
+    nutritional_claims: list[str] = []
+    labels: list[str] = []
+    origin: Claim | None = None
 
 
 class LineClaims(ContractModel):
@@ -219,9 +226,11 @@ class LineClaims(ContractModel):
 
     product_id: str
     category: str
+    brand: str | None = None
     sales_unit: str
     base_quantity: float
     base_unit: BuyerUnit
+    size_per_sales_unit: SizePerSalesUnit | None = None
     comparison_price_minor: int
     comparison_unit: str
     substitute_for: SubstituteFor | None = None
@@ -234,6 +243,7 @@ class LineClaims(ContractModel):
     allergens: AllergenInfo
     delivery_reliability: Claim
     carbon_footprint: Claim
+    nutritional_claims: list[str] = []
     labels: list[str] = []
 
 
@@ -254,6 +264,7 @@ class Alternative(ContractModel):
     comparison_unit: str
     why: str
     chosen: bool
+    catalog_listed: bool = False
 
 
 class AimoExtension(ContractModel):
