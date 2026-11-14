@@ -82,6 +82,49 @@ Branch `feat/surface-live`.
 
 With Adrien and Léon, write `scenarios/run.py` on one screen: act 1 through the real pieces. Your page must show the order and both logs. Record a first backup video right after, even if it is rough.
 
-## After 17:00
+## Saturday evening: the 2-minute video (replaces "After 17:00")
 
-In order: act 1 live from Claude Desktop, the attack buttons for act 4 with Léon, a new backup video at each milestone, rehearsals.
+Read the section "The demo: a 2-minute video, three buttons, one AP2 trail" in `PLAN.md` first. Your lane tonight is the page only, UI and UX, in `surface/`. Adrien builds the service that produces the data and writes `scenarios/run.py`. Léon edits `scenarios/policy.demo.json` and writes the demo script and the deck.
+
+The page is the stage of the video: a mock-up of a Valio Aimo customer portal for the restaurant of `scenarios/restaurant-case/`. Everything on screen comes from one JSON object, the demo state. You render it, you never compute a fact.
+
+### The layout (one screen, recorded at 1920x1080, no scrolling during a scenario)
+
+- **Left, a fixed panel**: one button per scenario, read from `state.scenarios` (today "Normal order", "Substitution", "Attack"; a fourth may appear), plus "Reset". The running scenario is highlighted.
+- **Centre, the kitchen**: the restaurant's name and menu, the lines the agent asked for (product, quantity, price, the dish each one goes into), then the card of the moment: the order confirmation, the substitution and approval card with "Approve and sign" and "Reject", or the list of refused attacks.
+- **Right, the AP2 trail**: `state.steps`, seven steps from top to bottom: open mandate, signed quote, verdict, closed mandates, Valio verifies, sandbox payment, signed receipt. Each step shows its title, who signed (manager, agent, Valio), a short proof (a hash) and one line of detail. Statuses: pending (grey), done (green), waiting (amber, the chef must sign), refused (red), skipped. Reveal the done steps one after the other, about 400 ms apart, so a viewer can follow.
+- **A thin banner**: "Concept mock-up, Junction 2026, synthetic data". The payment step always carries the word "sandbox".
+
+### The demo state
+
+```json
+{
+  "scenarios": [{"id": "normal-order", "title": "Normal order", "hint": "..."}],
+  "scenario": {"id": "substitution", "title": "Substitution", "status": "waiting_for_human"},
+  "kitchen": {"name": "...", "covers_per_service": 50, "services": ["..."], "menu": [{"course": "Starter", "dish": "..."}]},
+  "request": {"text": "what the agent was asked", "lines": [{"product_id": "...", "name": "...", "amount": 6, "unit": "KG", "dish": "Main"}]},
+  "quote": null,
+  "verdict": null,
+  "authorization": null,
+  "approval": null,
+  "order": null,
+  "attacks": [{"title": "...", "status": "refused", "problems": ["..."]}],
+  "steps": [{"key": "open_mandate", "title": "...", "signer": "manager", "status": "done", "detail": "...", "proof": "a3f9c1", "at": "2026-11-14T13:29:15+02:00"}],
+  "audit": {"buyer": [], "merchant": []}
+}
+```
+
+`scenario.status` is `idle`, `running`, `waiting_for_human`, `done` or `refused`. A step's `signer` is `manager`, `agent`, `merchant` or `none`, its `status` is `pending`, `done`, `waiting`, `refused` or `skipped`. `quote`, `verdict`, `authorization`, `approval`, `order` and the audit events keep the shapes of `contract/models.py` (`CheckoutResponse`, `Verdict`, `AuthorizationStatus`, `ApprovalRequest`, `Order`, `AuditEvent`), so the functions you already have in `app.js` still work on them: `linesTable`, `verdictPanel`, `substitutionCompare`, `judgeBar`, `approvalCard`, the countdown, `auditEvent`. `order` will gain a `payment` object (id, status, amount, currency, instrument, terms, `sandbox: true`).
+
+### Where the state comes from
+
+- **Mock mode** (`?mock=1`): `contract/examples/demo-state.<name>.json`. Adrien merges these files around 20:30. Until then, write one small sample file of your own in `surface/static/` to build the layout, and delete it when his files land.
+- **Live mode**: `GET http://localhost:8003/state` every second. A scenario button sends `POST http://localhost:8003/scenarios/<id>/run`. Reset sends `POST http://localhost:8003/reset`. The chef's decision goes to the harness as today: `POST http://localhost:8002/approvals/<approval_id>/decision` with `{"decision": "approve", "decided_by": "chef"}` (or `"reject"`).
+
+### The steps, one branch and one small PR each
+
+1. **C5** `feat/surface-demo-shell` (by 22:00): the three zones and the left panel, in mock mode. Update the "Approval page" entry of `TECH-CHOICES.md`.
+2. **C6** `feat/surface-demo-cards` (by 23:30): the substitution and approval card (both products side by side, what differs, the judge's bar, the countdown, the dishes affected), the order confirmation with the sandbox payment, the attack list, and the animated trail.
+3. **C7** `feat/surface-demo-live` (by 00:30): live mode, banner, polish for the recording.
+
+The rules the page keeps do not change: it never invents a fact, a missing value reads "unknown", everything from the data goes through `esc()`, approval happens on this page only, no framework and no build step. Keep the old screens reachable if it costs nothing, otherwise remove them. Update `tests/test_surface_static.py` for what changed. Questions for Adrien go in `team/colette/notes.md`.

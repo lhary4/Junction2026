@@ -14,7 +14,7 @@ Team project for Junction, November 2026. Repo owned by Léon: github.com/lhary4
 - Submission: Sunday 15/11/2026 at 10:00.
 
 ## Start here
-- `PLAN.md`: the idea, the architecture, the four acts of the demo, who owns what, the timeline.
+- `PLAN.md`: the idea, the architecture, the demo (a 2-minute video on the restaurant case), who owns what, the timeline.
 - `team/<your-name>/START.md`: your steps, in order. Start a session with `Read PLAN.md and team/<your-name>/START.md, then start at step ...`.
 - `docs/contract.md` and `contract/examples/`: the messages the pieces exchange. Code against them.
 

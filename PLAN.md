@@ -13,9 +13,9 @@ That one mechanism answers the two problems Valio asks about:
 ## How it fits together
 
 ```
-BUYER SIDE (hotel chain)                                VALIO AIMO SIDE
-Claude Desktop (external agent)
-   │ MCP (5 tools, agent_mcp/)
+BUYER SIDE (a restaurant)                               VALIO AIMO SIDE
+Buying agent (the demo driver, or any agent through MCP)
+   │ HTTP, or MCP (5 tools, agent_mcp/)
    ├──────────────────────────────────────────────────▶ merchant/  FastAPI :8001
    │                                                     search, ES256-signed quote, order,
    ▼                                                     mandate verification, signed receipt, audit
@@ -35,14 +35,51 @@ surface/ (static page): the human approves and signs, audit logs from both sides
 
 Standards we stand on: MCP for the agent, UCP's `Checkout` object for the quote, AP2 v0.2 mandates for the authorization, ES256 signatures, OpenAPI generated from Pydantic models. Details: `docs/architecture.md` and `docs/contract.md`.
 
-## The demo in four acts
+## The demo: a 2-minute video, three buttons, one AP2 trail
 
-| Act | The human says | What happens | Verdict |
-|---|---|---|---|
-| 1 | "I need 1,000 litres of lactose-free milk by Monday." | Comparison table (price per litre, date, reliability, carbon, labels). 1,000 x 464306 at EUR 1.01, EUR 1,010. | `auto` |
-| 2 | "Make it 2,000 litres." | EUR 2,020 is above the EUR 1,500 limit. Approval card with the order cut-off as a deadline. The human signs, or lets it expire. | `human` |
-| 3 | "600 litres of the Arla one." | Only 384 in stock. The gateway ranks three substitutes. The Valio one (same allergens) goes through. The oat drink is 60% lower in carbon but changes the allergens. | `auto`, then `human` |
-| 4 | Someone changes the price in a signed quote. | The signature no longer matches. A replayed mandate is refused too. | `deny` |
+Decided on Saturday 14/11 at 19:30, after a talk with a Valio Aimo engineer (`contexte/mentor-notes.md`). What we hand in is a **video of 2:00 at most**, public on YouTube or Vimeo, plus a PDF deck. The four milk acts are dropped from the video. The demo runs on the restaurant case in `scenarios/restaurant-case/`: a 50-cover Helsinki restaurant, a Nordic set menu, 22 real catalog products.
+
+The stage is one page that looks like a Valio Aimo customer portal, because that is where Valio expects the agent to live first. MCP stays as the second door, for customers whose ERP has its own agent.
+
+```
++-------------------+---------------------------------+----------------------+
+| SCENARIOS         | KITCHEN                         | AP2 TRAIL            |
+| 1 Normal order    | menu, order lines, prices       | 1 Open mandate       |
+| 2 Substitution    | substitution or approval card   | 2 Signed quote       |
+| 3 Attack          | (the chef signs here)           | 3 Verdict            |
+| Reset             |                                 | 4 Closed mandates    |
+|                   |                                 | 5 Valio verifies     |
+|                   |                                 | 6 Sandbox payment    |
+|                   |                                 | 7 Signed receipt     |
++-------------------+---------------------------------+----------------------+
+```
+
+| Button | What runs | Expected end |
+|---|---|---|
+| 1 Normal order | The dairy and dry goods of the menu (butter, cream, smetana, milk, oat flakes, crispbread, pickled cucumber, salt, sugar, oil), about EUR 187 | `auto`: the agent's key signs, sandbox payment, signed receipt |
+| 2 Substitution | One ingredient Valio cannot deliver. The gateway ranks substitutes, the judge reads the kitchen's preferences | `human`: the chef's phone buzzes, the chef compares and signs on the page, then payment and receipt |
+| 3 Attack | The agent signs above its cap, a mandate over a changed quote, a replayed mandate | Three refusals by Valio, in red on the trail |
+
+Fresh vegetables are left out of button 1 on purpose: they have no allergen data, and our rule sends unknown allergen data to a human.
+
+**The ingredient of button 2** is picked by Adrien after running the candidates through the real gateway and harness in live mode. First choice: the squeaky cheese 474880 (fresh, lactose free, order cut-off passed), with two lactose-free replacements in stock, the same maker's frozen one (467148) and another maker's chilled one (475072). Fallback: the lingonberry jam 465815 (no delivery on any date), replaced by 462198. If the chosen case ends in `auto`, a fourth button "Above the limit" makes the chef sign once in the video.
+
+**The AP2 trail** closes every scenario: seven steps, who signed each one (manager, agent, Valio), with the real hashes. **The payment step is a sandbox**: once the mandates verify, the gateway books the amount on a simulated invoice account. No real money moves, and the page says so. In the video we say "mandate" for what is signed and "sandbox payment" for the charge.
+
+**The demo driver** (`scenarios/run.py`, port 8003, started by `scripts/dev.py`) plays the buying agent and feeds the page. `POST /scenarios/{id}/run` runs a scenario through the gateway and the harness with the same calls as the MCP tools. `GET /state` returns one JSON object, the `DemoState` of `contract/models.py`: the menu lines, the quote, the verdict, the approval, the order and the seven steps. The chef's decision goes from the page straight to the harness.
+
+The video, target 1:55:
+
+| Beat | Time | What we see |
+|---|---|---|
+| Hook | 0:00 to 0:12 | The portal of the restaurant, its menu. "Who signs?" |
+| Normal order | 0:12 to 0:35 | Button 1. The trail lights up to the signed receipt |
+| Substitution | 0:35 to 1:20 | Button 2. Ranked substitutes, the judge, the phone, the chef signs before the deadline |
+| Attack | 1:20 to 1:40 | Button 3. Three refusals, both audit logs |
+| What else it does | 1:40 to 1:52 | One sentence each: weekly reorder from stock and bookings, carbon comparison, the MCP door for ERP agents |
+| Close | 1:52 to 2:00 | MCP, UCP, AP2, ES256. "The verdict decides who signs." |
+
+The video is public and the challenge data must not be shown as real Valio data: the page carries a banner "Concept mock-up, Junction 2026, synthetic data".
 
 ## What is already proven
 
@@ -52,7 +89,7 @@ Run on 14/11, scripts in `spikes/`:
 - The stack installs together: Python 3.14, `ap2` (commit `e1ea56d`), `pydantic` 2.12.5, `fastapi` 0.162.7, `mcp` 2.3.0, `google-genai` 3.3.0, `uvicorn` 0.54.0. A stack test passes 8 checks out of 8 from this repo: MCP over stdio, FastAPI in a second process, MCP over HTTP.
 - The catalog already lists substitutes for some products (field `substitutions`): 464306 lists 465039, 464398, 469363 and 464201.
 
-Not proven yet, and the first thing two lanes check: Gemini Decision on our substitution case (Léon), Claude Desktop as the live agent (Colette).
+Proven since: Gemini Decision as the judge, on 61 labelled product pairs (PR #21). Dropped: Claude Desktop as the agent on screen. Our only test of a live agent took about 2 minutes for one round, on another client, and the video is 2 minutes long.
 
 ## Who owns what
 
@@ -67,7 +104,9 @@ One owner per folder. If you need a change in someone else's folder, say it out 
 | `team/<name>/` | Each person | `START.md` (your steps) and `notes.md` (your results and questions) |
 | `tests/` | Everyone | One file per area: `test_merchant_*.py`, `test_harness_*.py`, `test_surface_*.py` |
 
-## The first four hours
+Three exceptions for Saturday evening, so that Colette works on the page only: Adrien writes `scenarios/run.py` (the demo driver), Léon edits `scenarios/policy.demo.json` (the restaurant's policy) and writes `docs/demo-script.md` and the deck.
+
+## The first four hours (done)
 
 Start is 13:15, when this plan is merged. Each cell is one step in your `START.md`, and one small PR.
 
@@ -95,28 +134,36 @@ Sync points, five minutes, out loud:
 - **Demo script, prompts, pitch outline** in hour 3.
 - **A backup video at every milestone**, replaced by a better one each time.
 
-## After 17:00
+## Saturday evening to Sunday 10:00
 
-| Time | What must be on `main` |
+Where we stood at 19:30: the gateway and the harness work end to end, and nothing is visible on a page with the real services yet. That is the first thing to fix. Each person's steps are in the section "Saturday evening" of their `START.md`.
+
+| Who | In order |
 |---|---|
-| Saturday 17:00 | Act 1 scripted across the real pieces, first backup video |
-| Saturday 19:30 | Act 1 live from Claude Desktop. Acts 2 and 4 scripted: approval card with deadline, mandate signed by the human, tampered quote refused, two logs |
-| Saturday 23:00 | Act 3: partial stock, ranked substitutes, Gemini judge. Otherwise the reduced version: rule only, judge shown on one example |
-| Sunday 02:00 | All 4 acts from the page and Claude Desktop, attack buttons, replay mode complete |
-| Sunday 06:00 | Feature freeze, fixes only |
-| Sunday 06:00 to 08:00 | 3 rehearsals, final video, README and docs |
-| Sunday 09:30 | Submission, 30 minutes of margin |
+| Adrien | The `DemoState` model and its example files, the live probe and the choice of the substitution ingredient, the demo driver, the sandbox payment, the attacks, the menu products added to the replay recording. Then, if time is left, a customer token on the gateway and the MCP live mode |
+| Léon | The restaurant's policy and the judge on the candidates, a Telegram message when an approval is created, the demo script and the deck. Bonus: a passkey on "Approve and sign" |
+| Colette | The page only: the three zones on the example files, the cards and the animated trail, then the switch to the live state |
 
-Cut order if things slip: the cumulative budget across split orders, the human-signed list of pre-accepted substitutes, judge calibration beyond 10 pairs, polish of the comparison table, Claude live on acts 3 and 4 (the scripted runner replaces it). Never cut: acts 1, 2 and 4 with real signatures and both logs.
+| Time | What must be true |
+|---|---|
+| Saturday 20:30 | Example state files on `main`, so the page can be built. Substitution ingredient chosen by 20:45 |
+| Saturday 22:30 | Buttons 1 and 2 run the real flow on the page. First backup recording |
+| Sunday 00:30 | Sandbox payment, full AP2 trail, attacks, Telegram message. Timed rehearsal. Backup video uploaded and project switched to FINAL (it stays editable until 10:00) |
+| Sunday 02:00 | Replay recording complete. Code freeze |
+| Sunday 06:30 | Recording in replay mode, then editing |
+| Sunday 08:45 | Public video, PDF deck, form filled |
+| Sunday 09:15 | Final check: the video opens in a private window, the project is in FINAL |
+
+Cut order if things slip: the passkey, the customer token, the MCP live mode, the fourth button, the attacks beyond the first one. Never cut: buttons 1 and 2 on real signatures, the AP2 trail, the sandbox payment.
 
 ## How the judges score, and where we answer
 
 | Criterion | Weight | Our answer |
 |---|---|---|
-| Working end-to-end demo | 30% | The four acts on real Valio data, with a replay mode and a scripted fallback |
-| Solving the user need | 20% | Litres converted to sales units in code, comparison on price, date, reliability and carbon |
-| Autonomy and controls | 20% | The verdict decides who signs. Rules in code, a separate judge, two audit logs |
-| Robustness to exceptions | 15% | Partial stock, ranked substitutes, allergen change, missing data, cut-off deadline |
+| Working end-to-end demo | 30% | Three scenarios on a real menu and real Valio data, from the request to the signed receipt, with a replay mode |
+| Solving the user need | 20% | A restaurant's own recipes and quantities, converted to sales units in code, and a substitute judged against the kitchen's stated preferences |
+| Autonomy and controls | 20% | The verdict decides who signs. Rules in code, a separate judge, a spend cap Valio checks itself, two audit logs |
+| Robustness to exceptions | 15% | A product Valio cannot deliver, ranked substitutes, missing allergen data, the order cut-off as a deadline, three attacks refused |
 | Openness, path to production | 15% | MCP, UCP Checkout, AP2 mandates, ES256, generated OpenAPI. `TECH-CHOICES.md` explains each choice |
 
 ## Rules for three people coding at once
