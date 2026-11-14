@@ -117,19 +117,30 @@ def _mutate_act1(**kind: Any) -> AimoCheckout:
 # ---------- Policy loader ----------
 
 
-def test_load_policy_reads_default_and_explicit_path(tmp_path):
+def test_load_policy_reads_default_and_explicit_path(tmp_path, monkeypatch):
+    import harness.policy as policy_module
+
+    example_pol = BuyerPolicy.model_validate_json((EXAMPLES / "policy.demo.json").read_text(encoding="utf-8"))
+
     default_pol = load_policy()
     assert isinstance(default_pol, BuyerPolicy)
     assert default_pol.policy_id == "pol_demo_hotel_1"
     assert default_pol.autonomous_limit_minor == 150000
 
-    # Explicit scenarios/policy.demo.json falls back cleanly while scenarios/ has no file yet
-    fallback_pol = load_policy(ROOT / "scenarios" / "policy.demo.json")
-    assert fallback_pol == default_pol
+    # When scenarios/policy.demo.json exists, the default and the explicit path both read it
+    scenario_path = ROOT / "scenarios" / "policy.demo.json"
+    if scenario_path.exists():
+        assert load_policy(scenario_path) == default_pol
+
+    # When the scenario file is missing, both fall back cleanly to the contract example
+    missing = tmp_path / "scenarios" / "policy.demo.json"
+    monkeypatch.setattr(policy_module, "SCENARIO_POLICY", missing)
+    assert load_policy() == example_pol
+    assert load_policy(missing) == example_pol
 
     custom_path = tmp_path / "custom.policy.json"
     custom_path.write_text((EXAMPLES / "policy.demo.json").read_text(encoding="utf-8"), encoding="utf-8")
-    assert load_policy(custom_path) == default_pol
+    assert load_policy(custom_path) == example_pol
 
 
 # ---------- Table of required L3 rule cases ----------

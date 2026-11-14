@@ -1,0 +1,32 @@
+original_id,original_name,candidate_id,candidate_name,candidate_contains,same_category,label,reason,family,use
+464249,Valio cooking cream 15 % 1 l UHT lactose free,463797,Arla Pro Cooking cream 10% 1 L UHT lactose free,AM,true,ask,"Less fat (15 % to 10 %) can change the creaminess and texture of the sauce. The other way round, 10 % to 15 %, would be ok.",cream,cream sauce
+464194,Valio whipping cream 1 l UHT lactose free,469346,Arla Pro Whipping cream 1 L UHT lactose free,AM,true,ok,Whipping cream 38 % to 36 %: the result is the same. A brand change alone is ok.,cream,"whipped, for desserts"
+464194,Valio whipping cream 1 l UHT lactose free,464249,Valio cooking cream 15 % 1 l UHT lactose free,AM,true,ask,Made for another use: cooking cream instead of whipping cream.,cream,"whipped, for desserts"
+464237,Valio coffee milk 1 l lactose free UHT,473142,Valio coffee milk drink vanilla 1 l lactose free UHT,AM,true,no,Flavoured (vanilla) instead of plain.,coffee milk,milk for coffee
+464411,Valio butter 500 g unsalted,463798,Valio butter 200 g salted,AM,true,ask,"Clearly salted (1.4 %) instead of unsalted: the chef decides, the recipe must be adjusted.",butter,pastry baking
+464411,Valio butter 500 g unsalted,471792,"Eleplant plant power for spreading, cooking and baking 500 g",GO,true,ask,Plant-based fat made for the same use (baking): a human decides. It also adds oats.,butter,pastry baking
+466375,Gran Castelli mozzarella 125g lactose free,475908,Castelli mozzarella 125g,AM,true,ask,"The candidate's data says nothing about lactose: unknown, a human checks.",cheese,caprese salad
+466375,Gran Castelli mozzarella 125g lactose free,468526,Castelli mozzarella bufala 125g mozzarella cheese from buffalo milk,AM,true,ask,"Buffalo milk instead of cow's milk, and nothing in the data about lactose.",cheese,caprese salad
+469685,CASTELLI APP1KG PARMESAN REGGIANO 30MO P,471221,Castelli parmigiano reggiano 12 months cheese 5x1kg,AM,true,ask,Ageing differs by more than 6 months (30 to 12): a significant difference. Under 6 months would be ok.,cheese,grated over pasta
+469685,CASTELLI APP1KG PARMESAN REGGIANO 30MO P,475772,Gran Castelli italian hard cheese approx1kg,AM,true,no,Not a Parmigiano Reggiano: a different cheese.,cheese,grated over pasta
+469079,Valio Turkish natural yoghurt 6% 5 kg lactose free,462718,Valio Turkish cooking yoghurt 2 kg lactose free,AM,true,ask,"Made for another use: cooking yoghurt instead of table yoghurt, and 10 % fat instead of 6 %.",yoghurt,breakfast buffet
+470136,Valio A+™ Luomu™ natural yoghurt 5 kg fat free lactose free,476743,Valio A+™ natural yoghurt 5 kg lactose free,AM,true,ask,"Organic label lost, and 2.5 % fat instead of fat-free.",yoghurt,breakfast buffet
+476665,Valiojogurtti® 200 g strawberry laktoositon,464005,Valiojogurtti® 200 g mango laktoositon,AM,true,ok,Another flavour of the same yoghurt.,yoghurt,breakfast buffet
+465138,"PH7 7X1,2KG OAT BREAD GLUTEN FREE FROZEN",475752,"5 x Elovena 320g gluten free oat-muesli rolls, frozen",GO,true,ask,Format changes: rolls instead of a loaf. Gluten-free is kept.,bakery,gluten-free bread at breakfast
+471323,Schulstad Bakery Solutions Butter Croissant 52x60g Frozen,465250,Schulstad Bakery Solutions croissant 48x70g,AE AM AW UW,true,ok,Croissant of the same brand: accepted for the breakfast buffet.,bakery,breakfast buffet
+472312,Vaasan Street Food Potato Burger 11cm 30x70g,469498,Vaasan Street Food Brioche Burger 30x80g Brioche burger bun. Thaw & serve. Frozen.,AW UW,true,ask,Another kind of burger bun: taste and texture differ.,bakery,burgers
+468876,Atria Chicken Fillet ca3kg/ca160g,462281,"Kariniemen Chicken breastfillet natural 160-185g/appr 4,4 kg",unknown,true,ask,"Only the brand changes, which is ok, but the candidate has no allergen data: a human checks.",chicken,"grilled, seasoned by the kitchen"
+468876,Atria Chicken Fillet ca3kg/ca160g,463232,Atria Chicken Fillet Lightly Salted ca3kg/ca150g,none,true,ok,"Lightly salted instead of natural: accepted, the kitchen seasons the chicken itself.",chicken,"grilled, seasoned by the kitchen"
+468876,Atria Chicken Fillet ca3kg/ca160g,466433,Familia Pro Chicken inner fillet salted frozen 2kg,none,false,no,Frozen instead of fresh.,chicken,"grilled, seasoned by the kitchen"
+462861,AIMO PORK SIRLOIN STEAK N150G/10KPL FI,463063,AIMO PORK SIRLOIN STEAK N150G/10KPL EU,unknown,true,ask,Finnish origin lost.,pork,pan-fried steak
+463132,Atria Minced Beef 17% 2kg,463104,Atria Beef 0 Mince 10% 2kg,none,true,ask,Less fat (17 % to 10 %): the chef decides.,minced meat,burger patties
+463132,Atria Minced Beef 17% 2kg,463153,Atria Beef-Pork Minced Meat 15% 2kg,none,true,no,Pork added to beef: a different kind of product.,minced meat,burger patties
+464322,"12 x Löfbergs Professional Dark Coffee 500 g FairTrade Organic Ground 1,5",470153,"12 x Löfbergs Professional Coffee 500 g Rainforest Alliance Ground 1,5",unknown,true,ask,Organic and Fairtrade labels lost (Rainforest Alliance instead).,coffee,filter coffee
+460638,Paulig Juhla Mokka Luomu medium coarse ground coffee 18 x 300g,461087,Paulig Juhla Mokka medium coarse ground coffee 18 x 300g,unknown,true,ask,Organic and Fairtrade labels lost.,coffee,filter coffee
+460065,TOMATO 1CL FINLAND,460027,TOMATO NL/BE/ES 1.CL,unknown,true,ask,Finnish origin lost.,vegetables,salad bar
+460239,CAPSICUM RED NL/PL/ES 1.cl,460267,CAPSICUM GREEN NL/PL/ES 1.CL,unknown,true,ask,Another colour of pepper: the taste and look of the dish change.,vegetables,salad bar
+467286,SallaCarte Red paprika diced 1kg,474934,SallaCarte Red paprika diced 9x1kg,none,true,ok,"Same product sold by the case, as long as the delivered quantity matches the order.",vegetables,salad bar
+460211,WHITE CABBAGE FINLAND KG,467530,SallaCarte Cabbage shredded 1 kg,none,false,ask,Format changes: shredded instead of whole.,vegetables,coleslaw
+461110,PINEAPPLES GOLD EXTRA SWEET COSTA RICA,461078,NECTARINE ES/TR,unknown,false,no,A different fruit.,fruit,fruit at breakfast
+470789,"Oddlygood® organic soya drink 1 l UHT, no added sugar",460509,"Alpro Soya drink, Original 1L",AY,true,ask,"Organic label lost, and no proof in the data of 'no added sugar' or 'vegan'.",plant drink,vegan option at breakfast
+472692,Tork Xpress® Advanced Compressed Soft Multifold handtowel H2,461777,PH Tork H2 Nokia Virgin 1/2,unknown,true,ok,Non-food: the most similar item of the same kind.,non-food,hand towels
