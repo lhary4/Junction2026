@@ -2,6 +2,18 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## L6: Telegram notification on pending approval (`harness/notify.py`) + L8 readiness check
+
+- **`harness/notify.py`**:
+  - Sends one concise plain-text Telegram message (`POST https://api.telegram.org/bot{token}/sendMessage`) when a new pending `ApprovalRequest` is created: 1-sentence reason, EUR total, Helsinki deadline (`%Y-%m-%d %H:%M` or `none`), and the direct link to the approval page (`{HARNESS_URL}/#/approvals/{approval_id}`).
+  - Approval stays strictly on the web surface—never in Telegram chat—so the signing boundary over `checkout_hash` (and future passkey check) is never weakened.
+  - Reads optional `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` from `os.environ` / `.env` (added without values to `.env.example`). Missing or empty values return `NotifyResult(status="skipped")` with zero HTTP calls.
+  - Strict `2.0s` timeout; any timeout, connection failure, non-200 response, invalid JSON, or `{"ok": false}` reply is caught, logged at `WARNING` with `TELEGRAM_BOT_TOKEN` redacted (both raw and URL-encoded), and swallowed so notification errors never alter, fail, or delay a verdict.
+- **`harness/app.py`**:
+  - Wired `notify_fn` into `create_app(..., notify_fn=...)` (defaulting to `notify_approval`), triggered only when a **new** pending approval is created in `POST /authorize` (idempotent repeat calls on an already-pending `checkout_id` return early without sending a second alert).
+- **L8 proactive check (`Order.payment`)**:
+  - Verified `_submit_mandate_and_verify_receipt` in `harness/app.py` parses gateway responses via `Order.model_validate(...)` and only reads `order_id`, `mandate_reference`, and `receipt_jwt`. Once Adrien adds `payment` (with `= None` default per `contract/models.py` convention) to `Order`, `harness/` and `tests/test_harness_*.py` require zero changes.
+
 ## Signed substitution claims & typed `catalog_listed` flag in the quote (PR #25 follow-up to PR #21 & Adrien's PR #24)
 
 Closed the last two contract cleanups (plus both `TECH-CHOICES.md` / `temperature_condition` notes from Adrien's PR #24) so 100% of substitution guardrail & judge inputs come from the ES256-signed quote with zero unsigned `/products/search` lookup and zero string matching on `Alternative.why`:
