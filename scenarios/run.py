@@ -3,15 +3,21 @@
 Run: uv run uvicorn scenarios.run:app --port 8003        (or the three services at once: uv run python scripts/dev.py)
 From the terminal, with the gateway and the harness running:  uv run python scenarios/run.py normal-order
 
-It makes the same calls as the MCP tools: POST /checkouts on the gateway, then POST /authorize on the harness. It holds
-no key and signs nothing. GET /state reads the quote, the verdict, the approval, the order and both audit logs back from
-the two services and returns one DemoState (contract/models.py). The page renders it and works out no fact itself.
+It makes the same calls as the MCP tools: POST /checkouts on the gateway, then POST /authorize on the harness. For an
+order it holds no key and signs nothing. GET /state reads the quote, the verdict, the approval, the order and both audit
+logs back from the two services and returns one DemoState (contract/models.py). The page renders it and works out no
+fact itself.
 
 The chef's decision does not come through here: the page sends it to the harness, and the next GET /state shows it.
 The driver only remembers which scenario is on screen and which quote it asked for. Everything else is read again on
 every call, so the state can never disagree with what the gateway and the harness hold.
+
+The attack scenario is the one exception to "no key". There the driver plays an agent whose key leaked, together with
+a copy of the open mandates: it skips the harness and sends three bad mandates straight to the gateway. It builds them
+from the demo keys of the repo (contract/fixtures/keys/), the way the gateway's own tests do.
 """
 
+import base64
 import json
 import os
 import sys
@@ -33,6 +39,7 @@ from pydantic import BaseModel
 from contract.models import (
     ApprovalRequest,
     AuditEvent,
+    Authorization,
     AuthorizationStatus,
     BuyerPolicy,
     CheckoutResponse,
@@ -41,6 +48,8 @@ from contract.models import (
     Verdict,
 )
 from trust.checkout import checkout_hash
+from trust.keys import private_key, public_jwk
+from trust.mandates import close_as_agent, issue_open_mandates
 
 HELSINKI = ZoneInfo("Europe/Helsinki")
 CASE = json.loads((ROOT / "scenarios" / "restaurant-case" / "order.json").read_text(encoding="utf-8"))
@@ -98,7 +107,26 @@ class Scenario:
     needs: tuple[tuple[str, float, str], ...]  # product id, amount, unit (KG, L or ST)
     delivery_date: str = DELIVERY_DATE
     customer: str = CUSTOMER
+    # Only for an attack: `needs` must come to more than the agent's cap, and `other_needs` is another, smaller order
+    # whose mandate the agent tries to reuse.
+    attack: bool = False
+    other_needs: tuple[tuple[str, float, str], ...] = ()
 
+
+# What the kitchen is missing for one week of the menu's dairy and dry goods.
+WEEK_OF_DAIRY_AND_DRY_GOODS = (
+    ("463437", 6.45, "KG"),  # butter: 2.15 kg a service
+    ("464194", 3.75, "L"),  # whipping cream
+    ("476890", 4.5, "KG"),  # smetana
+    ("464306", 7.5, "L"),  # milk
+    ("460200", 1.5, "KG"),  # oat flakes
+    ("467958", 6, "ST"),  # crispbread, by the pack
+    ("468513", 2, "ST"),  # pickled cucumber, by the jar
+    ("468172", 0.94, "KG"),  # salt
+    ("460325", 1.05, "KG"),  # sugar
+    ("466608", 0.6, "L"),  # rapeseed oil
+)
+ATTACK_WEEKS = 12  # ten weeks is EUR 1,497.65, under the EUR 1,500 cap: the gateway would rightly accept that order
 
 SCENARIOS = (
     Scenario(
@@ -106,18 +134,7 @@ SCENARIOS = (
         title="Normal order",
         hint="The dairy and dry goods of the menu. Inside the limits the chef signed: the agent signs.",
         text="Order the dairy and dry goods for this week's menu: three dinner services, 50 covers each.",
-        needs=(
-            ("463437", 6.45, "KG"),  # butter: 2.15 kg a service
-            ("464194", 3.75, "L"),  # whipping cream
-            ("476890", 4.5, "KG"),  # smetana
-            ("464306", 7.5, "L"),  # milk
-            ("460200", 1.5, "KG"),  # oat flakes
-            ("467958", 6, "ST"),  # crispbread, by the pack
-            ("468513", 2, "ST"),  # pickled cucumber, by the jar
-            ("468172", 0.94, "KG"),  # salt
-            ("460325", 1.05, "KG"),  # sugar
-            ("466608", 0.6, "L"),  # rapeseed oil
-        ),
+        needs=WEEK_OF_DAIRY_AND_DRY_GOODS,
     ),
     Scenario(
         id="substitution",
@@ -125,6 +142,15 @@ SCENARIOS = (
         hint="Valio cannot deliver one ingredient. The chef compares the substitutes and signs.",
         text="Order the squeaky cheese for the dessert: 10.5 kg for the three services.",
         needs=(("474880", 10.5, "KG"),),
+    ),
+    Scenario(
+        id="attack",
+        title="Attack",
+        hint="Three bad mandates sent straight to Valio. No valid signature, no order.",
+        text="Order twelve weeks of the menu's dairy and dry goods at once.",
+        needs=tuple((p, round(amount * ATTACK_WEEKS, 2), unit) for p, amount, unit in WEEK_OF_DAIRY_AND_DRY_GOODS),
+        attack=True,
+        other_needs=WEEK_OF_DAIRY_AND_DRY_GOODS,
     ),
 )
 
@@ -144,6 +170,7 @@ class _Run:
     scenario: Scenario
     running: bool = True
     issued: CheckoutResponse | None = None
+    attacks: list[dict] | None = None  # what Valio answered to each bad mandate, once they were sent
 
 
 def service_url(name: str, default: str) -> str:
@@ -189,11 +216,12 @@ class Driver:
                 raise DriverError(409, f"scenario {self._current.scenario.id!r} is still running")
             self._current = run
         try:
-            needs = [{"product_id": p, "amount": a, "unit": u} for p, a, u in scenario.needs]
-            quote = {"customer": scenario.customer, "delivery_date": scenario.delivery_date, "needs": needs}
-            run.issued = CheckoutResponse.model_validate(self._post(self.gateway, "gateway", "/checkouts", quote))
-            ask = {"checkout_id": run.issued.checkout_id, "request_text": scenario.text}
-            self._post(self.harness, "harness", "/authorize", ask)
+            if scenario.attack:
+                self._attack(run)
+            else:
+                run.issued = self._quote(scenario, scenario.needs)
+                ask = {"checkout_id": run.issued.checkout_id, "request_text": scenario.text}
+                self._post(self.harness, "harness", "/authorize", ask)
         except DriverError:
             with self._lock:
                 if self._current is run:
@@ -214,6 +242,20 @@ class Driver:
 
         checkout_id = issued.checkout_id
         policy = self._get(self.harness, "harness", "/policy", BuyerPolicy)
+        if run.scenario.attack:
+            # The harness was never asked: its side has no verdict and no line to show. Valio's log tells the story.
+            audit = {"buyer": [], "merchant": self._audit(self.gateway, "gateway", checkout_id)}
+            sent = run.attacks or []
+            all_refused = bool(sent) and all(attack["status"] == "refused" for attack in sent)
+            status = "running" if run.running else ("refused" if all_refused else "done")
+            return self._build(
+                run,
+                status,
+                steps=_attack_steps(policy, issued, run.attacks, audit),
+                quote=issued.checkout,
+                attacks=sent,
+                audit=audit,
+            )
         verdict = self._get(self.harness, "harness", f"/verdicts/{checkout_id}", Verdict)
         authorization = self._get(self.harness, "harness", f"/authorizations/{checkout_id}", AuthorizationStatus)
         approval = order = None
@@ -237,6 +279,73 @@ class Driver:
             order=order,
             audit=audit,
         )
+
+    # ---------- the attack ----------
+
+    def _attack(self, run: _Run) -> None:
+        """An agent whose key leaked skips the harness and sends three bad mandates straight to Valio.
+
+        The three aim at one quote that is above the agent's cap. Nothing here could be ordered honestly without the
+        chef, so every answer must be a refusal. A quote under the cap is never attacked: Valio would accept it.
+        """
+        scenario = run.scenario
+        policy = self._get(self.harness, "harness", "/policy", BuyerPolicy)
+        if policy is None:
+            raise DriverError(502, "the harness has no policy: the agent's cap is unknown")
+        target = self._quote(scenario, scenario.needs)
+        total, cap = target.checkout.total_minor(), policy.autonomous_limit_minor
+        if total <= cap:
+            raise DriverError(
+                500,
+                f"the attack needs a quote above the agent's cap: {_eur(total)} is within {_eur(cap)}, nothing sent",
+            )
+        run.issued = target
+        other = self._quote(scenario, scenario.other_needs)
+
+        # The stolen material: the agent's key, and open mandates the manager signed for that key.
+        agent = private_key("agent")
+        open_mandates = issue_open_mandates(policy, private_key("manager"), public_jwk("agent"))
+        tries = (
+            (
+                "above-cap",
+                f"The agent signs {_eur(total)} itself, above its {_eur(cap)} cap",
+                close_as_agent(open_mandates, agent, target.checkout_jwt),
+            ),
+            (
+                "changed-quote",
+                "The agent lowers a price in the quote and signs that",
+                close_as_agent(open_mandates, agent, _with_a_lower_price(target.checkout_jwt)),
+            ),
+            (
+                "mandate-for-another-quote",
+                f"The agent reuses a mandate signed for another, smaller quote ({_eur(other.checkout.total_minor())})",
+                close_as_agent(open_mandates, agent, other.checkout_jwt),
+            ),
+        )
+        run.attacks = [self._send(target.checkout_id, key, title, mandates) for key, title, mandates in tries]
+
+    def _send(self, checkout_id: str, key: str, title: str, authorization: Authorization) -> dict:
+        """One bad mandate to POST /checkouts/{id}/complete, and what Valio said. `accepted` must never come back."""
+        path = f"/checkouts/{checkout_id}/complete"
+        try:
+            response = self.gateway.post(path, json=authorization.model_dump(mode="json"))
+        except httpx.HTTPError as e:
+            raise DriverError(502, f"the gateway does not answer on {path}: {e}") from e
+        if response.status_code == 403:
+            problems = [str(problem) for problem in response.json().get("problems") or ["refused"]]
+            return {"key": key, "title": title, "status": "refused", "problems": problems}
+        if response.status_code == 200:
+            return {"key": key, "title": title, "status": "accepted", "problems": []}
+        raise DriverError(502, f"the gateway answered HTTP {response.status_code} on {path}: {_detail(response)}")
+
+    def _quote(self, scenario: Scenario, needs: tuple[tuple[str, float, str], ...]) -> CheckoutResponse:
+        """A signed quote from Valio for these needs: the first call of any agent."""
+        body = {
+            "customer": scenario.customer,
+            "delivery_date": scenario.delivery_date,
+            "needs": [{"product_id": product, "amount": amount, "unit": unit} for product, amount, unit in needs],
+        }
+        return CheckoutResponse.model_validate(self._post(self.gateway, "gateway", "/checkouts", body))
 
     # ---------- building the state ----------
 
@@ -331,20 +440,8 @@ def _steps(
     audit: dict[str, list[AuditEvent]],
 ) -> list[dict]:
     """The trail for one quote. Each sentence says what happened and who did it, from what the services answered."""
-    checkout = issued.checkout
-    total = _eur(checkout.total_minor())
-    lines = len(checkout.line_items)
-    steps = [
-        _step("open_mandate", "done", _open_mandate(policy)),
-        _step(
-            "signed_quote",
-            "done",
-            f"{lines} line{'s' if lines != 1 else ''}, {total} before tax, signed by {checkout.merchant.name}, "
-            f"valid until {_when(checkout.expires_at)}.",
-            proof=checkout_hash(issued.checkout_jwt),
-            at=checkout.aimo.issued_at,
-        ),
-    ]
+    total = _eur(issued.checkout.total_minor())
+    steps = [_step("open_mandate", "done", _open_mandate(policy)), _quote_step(issued)]
     if verdict is None or authorization is None:
         return steps + [_step(key) for key, _, _ in TRAIL[2:]]
 
@@ -433,6 +530,60 @@ def _steps(
         _step("sandbox_payment", "skipped", "Nothing is booked."),
         _step("signed_receipt", "skipped", "No order, no receipt."),
     ]
+
+
+def _attack_steps(
+    policy: BuyerPolicy | None, issued: CheckoutResponse, attacks: list[dict] | None, audit: dict[str, list[AuditEvent]]
+) -> list[dict]:
+    """The trail of the attack: the quote is real, the harness is skipped, and Valio refuses what the agent signed."""
+    steps = [_step("open_mandate", "done", _open_mandate(policy)), _quote_step(issued)]
+    if attacks is None:  # the mandates are not sent yet
+        return steps + [_step(key) for key, _, _ in TRAIL[2:]]
+    refused = sum(attack["status"] == "refused" for attack in attacks)
+    everything_refused = refused == len(attacks)
+    answers = [event.at for event in audit["merchant"] if event.action in ("order_refused", "order_accepted")]
+    return steps + [
+        _step("verdict", "skipped", "The agent did not ask the harness: no verdict, so nobody was allowed to sign."),
+        _step(
+            "closed_mandates",
+            "done",
+            f"{len(attacks)} mandates built with the agent's key, outside the harness.",
+            signer="agent",
+        ),
+        _step(
+            "merchant_verifies",
+            "refused" if everything_refused else "done",
+            f"{refused} of {len(attacks)} refused by Valio. No valid signature, no order."
+            if everything_refused
+            else f"Only {refused} of {len(attacks)} refused by Valio: a bad mandate went through.",
+            at=answers[-1] if answers else None,
+        ),
+        _step("sandbox_payment", "skipped", "Nothing is booked."),
+        _step("signed_receipt", "skipped", "No order, no receipt."),
+    ]
+
+
+def _quote_step(issued: CheckoutResponse) -> dict:
+    checkout = issued.checkout
+    lines = len(checkout.line_items)
+    return _step(
+        "signed_quote",
+        "done",
+        f"{lines} line{'s' if lines != 1 else ''}, {_eur(checkout.total_minor())} before tax, "
+        f"signed by {checkout.merchant.name}, valid until {_when(checkout.expires_at)}.",
+        proof=checkout_hash(issued.checkout_jwt),
+        at=checkout.aimo.issued_at,
+    )
+
+
+def _with_a_lower_price(checkout_jwt: str) -> str:
+    """The same token with the first line at half its price and the signature left as it was: a quote changed after
+    Valio signed it. Plain base64 and JSON, no key needed, which is the point."""
+    header, body, signature = checkout_jwt.split(".")
+    payload = json.loads(base64.urlsafe_b64decode(body + "=" * (-len(body) % 4)))
+    payload["line_items"][0]["item"]["price"] //= 2
+    changed = base64.urlsafe_b64encode(json.dumps(payload).encode("utf-8")).rstrip(b"=").decode("ascii")
+    return f"{header}.{changed}.{signature}"
 
 
 def _mandate_facts(order: Order) -> str:
@@ -540,6 +691,8 @@ def main(argv: list[str]) -> int:
     for step in state.steps:
         proof = f"  [{step.proof}]" if step.proof else ""
         print(f"  {step.status:<8} {step.title:<16} {step.signer:<8} {step.detail or ''}{proof}")
+    for attack in state.attacks:
+        print(f"  {attack.status:<8} {attack.title}: {'; '.join(attack.problems)}")
     if state.approval and state.approval.status == "pending":
         print(f"the chef signs on the page, or: POST /approvals/{state.approval.approval_id}/decision on the harness")
     return 0
