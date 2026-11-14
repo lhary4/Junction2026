@@ -281,7 +281,9 @@ def test_policy_surface_static_and_cors(harness_env):
     pol = client.get("/policy", headers={"Origin": "http://localhost:8003"})
     assert pol.status_code == 200
     assert pol.headers["access-control-allow-origin"] == "http://localhost:8003"
-    assert pol.json()["policy_id"] == "pol_demo_hotel_1"
+    assert pol.json()["policy_id"] == "pol_demo_restaurant_1"
+    assert pol.json()["customer"] == "demo-restaurant-helsinki"
+    assert pol.json()["approver"] == "chef@demo-restaurant.example"
 
     page = client.get("/")
     assert page.status_code == 200
