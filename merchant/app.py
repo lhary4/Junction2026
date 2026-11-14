@@ -1,15 +1,28 @@
-"""The Valio Aimo gateway, port 8001: search, signed quotes, orders with a signed receipt, public keys, audit log.
+"""The Valio Aimo gateway, port 8001: search, lookup of prices and availability, signed quotes, orders with a
+signed receipt, public keys, audit log.
 
 Run: uv run uvicorn merchant.app:app --port 8001   (or both services at once: uv run python scripts/dev.py)
 VALIO_MODE=replay (default) serves the answers recorded on 14/11, VALIO_MODE=live calls the Valio APIs.
 """
 
+from typing import Annotated
+
 from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from contract.models import AuditEvent, Authorization, CheckoutResponse, Order, QuoteRequest, SearchResponse
+from contract.models import (
+    AuditEvent,
+    Authorization,
+    CheckoutResponse,
+    OffersRequest,
+    OffersResponse,
+    Order,
+    QuoteRequest,
+    SearchResponse,
+)
 from merchant import audit, catalog, orders, store
+from merchant.offers import OffersError, find_offers
 from merchant.quotes import QuoteError, build_quote, summary
 from trust.checkout import checkout_hash, sign_checkout
 from trust.keys import private_key, public_jwks
@@ -27,6 +40,15 @@ app.add_middleware(
 def search_products(q: str = Query(min_length=2), limit: int = Query(10, ge=1, le=50)) -> SearchResponse:
     products = catalog.load().search(q, limit)
     return SearchResponse(query=q, count=len(products), products=products)
+
+
+@app.get("/offers")
+def lookup_offers(request: Annotated[OffersRequest, Query()]) -> OffersResponse:
+    """Products, prices and availability for a query. Informative: only POST /checkouts returns a signed quote."""
+    try:
+        return find_offers(request)
+    except OffersError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e)) from e  # 422, or 503 when Valio is down
 
 
 @app.post("/checkouts")

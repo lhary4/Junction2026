@@ -176,6 +176,24 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: the name's size alone (wrong for every multipack sold as one unit); trusting only the price per litre (not there before a quote, so a product card would show no size).
 - Decided in: PR #11, 14/11/2026 (reading the name). The pack count: PR #15, 14/11/2026.
 
+## Lookup: prices and availability for a shortlist, informative and not signed
+- Status: decided
+- What it is: one question to Valio's gateway, "what do you have for these words, on this date, for this amount?" (`GET /offers`). The answer lists products with their price, price per litre or kilo, stock, delivery date and order cut-off, says for each one whether it can be ordered and why not, and works out how many units the amount needs and what they cost. Products that can be ordered come first, cheapest first. Valio does not sign this answer.
+- Why: the brief's first requirement is a "product, price and availability lookup", and its example asks for "an option based on price and availability". Before this, the agent picked a product without seeing any price, and only a quote revealed that an order was already too late. We do not sign the answer because a signature means "Valio commits to this". Two kinds of signed pieces would blur which one an order may rest on. The quote stays the only one.
+- What it changes for us: the agent compares first, then asks a signed quote for the product it picked. The lookup says in its own data that it commits nobody (`binding: false`), and every fact in it still states its source and how sure it is. Valio is only asked about the 100 products whose names are closest to the words, in one call for prices and one for stock: its API forbids pricing the whole catalog and does not say how many calls it tolerates. The answer says how many products matched and how many were priced, so the agent knows when to use more precise words.
+- If we change it: signing the lookup would need an expiry and a rule on what a signed price list allows. A smaller shortlist is one number in `merchant/offers.py`, but 50 is already too few: in the full catalog the brief's sentence matches 70 products and the cheapest one is the 51st closest name.
+- Alternatives we looked at: one signed quote per candidate (five signed commitments to compare five prices, and five times the calls); prices inside the search results (every search would call Valio, even to read a label); a signed lookup (see above).
+- Decided in: PR #16, 14/11/2026.
+
+## Search: plain words on product names, every category kept
+- Status: decided
+- What it is: search looks for the words of the request in the English and Finnish product names. Capital letters, hyphens and punctuation do not count, Finnish letters (ä, ö) do. Names that contain the words as whole words come first, then the names with the fewest other words.
+- Why: "lactose-free milk", the exact words of the brief, found nothing because the names write "lactose free". The search also kept only the kind of product that matched most often, so "butter" answered with butter buns and hid the butter.
+- What it changes for us: nothing is hidden any more, so a broad word brings mixed results (butter, peanut butter, butter buns). Each result says its kind of product, and the lookup shows price and availability, so the agent narrows with one more word.
+- If we change it: one function in `merchant/catalog.py`. The lookup and the search route both use it.
+- Alternatives we looked at: guessing one kind of product from the words (no rule we tried got "butter", "cream" and "cheese" right); a search engine with synonyms and typos (too much for the weekend).
+- Decided in: PR #16, 14/11/2026.
+
 ## Substitutes: the gateway proposes, ranked in three tiers, and never breaks a free-from promise
 - Status: decided (the ranking inside a tier is open: Colette may change what counts first)
 - What it is: when stock is short, Valio's gateway takes what there is and proposes up to three replacements: `best` (same kind of product, same allergens), `better` (same kind, other allergens), `good` (a related kind, plant-based drinks for milk). Inside a tier, the substitutes Valio itself lists come first, then the cheapest per litre. The best one goes into the quote automatically. The agent may ask for another one from the list, never one the gateway did not offer.
@@ -241,3 +259,4 @@ None of us is a seasoned developer. This file explains every technical choice in
 - **React, Vite and SQLite**: a plain page and files are enough and need no build.
 - **Ed25519 signatures**: AP2 does not allow them for quotes.
 - **Running the whole demo inside the chat**: the brief says this is not a chatbot, and approval must happen where the agent cannot reach.
+- **Search results limited to the most common kind of product**: it hid the right answer whenever another kind matched more often ("butter" returned butter buns only). Every kind is returned now.

@@ -1,0 +1,59 @@
+{
+  "additionalProperties": false,
+  "description": "The query parameters of GET /offers. `amount` and `unit` go together: what the buyer needs, in their unit.",
+  "properties": {
+    "q": {
+      "minLength": 2,
+      "title": "Q",
+      "type": "string"
+    },
+    "delivery_date": {
+      "format": "date",
+      "title": "Delivery Date",
+      "type": "string"
+    },
+    "amount": {
+      "anyOf": [
+        {
+          "exclusiveMinimum": 0,
+          "type": "number"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Amount"
+    },
+    "unit": {
+      "anyOf": [
+        {
+          "enum": [
+            "L",
+            "KG",
+            "ST"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Unit"
+    },
+    "limit": {
+      "default": 10,
+      "maximum": 50,
+      "minimum": 1,
+      "title": "Limit",
+      "type": "integer"
+    }
+  },
+  "required": [
+    "q",
+    "delivery_date"
+  ],
+  "title": "OffersRequest",
+  "type": "object"
+}

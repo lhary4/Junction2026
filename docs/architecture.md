@@ -5,9 +5,9 @@
 ```
 BUYER SIDE (hotel chain)                                VALIO AIMO SIDE
 Claude Desktop (external agent)
-   │ MCP (5 tools, agent_mcp/)
+   │ MCP (6 tools, agent_mcp/)
    ├──────────────────────────────────────────────────▶ merchant/  FastAPI :8001
-   │                                                     search, ES256-signed quote, order,
+   │                                                     search, lookup, signed quote, order,
    ▼                                                     mandate verification, signed receipt, audit
 harness/  FastAPI :8002 ──── HTTP: reads the quote ───▶      │
  verifies the signature, rules in code,   sends the mandate  ▼
@@ -21,8 +21,8 @@ Two parties, as in real life. The buyer side holds the agent, the harness that g
 
 ## One order, step by step
 
-1. **Search.** The agent calls `search_products`. The gateway searches the product file locally and answers with product cards: no prices yet, but origin, allergens, labels, delivery reliability and carbon footprint, each with a certainty level.
-2. **Quote.** The agent calls `request_quote` with a product and an amount in litres or kilos. The gateway converts to sales units in code, asks the real Valio APIs for price and availability, and returns a quote it has signed. The agent gets a `checkout_id` and a readable summary.
+1. **Look up and compare.** The agent calls `lookup_offers` with the buyer's words, the delivery date and the amount ("lactose-free milk", Monday, 1,000 litres). The gateway searches the product file locally, then asks the real Valio APIs for price and availability, for a shortlist of 100 products at most and never for the whole catalog. It answers with offers: the product card (origin, allergens, labels, delivery reliability, carbon footprint), the price per unit and per litre or kilo, the stock, the delivery date and the order cut-off, each with its source and a certainty level, plus whether the product can be ordered and what the amount would cost. Orderable offers come first, cheapest first. This answer is not signed and commits nobody: it is there to compare. `search_products` still exists for a plain search by name, without prices.
+2. **Quote.** The agent calls `request_quote` with the product it picked and an amount in litres or kilos. The gateway converts to sales units in code, asks the real Valio APIs for price and availability, and returns a quote it has signed. The agent gets a `checkout_id` and a readable summary.
 3. **Authorize.** The agent calls `authorize_checkout` with the `checkout_id` and the human's original sentence. The harness fetches the signed quote itself, checks Valio's signature and the expiry, then runs the rules. For a substitution that is not pre-accepted, it asks the judge.
 4. **Sign, or not.**
    - `auto`: the harness closes the mandates with the agent's key. This only works inside the limits the manager signed beforehand.
