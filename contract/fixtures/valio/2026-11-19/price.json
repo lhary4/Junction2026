@@ -1772,6 +1772,44 @@
    },
    "netPriceFound": true,
    "error": false
+  },
+  {
+   "productId": "461904",
+   "quantity": 1.0,
+   "catalogPrice": {
+    "value": 2.48,
+    "valueWithTax": 2.81,
+    "validFrom": "2026-05-01T00:00:00+0300",
+    "validTo": "9999-12-31T00:00:00+0200",
+    "currency": "EUR"
+   },
+   "priceWithTax": {
+    "value": 2.81,
+    "validFrom": "2026-05-01T00:00:00+0300",
+    "validTo": "9999-12-31T00:00:00+0200",
+    "currency": "EUR"
+   },
+   "comparisonPrice": {
+    "value": 4.96,
+    "valueWithTax": 5.63,
+    "validFrom": "2026-05-01T00:00:00+0300",
+    "validTo": "9999-12-31T00:00:00+0200",
+    "currency": "EUR"
+   },
+   "comparisonUnit": "KG",
+   "tax": {
+    "taxRate": 13.5,
+    "taxValue": 0.33
+   },
+   "listPrice": {
+    "value": 2.92,
+    "valueWithTax": 3.31,
+    "validFrom": "2026-05-01T00:00:00+0300",
+    "validTo": "9999-12-31T00:00:00+0200",
+    "currency": "EUR"
+   },
+   "netPriceFound": false,
+   "error": false
   }
  ]
 }

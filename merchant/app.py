@@ -1,5 +1,5 @@
-"""The Valio Aimo gateway, port 8001: search, lookup of prices and availability, signed quotes, orders with a
-signed receipt, public keys, audit log.
+"""The Valio Aimo gateway, port 8001: search, lookup of prices and availability, carbon footprint of an order with
+greener alternatives, signed quotes, orders with a signed receipt, public keys, audit log.
 
 Run: uv run uvicorn merchant.app:app --port 8001   (or both services at once: uv run python scripts/dev.py)
 VALIO_MODE=replay (default) serves the answers recorded on 14/11, VALIO_MODE=live calls the Valio APIs.
@@ -15,6 +15,8 @@ from contract.models import (
     AuditEvent,
     Authorization,
     CheckoutResponse,
+    FootprintRequest,
+    FootprintResponse,
     OffersRequest,
     OffersResponse,
     Order,
@@ -22,6 +24,7 @@ from contract.models import (
     SearchResponse,
 )
 from merchant import audit, catalog, orders, store
+from merchant.footprint import FootprintError, footprint
 from merchant.offers import OffersError, find_offers
 from merchant.quotes import QuoteError, build_quote, summary
 from trust.checkout import checkout_hash, sign_checkout
@@ -49,6 +52,15 @@ def lookup_offers(request: Annotated[OffersRequest, Query()]) -> OffersResponse:
         return find_offers(request)
     except OffersError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e)) from e  # 422, or 503 when Valio is down
+
+
+@app.post("/footprint")
+def order_footprint(request: FootprintRequest) -> FootprintResponse:
+    """The estimated carbon footprint of these lines, and at most two greener products. Informative, never signed."""
+    try:
+        return footprint(request)
+    except FootprintError as e:
+        raise HTTPException(status_code=e.status_code, detail=str(e)) from e
 
 
 @app.post("/checkouts")

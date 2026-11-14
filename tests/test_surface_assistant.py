@@ -7,7 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from surface import assistant
-from surface.assistant import AssistantUnavailableError, ModelAnswer, StockChange, create_app
+from surface.assistant import AssistantUnavailableError, ModelAnswer, ProductSwap, StockChange, create_app
 
 STATE = {
     "step": "stock",
@@ -128,3 +128,43 @@ def test_it_serves_the_page_and_what_the_page_reads():
 @pytest.mark.parametrize("path", ["/.env", "/surface/static/../../.env", "/scenarios/pairs.csv", "/pyproject.toml"])
 def test_it_serves_nothing_else_from_the_repo(path):
     assert client_answering("Hello.").get(path).status_code == 404
+
+
+# ---------- Greener swaps: only what Valio offered on the page ----------
+
+ECO_STATE = STATE | {
+    "eco": {
+        "estimated_total_kg_co2e": 49.6,
+        "alternatives": [{"product_id": "463437", "alternative_id": "461904", "saving_kg_co2e": 16.9}],
+    }
+}
+
+
+def client_swapping(*swaps: tuple[str, str]) -> TestClient:
+    answer = ModelAnswer(reply="Done.", swaps=[ProductSwap(product_id=p, swap_to=s) for p, s in swaps])
+    return TestClient(create_app(ask=lambda turns, state: answer))
+
+
+def test_a_swap_valio_offered_reaches_the_page():
+    body = ask(client_swapping(("463437", "461904")), "Switch the butter to the greener option", ECO_STATE).json()
+    assert body["swaps"] == [{"product_id": "463437", "swap_to": "461904"}] and body["dropped"] == 0
+
+
+@pytest.mark.parametrize(
+    "swap",
+    [("463437", "999999"), ("464194", "461904"), ("461921", "463465")],
+    ids=["another-product", "another-line", "not-offered"],
+)
+def test_a_swap_valio_did_not_offer_is_dropped(swap):
+    body = ask(client_swapping(swap), "Make it greener", ECO_STATE).json()
+    assert body["swaps"] == [] and body["dropped"] == 1
+
+
+def test_no_swap_while_an_order_is_open_or_without_offers():
+    locked = ask(client_swapping(("463437", "461904")), "Switch it", ECO_STATE | {"can_edit": False}).json()
+    assert locked["swaps"] == []
+    assert ask(client_swapping(("463437", "461904")), "Switch it", STATE).json()["swaps"] == []
+
+
+def test_the_model_is_told_to_offer_only_listed_swaps():
+    assert "Never suggest" in assistant.SYSTEM_PROMPT and "state.eco.alternatives" in assistant.SYSTEM_PROMPT

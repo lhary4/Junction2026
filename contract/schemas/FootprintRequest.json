@@ -1,0 +1,65 @@
+{
+  "$defs": {
+    "Need": {
+      "additionalProperties": false,
+      "description": "What the buyer asked for, in their own unit (litres, kilos or sales units).",
+      "properties": {
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "unit": {
+          "enum": [
+            "L",
+            "KG",
+            "ST"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "substitute_with": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Substitute With"
+        }
+      },
+      "required": [
+        "product_id",
+        "amount",
+        "unit"
+      ],
+      "title": "Need",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "The lines of an order the kitchen is about to send, in its own units. `substitute_with` is not read here.",
+  "properties": {
+    "needs": {
+      "items": {
+        "$ref": "#/$defs/Need"
+      },
+      "maxItems": 100,
+      "minItems": 1,
+      "title": "Needs",
+      "type": "array"
+    }
+  },
+  "required": [
+    "needs"
+  ],
+  "title": "FootprintRequest",
+  "type": "object"
+}

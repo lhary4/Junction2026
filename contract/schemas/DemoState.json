@@ -2055,16 +2055,47 @@
           "type": "string"
         },
         "order_id": {
-          "title": "Order Id",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Id"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error"
+        },
+        "error_description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Error Description"
         }
       },
       "required": [
         "status",
         "iss",
         "iat",
-        "reference",
-        "order_id"
+        "reference"
       ],
       "title": "Receipt",
       "type": "object"

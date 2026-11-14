@@ -26,7 +26,7 @@ import json
 import os
 import sys
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -226,11 +226,17 @@ class Driver:
             self._current = None
         return self.state()
 
-    def run(self, scenario_id: str) -> DemoState:
-        """The buying agent's two calls: a signed quote from Valio, then the harness is asked to order it."""
+    def run(self, scenario_id: str, needs: list[Need] | None = None) -> DemoState:
+        """The buying agent's two calls: a signed quote from Valio, then the harness is asked to order it.
+
+        `needs` are the lines the chef confirmed on the page, for example with the butter swapped for a greener
+        product. Without them the scenario orders its own lines. The attack always sends its own.
+        """
         scenario = self.scenarios.get(scenario_id)
         if scenario is None:
             raise DriverError(404, f"no scenario {scenario_id!r} (there is: {', '.join(self.scenarios)})")
+        if needs and not scenario.attack:
+            scenario = replace(scenario, needs=tuple((need.product_id, need.amount, need.unit) for need in needs))
         run = _Run(scenario)
         with self._lock:
             if self._current and self._current.running:
@@ -251,6 +257,11 @@ class Driver:
         finally:
             run.running = False
         return self.state()
+
+    def footprint(self, needs: list[Need]) -> dict:
+        """The estimated carbon footprint of the lines on the page, and Valio's greener alternatives. Never signed."""
+        body = {"needs": [need.model_dump(mode="json", exclude_none=True) for need in needs]}
+        return self._post(self.gateway, "gateway", "/footprint", body)
 
     # ---------- an outside agent, through MCP ----------
 
@@ -752,6 +763,33 @@ class AgentQuoteRequest(BaseModel):
     delivery_date: date
 
 
+class PageLine(BaseModel):
+    """One line the chef confirmed on the page. The page also sends a name and a dish: they are not read here."""
+
+    product_id: str
+    amount: float
+    unit: str
+
+
+class RunRequest(BaseModel):
+    """Body of POST /scenarios/{id}/run, optional: the lines the chef confirmed on the page."""
+
+    lines: list[PageLine] = []
+
+
+class FootprintAsk(BaseModel):
+    """Body of POST /footprint: the lines on the page."""
+
+    lines: list[PageLine]
+
+
+def _needs(lines: list[PageLine]) -> list[Need]:
+    try:
+        return [Need(product_id=line.product_id, amount=line.amount, unit=line.unit) for line in lines]
+    except ValueError as e:
+        raise DriverError(422, f"a line of the page is not a valid need: {e}") from e
+
+
 def create_app(driver: Driver | None = None) -> FastAPI:
     active = driver or Driver()
     api = FastAPI(title="Demo driver", version="0.1")
@@ -771,8 +809,13 @@ def create_app(driver: Driver | None = None) -> FastAPI:
         return active.state()
 
     @api.post("/scenarios/{scenario_id}/run")
-    def run(scenario_id: str) -> DemoState:
-        return active.run(scenario_id)
+    def run(scenario_id: str, request: RunRequest | None = None) -> DemoState:
+        return active.run(scenario_id, _needs(request.lines) if request else None)
+
+    @api.post("/footprint")
+    def footprint(request: FootprintAsk) -> dict:
+        """For the page: the footprint of its lines and Valio's greener alternatives, asked from the gateway."""
+        return active.footprint(_needs(request.lines))
 
     @api.post("/reset")
     def reset() -> DemoState:

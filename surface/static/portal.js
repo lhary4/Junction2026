@@ -135,6 +135,8 @@ const app = {
   busy: false,
   chatBusy: false,
   problem: null,
+  // Valio's estimate of the order's carbon footprint, for the lines in `key`, and the offers the chef put off this week
+  eco: { data: null, key: null, loading: false, dismissed: new Set() },
 };
 
 /* ---------- Small helpers ---------- */
@@ -259,6 +261,7 @@ function icon(name) {
     shield: '<path d="M10 2l6.500 2.400v4.800c0 4-2.700 7.300-6.500 8.800-3.800-1.500-6.500-4.800-6.500-8.800V4.400z" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round"/><path d="M7 10l2.200 2.200L13.200 8" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"/>',
     pen: '<path d="M3 17l1-4L14 3l3 3L7 16z" fill="none" stroke="currentColor" stroke-width="1.700" stroke-linejoin="round"/><path d="M12 5l3 3" stroke="currentColor" stroke-width="1.700"/>',
     send: '<path d="M3 10l14-6.500-5 14-2.800-5.700z" fill="currentColor"/>',
+    leaf: '<path d="M4 16.500C3.500 8.500 8 3.500 17 3.500c.5 8.500-4 13-11.500 13" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round"/><path d="M4 16.500l7.500-7.500" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round"/>',
   };
   return `<svg class="icon" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${paths[name]}</svg>`;
 }
@@ -270,6 +273,8 @@ const driver = {
   // The lines are what the chef confirmed in the stock table. A driver that only plays fixed scenarios ignores them.
   run: (id, body) => postJson(`${DRIVER_URL}/scenarios/${encodeURIComponent(id)}/run`, body ?? {}, 60000),
   reset: () => postJson(`${DRIVER_URL}/reset`, {}),
+  // Valio's estimate of the carbon footprint of these lines, and its greener alternatives. Never signed.
+  footprint: (lines) => postJson(`${DRIVER_URL}/footprint`, { lines }, 8000),
 };
 
 const harness = {
@@ -302,7 +307,7 @@ const hasRun = () => status() !== "idle";
 const finished = () => ["done", "refused"].includes(status());
 const missingLines = () => app.lines.filter((line) => line.to_order > 0);
 const neededNow = (line) => round3(Math.max(0, line.need - line.in_stock));
-const changedLines = () => app.lines.filter((line) => line.by.in_stock || line.by.to_order);
+const changedLines = () => app.lines.filter((line) => line.by.in_stock || line.by.to_order || line.swapped_from);
 
 /* The lines the assistant will ask Valio for: what is short in the stock table. */
 const orderLines = () =>
@@ -455,10 +460,164 @@ const changeText = (change) =>
 function undoChanges() {
   if (!canEdit()) return;
   app.lines.forEach((line) => {
+    unswap(line);
     line.in_stock = line.counted;
     line.to_order = neededNow(line);
     line.by = {};
   });
+}
+
+/* ---------- The carbon footprint and the weekly greener check ---------- */
+
+/*
+ * Valio's gateway estimates the footprint of the lines to order (weight x the average of the product group) and offers
+ * at most two greener products for them, once a week. The page shows these figures as they come, marked as estimates,
+ * and never works one out. Without the driver it reads the two estimates recorded for the normal order.
+ */
+const ECO_RECORDED = ["normal-order", "normal-order.greener"];
+const ecoKey = () => linesKey(orderLines());
+const ecoNow = () => (app.eco.key === ecoKey() ? app.eco.data : null);
+const kgCo2 = (value) => `${Number(value).toLocaleString("en-GB", { maximumFractionDigits: 1 })} kg CO2e`;
+const ecoOffer = (productId) => ecoNow()?.alternatives?.find((offer) => offer.product_id === productId) ?? null;
+const swappedLines = () => app.lines.filter((line) => line.swapped_from);
+
+async function recordedFootprint(key) {
+  for (const name of ECO_RECORDED) {
+    const found = await call(`${EXAMPLES_FOLDER}footprint.${name}.json`).catch(() => null);
+    if (found && linesKey(found.lines) === key) return found;
+  }
+  return null;
+}
+
+/* Ask for the estimate of the lines on screen, once per set of lines. Called by draw(), so it follows every change. */
+async function refreshEco() {
+  const lines = orderLines();
+  const asked = linesKey(lines);
+  app.eco.loading = true;
+  let data = null;
+  try {
+    if (lines.length && app.mode === "live") data = await driver.footprint(lines).catch(() => null);
+    if (lines.length && !data) data = await recordedFootprint(asked);
+  } finally {
+    app.eco.loading = false;
+    if (asked === ecoKey()) {
+      app.eco.data = data;
+      app.eco.key = asked;
+    }
+    draw();
+  }
+}
+
+/* The chef (or the assistant, when the chef asks) takes Valio's greener product for one line. Returns what changed. */
+function swapLine(productId, swapTo, by) {
+  const offer = ecoOffer(productId);
+  const line = app.lines.find((entry) => entry.product_id === productId);
+  if (!canEdit() || !offer || !line || offer.alternative.id !== swapTo) return null;
+  line.swapped_from = { product_id: line.product_id, name: line.name, offer, by };
+  line.product_id = offer.alternative.id;
+  line.name = offer.alternative.name;
+  app.eco.dismissed.delete(productId);
+  return { line, offer };
+}
+
+function unswap(line) {
+  if (!line.swapped_from) return;
+  line.product_id = line.swapped_from.product_id;
+  line.name = line.swapped_from.name;
+  delete line.swapped_from;
+}
+
+/* The kitchen's own name for the product of an offer, as in the stock table; Valio's name when the line is gone. */
+const kitchenName = (offer) => app.lines.find((line) => line.product_id === offer.product_id)?.name ?? offer.name;
+const swapText = (swap) => `${swap.line.swapped_from.name} → ${swap.offer.alternative.name}: ${kgCo2(swap.offer.saving_kg_co2e)} less`;
+const savedByPercent = (offer) => `${Math.round(offer.saving_share * 100)}%`;
+
+/* The little button on a line Valio has a greener product for, or the mark of a line already swapped. */
+function ecoMarks(line) {
+  if (line.swapped_from) {
+    return ` <span class="tag tag--eco" title="${esc(`Swapped by ${line.swapped_from.by}`)}">Greener swap</span>
+      <span class="muted">was ${esc(line.swapped_from.name)}</span>
+      ${canEdit() ? `<button class="link" type="button" data-unswap="${esc(line.product_id)}">Undo</button>` : ""}`;
+  }
+  const offer = ecoOffer(line.product_id);
+  if (!offer || !canEdit()) return "";
+  return ` <button class="eco-btn" type="button" data-eco="${esc(line.product_id)}"
+      title="${esc(`${offer.alternative.name}: ${savedByPercent(offer)} less CO2e`)}">${icon("leaf")}Greener option</button>`;
+}
+
+/* One line under the order: the estimated footprint, and what the greener swaps took off it. */
+function footprintLine() {
+  const data = ecoNow();
+  if (!data) {
+    if (app.eco.loading) return '<p class="eco-total">Estimating the carbon footprint…</p>';
+    return orderLines().length ? '<p class="eco-total eco-total--off">Carbon footprint: no estimate for these quantities without Valio\'s gateway.</p>' : "";
+  }
+  const swaps = swappedLines();
+  const saved = swaps.reduce((sum, line) => sum + line.swapped_from.offer.saving_kg_co2e, 0);
+  const unknown = data.unknown.length ? `, ${data.unknown.length} ${data.unknown.length === 1 ? "line" : "lines"} without data left out` : "";
+  return `<p class="eco-total" title="${esc(data.method)}">${icon("leaf")}Estimated carbon footprint <b>${esc(kgCo2(data.total_kg_co2e))}</b>
+      ${saved ? `<span class="eco-total__saved">${esc(kgCo2(saved))} less with your greener ${swaps.length === 1 ? "swap" : "swaps"}</span>` : ""}
+      <span class="muted">Product-group averages, an estimate${esc(unknown)}. Not part of the signed quote.</span></p>`;
+}
+
+function offerFacts(offer) {
+  return `<dl class="facts">
+      <dt>Footprint</dt><dd>${esc(kgCo2(offer.kg_co2e_before))} → <b>${esc(kgCo2(offer.kg_co2e_after))}</b>, ${esc(savedByPercent(offer))} less</dd>
+      <dt>Same amount</dt><dd>${esc(qty(offer.amount, offer.unit))}</dd>
+      <dt>Allergens</dt><dd>${esc(allergenText(offer.alternative.allergens))}${offer.alternative.nutritional_claims.includes("FREE_FROM_LACTOSE") ? ", lactose free" : ""}</dd>
+    </dl>
+    <p class="card__note">${esc(offer.why)}</p>`;
+}
+
+/* The weekly greener check, beside the order before it is sent: one or two products, never more. */
+function ecoCard() {
+  const data = ecoNow();
+  const offers = (data?.alternatives ?? []).filter((offer) => !app.eco.dismissed.has(offer.product_id));
+  if (!offers.length || !canEdit()) return "";
+  const items = offers
+    .map(
+      (offer) => `<div class="eco-offer">
+        <p class="card__lead">${icon("leaf")}${esc(kitchenName(offer))} → ${esc(offer.alternative.name)}</p>
+        ${offerFacts(offer)}
+        <div class="eco-offer__actions">
+          <button class="btn btn--go" type="button" data-eco-swap="${esc(offer.product_id)}">Switch</button>
+          <button class="link" type="button" data-eco-dismiss="${esc(offer.product_id)}">Not this week</button>
+        </div>
+      </div>`
+    )
+    .join("");
+  return `<section class="card card--eco">
+      <p class="card__label">Weekly greener check · Valio Aimo</p>
+      ${items}
+      <p class="card__note muted">Checked every ${esc(data.review_every_days)} days on the products you order each week. Estimates from product-group averages.</p>
+    </section>`;
+}
+
+function askSwap(productId) {
+  const offer = ecoOffer(productId);
+  if (!offer) return;
+  openDialog({
+    title: "Switch to the greener option?",
+    body: `<p class="dialog__text"><b>${esc(kitchenName(offer))}</b> → <b>${esc(offer.alternative.name)}</b></p>${offerFacts(offer)}
+      <p class="dialog__text">Valio's price comes with the signed quote, as for every line.</p>`,
+    confirm: `${icon("leaf")}Switch`,
+    onConfirm: () => {
+      closeDialog();
+      applySwap(productId, "you");
+    },
+  });
+}
+
+function applySwap(productId, by) {
+  const swap = swapLine(productId, ecoOffer(productId)?.alternative.id, by);
+  if (!swap) return;
+  say("chef", `Switch the ${swap.line.swapped_from.name.toLowerCase()} to the greener option.`);
+  const { offer } = swap;
+  say("agent", `Done, same amount: ${kgCo2(offer.saving_kg_co2e)} less on this line, ${savedByPercent(offer)} less, by Valio's estimate. Valio prices it in the signed quote.`, {
+    changes: [swapText(swap)],
+  });
+  toast(`Greener swap: ${kgCo2(swap.offer.saving_kg_co2e)} less`);
+  draw();
 }
 
 /* Every line back to what the kitchen needs, with the stock counts as they are. */
@@ -677,7 +836,7 @@ function stockView() {
       const short = line.to_order > 0;
       const above = line.to_order > neededNow(line);
       return `<tr class="${short ? "is-short" : "is-covered"}">
-          <td>${esc(line.name)}${above ? ' <span class="tag tag--warn" title="More than the recipes need, with what is in stock">above need</span>' : ""}</td>
+          <td>${esc(line.name)}${above ? ' <span class="tag tag--warn" title="More than the recipes need, with what is in stock">above need</span>' : ""}${short ? ecoMarks(line) : ""}</td>
           <td class="muted">${esc(line.dishes.join(", "))}</td>
           <td class="num">${esc(qty(line.need, line.unit))}</td>
           <td class="num">${field(line, "in_stock", "In stock")}</td>
@@ -719,7 +878,7 @@ function requestTable() {
   const lines = missingLines();
   const rows = lines
     .map(
-      (line) => `<tr><td>${esc(line.name)}</td><td class="muted">${esc(line.dishes.join(", "))}</td><td class="num"><b>${esc(qty(line.to_order, line.unit))}</b></td></tr>`
+      (line) => `<tr><td>${esc(line.name)}${ecoMarks(line)}</td><td class="muted">${esc(line.dishes.join(", "))}</td><td class="num"><b>${esc(qty(line.to_order, line.unit))}</b></td></tr>`
     )
     .join("");
   const empty = lines.length ? "" : '<p class="note">Everything is covered by the stock: there is nothing to order.</p>';
@@ -731,7 +890,7 @@ function requestTable() {
     <table class="tbl">
       <thead><tr><th>Ingredient</th><th>Used in</th><th class="num">To order</th></tr></thead>
       <tbody>${rows}</tbody>
-    </table>`;
+    </table>${footprintLine()}`;
 }
 
 /* One sentence under the quote when Valio gave no stock count on some lines. It never blocks the order: unknown is shown, not hidden. */
@@ -775,7 +934,7 @@ function quoteTable(state) {
       <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Total</th><th>Valio's stock</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr><td colspan="3">Total before tax</td><td class="num"><b>${esc(money(total.amount, quote.currency))}</b></td><td></td></tr></tfoot>
-    </table>${stockNote(quote)}`;
+    </table>${stockNote(quote)}${footprintLine()}`;
 }
 
 /* A card moves in once, when the step it belongs to lights up. */
@@ -966,7 +1125,7 @@ function orderView() {
   const state = app.state;
   if (!orderOnScreen() || app.shown < 2 || !state.quote) {
     const waiting = (hasRun() && !dirty()) || app.busy ? '<p class="working">Your assistant is asking Valio Aimo for a signed quote…</p>' : "";
-    return `<div class="order"><div class="order__main">${requestTable()}${waiting}</div><div class="order__side"></div></div>`;
+    return `<div class="order"><div class="order__main">${requestTable()}${waiting}</div><div class="order__side">${waiting ? "" : ecoCard()}</div></div>`;
   }
   const pending = state.approval?.status === "pending";
   const side = [
@@ -1025,7 +1184,7 @@ function drawTalk() {
   el("ask-text").disabled = !app.up.assistant || app.chatBusy;
   el("ask-send").disabled = !app.up.assistant || app.chatBusy;
   setHtml(el("ask-send"), icon("send"));
-  setHtml(el("ask-note"), app.up.assistant ? "It can change the stock table. It never signs: you do, with the buttons." : `${ASSISTANT} is offline. You can still change the table by hand.`);
+  setHtml(el("ask-note"), app.up.assistant ? "It can change the stock table and take a greener product Valio offers. It never signs: you do, with the buttons." : `${ASSISTANT} is offline. You can still change the table by hand.`);
 }
 
 /* ---------- Drawing: the demo strip (for the team, not for the customer) ---------- */
@@ -1062,6 +1221,8 @@ function draw() {
   drawMenu();
   drawTalk();
   drawDemo();
+  // The lines to order changed: ask Valio for their footprint. Once per set of lines, never twice at once.
+  if (app.kitchen.stock && app.eco.key !== ecoKey() && !app.eco.loading) refreshEco();
 }
 
 function drawAll() {
@@ -1210,6 +1371,7 @@ function startOver() {
   app.mismatch = false;
   app.detailsOpen = false;
   app.talk = [];
+  app.eco.dismissed = new Set();
   loadLines(app.kitchen.stock);
   say("agent", openingLine());
 }
@@ -1254,7 +1416,7 @@ async function chooseScenario(id) {
 
 /* In replay mode, the recorded run that asked for exactly these quantities, or else the run of the scenario. */
 async function replayRun(lines) {
-  for (const name of [REPLAY_FILE["normal-order"], REPLAY_FILE.substitution]) {
+  for (const name of [REPLAY_FILE["normal-order"], REPLAY_FILE.substitution, "normal-order.greener"]) {
     const run = await recorded(name);
     if (linesKey(run.request?.lines) === linesKey(lines)) return run;
   }
@@ -1335,6 +1497,33 @@ function correctQuantities() {
   draw();
 }
 
+/* Valio's footprint estimate and greener alternatives, for the chat: it may only offer a swap listed here. */
+function ecoFacts() {
+  const data = ecoNow();
+  const swapped = swappedLines().map((line) => `${line.swapped_from.name} → ${line.name}`);
+  if (!data) return { estimate: "not known for these lines yet", alternatives: [], swapped };
+  return {
+    estimated_total_kg_co2e: data.total_kg_co2e,
+    method: data.method,
+    lines_without_data: data.unknown,
+    lines: data.lines.map((line) => ({ product_id: line.product_id, name: line.name, kg_co2e: line.kg_co2e })),
+    alternatives: data.alternatives.map((offer) => ({
+      product_id: offer.product_id,
+      name: offer.name,
+      alternative_id: offer.alternative.id,
+      alternative_name: offer.alternative.name,
+      kg_co2e_before: offer.kg_co2e_before,
+      kg_co2e_after: offer.kg_co2e_after,
+      saving_kg_co2e: offer.saving_kg_co2e,
+      saving_percent: Math.round(offer.saving_share * 100),
+      why: offer.why,
+      alternative_allergens: allergenText(offer.alternative.allergens),
+    })),
+    swapped,
+    checked_every_days: data.review_every_days,
+  };
+}
+
 /* What the page shows, for the assistant's chat: it may only repeat what is here. */
 function pageFacts() {
   const state = app.state;
@@ -1351,6 +1540,7 @@ function pageFacts() {
     stock_counted_on: app.kitchen.stock?.counted_at ? dayLong(app.kitchen.stock.counted_at) : null,
     stock: app.lines.map((line) => ({ product_id: line.product_id, name: line.name, unit: line.unit, need: line.need, in_stock: line.in_stock, to_order: line.to_order, used_in: line.dishes })),
     spending_limit: limitText(),
+    eco: ecoFacts(),
     order: null,
   };
   if (orderOnScreen() && !revealing()) {
@@ -1396,8 +1586,10 @@ async function sendChat(text) {
     const answer = await assistant.chat(turns, pageFacts());
     // The page applies the changes itself and shows what really changed, whatever the reply says.
     const applied = (answer.stock_changes ?? []).map((change) => setStock(change.product_id, change.field, change.amount, ASSISTANT)).filter(Boolean);
-    say("agent", answer.reply, { changes: applied.map(changeText) });
-    if (applied.length) toast(`${applied.length} ${applied.length === 1 ? "line" : "lines"} changed in the stock table`);
+    const swaps = (answer.swaps ?? []).map((swap) => swapLine(swap.product_id, swap.swap_to, ASSISTANT)).filter(Boolean);
+    say("agent", answer.reply, { changes: [...applied.map(changeText), ...swaps.map(swapText)] });
+    if (swaps.length) toast(`Greener swap: ${kgCo2(swaps.reduce((sum, swap) => sum + swap.offer.saving_kg_co2e, 0))} less`);
+    else if (applied.length) toast(`${applied.length} ${applied.length === 1 ? "line" : "lines"} changed in the stock table`);
   } catch (error) {
     app.up.assistant = Boolean(error.status) && error.status !== 503;
     say("agent", "I could not answer just now. Nothing was changed. You can still change the table by hand.", { status: "refused" });
@@ -1499,6 +1691,35 @@ document.addEventListener("click", (event) => {
   const scenario = event.target.closest("[data-scenario]");
   if (scenario) {
     chooseScenario(scenario.dataset.scenario);
+    return;
+  }
+
+  // The greener check: the button on a line, the weekly card, and the undo of a swap.
+  const ecoButton = event.target.closest("[data-eco]");
+  if (ecoButton) {
+    askSwap(ecoButton.dataset.eco);
+    return;
+  }
+  const ecoSwap = event.target.closest("[data-eco-swap]");
+  if (ecoSwap) {
+    applySwap(ecoSwap.dataset.ecoSwap, "you");
+    return;
+  }
+  const ecoDismiss = event.target.closest("[data-eco-dismiss]");
+  if (ecoDismiss) {
+    app.eco.dismissed.add(ecoDismiss.dataset.ecoDismiss);
+    say("agent", "Noted: I will not offer it again before next week's check.");
+    draw();
+    return;
+  }
+  const unswapButton = event.target.closest("[data-unswap]");
+  if (unswapButton) {
+    const line = app.lines.find((entry) => entry.product_id === unswapButton.dataset.unswap);
+    if (line && canEdit()) {
+      unswap(line);
+      toast("Back to the original product");
+      draw();
+    }
     return;
   }
 

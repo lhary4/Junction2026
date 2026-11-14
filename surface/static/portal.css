@@ -2359,3 +2359,90 @@ input {
   color: var(--ink);
   font-size: 0.86rem;
 }
+
+/* The greener check: a button on a line Valio has a greener product for, the mark of a swapped line,
+   the weekly card beside the order and the estimated footprint under it. Green is the "done" green of the page. */
+.eco-btn {
+  margin-left: 6px;
+  min-height: 28px;
+  padding: 2px 10px 2px 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--done);
+  border-radius: 14px;
+  background: var(--done-soft);
+  color: var(--done);
+  font-weight: 700;
+  font-size: 0.8rem;
+  vertical-align: middle;
+}
+
+.eco-btn:hover {
+  background: #fff;
+}
+
+.eco-btn .icon,
+.eco-total .icon {
+  width: 15px;
+  height: 15px;
+}
+
+.tag--eco {
+  margin-left: 6px;
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.card--eco {
+  border-left-color: var(--done);
+}
+
+.card--eco .card__lead {
+  color: var(--done);
+}
+
+.eco-offer + .eco-offer {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.eco-offer__actions {
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.eco-total {
+  margin-top: 12px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  border-radius: 6px;
+  background: var(--done-soft);
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+
+.eco-total .icon {
+  color: var(--done);
+}
+
+.eco-total__saved {
+  color: var(--done);
+  font-weight: 700;
+}
+
+.eco-total .muted {
+  flex-basis: 100%;
+  font-size: 0.78rem;
+}
+
+.eco-total--off {
+  background: var(--mist);
+  color: var(--grey);
+}

@@ -21,6 +21,8 @@ EXPORTED = [
     models.Offer,
     models.OffersResponse,
     models.QuoteRequest,
+    models.FootprintRequest,
+    models.FootprintResponse,
     models.AimoCheckout,
     models.CheckoutResponse,
     models.BuyerPolicy,

@@ -28,9 +28,9 @@
 | 2 | **Normal order** | `0:12–0:35` | 23s | 50 | 130 wpm | `auto` -> agent closes open mandate -> sandbox payment -> ES256 receipt |
 | 3 | **Substitution** | `0:35–1:20` | 45s | 95 | 127 wpm | `human` -> `gemini-decision-1` scores -> Telegram link -> chef signs before cut-off |
 | 4 | **Attack** | `1:20–1:40` | 20s | 45 | 135 wpm | 3x HTTP 403 gateway refusals + dual SHA-256 hash-chained audit logs |
-| 5 | **What else it does** | `1:40–1:52` | 12s | 28 | 140 wpm | Weekly stock/cover reorder · `"estimated"` carbon · 5-tool MCP ERP door |
+| 5 | **What else it does** | `1:40-1:52` | 12s | 26 | 130 wpm | Estimated carbon footprint on the order · weekly greener swap (butter → margarine, 40 % less) by chat or button · 5-tool MCP ERP door |
 | 6 | **Close** | `1:52–2:00` | 8s *(ends `1:55`)* | 14 | ~130 wpm | MCP · UCP Checkout · AP2 · ES256 — *"The verdict decides who signs."* |
-| | **Total** | **`0:00–1:55`** | **115s (+5s buffer)** | **259** | **~135 wpm** | |
+| | **Total** | **`0:00–1:55`** | **115s (+5s buffer)** | **257** | **~135 wpm** | |
 
 ---
 
@@ -111,13 +111,16 @@
 ### Beat 5 — What Else It Does
 - **Timestamp**: `1:40–1:52 (12s)`
 - **On screen**:
-  - `1:40–1:44` *(4s)*: Highlight the **`KITCHEN`** recipe/stock header showing weekly reorder calculation from 50-cover x 3-service bookings and kitchen stock counts.
-  - `1:44–1:48` *(4s)*: Hover over a line item's carbon footprint pill (`value: 1.1 kg_co2e_per_kg`, `source: product_group_average`, `certainty: estimated`).
-  - `1:48–1:52` *(4s)*: Clean overlay card / split terminal showing `agent_mcp/server.py` exposing the **5 MCP tools** (`search_products`, `request_quote`, `authorize_checkout`, `get_authorization_status`, `get_order` / `lookup_offers`) connected to the exact same `:8001` and `:8002` services for hotel/restaurant chains with an ERP agent.
-- **Spoken line** *(28 words — three crisp sentences)*:
-  > "Beyond exceptions, it computes weekly reorders from kitchen stock and cover bookings. It compares product-group carbon footprints explicitly marked estimated. And five MCP tools connect external ERP agents."
+  - Setup, off camera: `Reset`, then **1 Normal order**, confirm the recipes and the stock. The page is on step 3 "Ready to order", nothing sent yet.
+  - `1:40-1:44` *(4s)*: Step 3 shows the **estimated carbon footprint** under the order (`145.9 kg CO2e`) and the **Weekly greener check** card beside it: butter → lactose-free margarine, `42.8 → 25.9 kg CO2e, 40% less`.
+  - `1:44-1:49` *(5s)*: The chef types in the chat *"Is there a more eco-friendly option for the butter? If so, switch it."* (paste it, Gemini answers in about a second). The butter line becomes the margarine with a **Greener swap** tag, the footprint drops to `129 kg CO2e`, `16.9 kg CO2e less`. Same result with the **Greener option** button on the butter line, then **Switch**: use the button if the chat is slow on the take.
+  - `1:49-1:52` *(3s)*: Clean overlay card showing `agent_mcp/server.py` exposing the **5 MCP tools** connected to the same `:8001` and `:8002` services, for chains with an ERP agent.
+- **Spoken line** *(26 words, three sentences)*:
+  > "Every order carries an estimated carbon footprint. Weekly, Valio offers a greener swap: margarine for butter, forty percent less CO2e. Five MCP tools connect ERP agents."
+- **Facts behind the line**: the footprint is weight x the product group average of the challenge's carbon file, marked as an estimate and never signed. The swap is offered only when it saves at least 25 %, adds no allergen and keeps the menu lactose free. Ordered, the swapped cart is also cheaper: EUR 176.10 against EUR 186.89 (recorded in `contract/examples/demo-state.normal-order.greener.json`).
 - **If it fails on take**:
-  - **Never launch a live LLM chat client during this 12s beat** (live MCP chat rounds take ~120s); use a clean 4-second slide/code overlay for the 5 MCP tools so timing stays rock-solid.
+  - **Never launch a live MCP chat client during this 12s beat** (live MCP chat rounds take ~120s); use a clean 3-second slide/code overlay for the 5 MCP tools so timing stays rock-solid.
+  - **No greener card**: the page needs the demo driver for the footprint, or replays the two estimates recorded in `contract/examples/footprint.*.json`, which only match the normal order's quantities. Reset and do not change a quantity before this beat.
 
 ---
 
@@ -146,6 +149,6 @@
 >
 > **[1:20]** What if the agent or buyer harness is bypassed? Button three sends three attacks straight to Valio: an agent mandate above the fifteen-hundred-euro cap, a tampered quote, and a replayed mandate. Valio's gateway refuses all three with HTTP 403, anchored in both hash-chained audit logs.
 >
-> **[1:40]** Beyond exceptions, it computes weekly reorders from kitchen stock and cover bookings. It compares product-group carbon footprints explicitly marked estimated. And five MCP tools connect external ERP agents.
+> **[1:40]** Every order carries an estimated carbon footprint. Weekly, Valio offers a greener swap: margarine for butter, forty percent less CO2e. Five MCP tools connect ERP agents.
 >
 > **[1:52]** Built on MCP, UCP Checkout, Google AP2 mandates, and ES256. The verdict decides who signs. **[1:55]**
