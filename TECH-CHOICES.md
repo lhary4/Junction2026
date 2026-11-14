@@ -246,7 +246,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - What it changes for us: every screen and every log line about the payment says "sandbox", and the page carries the banner "Concept mock-up". In the video we say "mandate" for what is signed and "sandbox payment" for the charge. The credit limit (EUR 20,000 a customer) and the terms ("Invoice at 14 days") are made up, because Valio's real ones are not in the challenge data. An order that does not fit on the account is refused, like one above the spend cap. Starting the services with `--fresh` empties the accounts.
 - If we change it: real payment would add AP2's other roles (credential provider, payment processor) and a real provider's test mode. Only `merchant/payments.py` and the payment step of the trail would change.
 - Alternatives we looked at: no payment at all (what we had until Saturday evening: the trail stopped at the receipt); a payment provider's test mode such as Stripe (one more account and one more integration for a step the brief does not ask for); x402, Nevermined (named in the brief as context, not required).
-- Decided in: PR #7, 14/11/2026 (the spend cap in the mandate). Sandbox payment: PR for step A9 (`feat/sandbox-payment`), 14/11/2026.
+- Decided in: PR #7, 14/11/2026 (the spend cap in the mandate). Sandbox payment: PR #31, 14/11/2026.
 
 ## Approval page: three plain files, with a mock mode that reads the examples
 - Status: decided
