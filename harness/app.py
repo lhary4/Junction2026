@@ -12,12 +12,14 @@ Routes (docs/contract.md):
 - GET  /approvals/{approval_id}
 - POST /approvals/{approval_id}/decision
 - GET  /policy
+- GET  /mandates/open
 - GET  /audit
 - /    serves `surface/static` (and `/contract/examples` for rehearsal mock links)
 """
 
 from __future__ import annotations
 
+import base64
 import inspect
 import json
 import logging
@@ -30,7 +32,6 @@ from typing import Annotated, Any
 from zoneinfo import ZoneInfo
 
 import httpx
-from ap2.sdk.utils import b64url_decode
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -96,7 +97,9 @@ def harness_url() -> str:
 
 def _jwt_kid(token: str) -> str | None:
     try:
-        header = json.loads(b64url_decode(token.split(".")[0]))
+        raw_header = token.split(".")[0]
+        padded = raw_header + "=" * (-len(raw_header) % 4)
+        header = json.loads(base64.urlsafe_b64decode(padded))
         kid = header.get("kid")
         return str(kid) if kid is not None else None
     except Exception:  # noqa: BLE001
@@ -727,6 +730,10 @@ def create_app(
     @api.get("/policy")
     def get_policy() -> BuyerPolicy:
         return load_policy(policy_path)
+
+    @api.get("/mandates/open")
+    def get_open_mandate_proofs() -> dict[str, str]:
+        return active_signer.open_mandate_proofs(load_policy(policy_path))
 
     @api.get("/audit")
     def get_audit() -> list[AuditEvent]:

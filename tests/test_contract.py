@@ -15,6 +15,7 @@ from contract.models import (
     AuthorizationStatus,
     BuyerPolicy,
     Claim,
+    DemoState,
     Offer,
     OffersRequest,
     OffersResponse,
@@ -26,6 +27,13 @@ from contract.models import (
 
 EXAMPLES = Path(__file__).resolve().parent.parent / "contract" / "examples"
 CHECKOUTS = ["checkout.act1.json", "checkout.act2.json", "checkout.act3.json"]
+DEMO_STATES = [
+    "demo-state.idle.json",
+    "demo-state.normal-order.json",
+    "demo-state.substitution.pending.json",
+    "demo-state.substitution.approved.json",
+    "demo-state.attack.json",
+]
 
 SINGLE = {
     "approval-request.pending.json": ApprovalRequest,
@@ -39,6 +47,7 @@ SINGLE = {
     "verdict.human.spend.json": Verdict,
     "verdict.human.substitution.json": Verdict,
     **{name: AimoCheckout for name in CHECKOUTS},
+    **{name: DemoState for name in DEMO_STATES},
 }
 SHAPES = {
     "product-cards.json": list[ProductCard],
@@ -116,3 +125,48 @@ def test_a_lookup_amount_comes_with_its_unit():
     for half in ({"amount": 1000}, {"unit": "L"}):
         with pytest.raises(ValidationError, match="amount and unit go together"):
             OffersRequest.model_validate(lookup | half)
+
+
+@pytest.mark.parametrize("name", DEMO_STATES)
+def test_demo_state_tells_one_story(name):
+    """Every piece of a demo state is about the quote on screen, and the trail agrees with the scenario's status."""
+    state = DemoState.model_validate(load(name))
+    assert DemoState.model_validate(state.model_dump(mode="json", exclude_none=True)) == state
+    assert state.kitchen.customer == "demo-restaurant-helsinki"
+
+    pieces = [state.verdict, state.authorization, state.approval, state.order]
+    events = state.audit.buyer + state.audit.merchant
+    for piece in [p for p in pieces if p] + events:
+        assert state.quote and piece.checkout_id == state.quote.id
+    if state.request:
+        assert state.quote and state.quote.aimo.customer == state.kitchen.customer
+        assert [(n.product_id, n.amount, n.unit) for n in state.quote.aimo.requested] == [
+            (line.product_id, line.amount, line.unit) for line in state.request.lines
+        ]
+
+    steps = {step.key: step for step in state.steps}
+    status = state.scenario.status
+    if status == "idle":
+        assert not state.request and not state.quote and {s.status for s in state.steps} == {"pending"}
+    if status == "done":
+        assert state.order and {s.status for s in state.steps} == {"done"}
+        assert steps["signed_quote"].proof == state.order.checkout_hash
+        assert steps["closed_mandates"].proof == state.order.mandate_reference
+        assert steps["closed_mandates"].signer == ("manager" if state.order.signed_by == "human" else "agent")
+    if status == "waiting_for_human":
+        assert state.approval and state.approval.status == "pending" and not state.order
+        assert (steps["closed_mandates"].signer, steps["closed_mandates"].status) == ("manager", "waiting")
+        assert steps["signed_receipt"].status == "pending"
+    if status == "refused":
+        assert not state.order and steps["merchant_verifies"].status == "refused"
+        assert state.attacks and all(a.status == "refused" and a.problems for a in state.attacks)
+
+
+def test_demo_state_keeps_the_seven_steps_and_a_known_scenario():
+    state = load("demo-state.normal-order.json")
+    with pytest.raises(ValidationError, match="seven steps of the AP2 trail"):
+        DemoState.model_validate(state | {"steps": state["steps"][:-1]})
+    with pytest.raises(ValidationError, match="is not in scenarios"):
+        DemoState.model_validate(state | {"scenario": state["scenario"] | {"id": "milk"}})
+    with pytest.raises(ValidationError, match="status is 'idle'"):
+        DemoState.model_validate(state | {"scenario": state["scenario"] | {"status": "idle"}})

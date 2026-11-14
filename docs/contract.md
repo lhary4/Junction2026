@@ -56,6 +56,7 @@ Allergens are not a claim but have the same idea: `{"contains": [...], "free_fro
 | `Authorization` (the mandates) | `authorization.json` | harness | gateway |
 | `Order` | `order.json` | gateway | harness, agent, surface |
 | `AuditEvent` | `audit-events.json` | both sides | surface |
+| `DemoState` | `demo-state.idle.json`, `.normal-order`, `.substitution.pending`, `.substitution.approved`, `.attack` | demo driver (`GET /state`) | surface |
 
 ### The lookup
 
@@ -91,11 +92,13 @@ A quote is valid until the order cut-off (`closing_time`), and at most 24 hours.
 
 Inside one quote, stock is counted once. Two needs for the same product, or two shortfalls covered by the same substitute, never add up to more than Valio has: the second one gets what the first one left, and a shortfall for the rest.
 
-`aimo.shortfalls` says what could not be covered. `aimo.alternatives` ranks substitutes from Valio's own assortment, one per tier: `best` (same category, same allergens), `better` (same category, other allergens), `good` (a related category, plant-based drinks for milk drinks). The catalog already lists substitutes for some products (field `substitutions` in the product file, read both ways): they come first in a tier with `catalog_listed: true`, then the cheapest per litre or kilo (`catalog_listed: false`). A substitute is only offered if it arrives on time, covers the whole shortfall, has complete allergen data and keeps every free-from promise of the original (a lactose-free product is only replaced by a lactose-free one). The `best` one is chosen unless `allow_alternatives` is false.
+`aimo.shortfalls` says what could not be covered. `aimo.alternatives` ranks substitutes from Valio's own assortment, one per tier: `best` (same category, same allergens), `better` (same category, other allergens), `good` (a related category, plant-based drinks for milk drinks). The catalog already lists substitutes for some products (field `substitutions` in the product file, read both ways): they come first in a tier with `catalog_listed: true`. Then come the others (`catalog_listed: false`), the closest product name first, then the cheapest per litre or kilo. Closest means the most name words in common, pack sizes left out: the category alone is too wide, the cheapest "cheese" for a squeaky cheese was a cheddar cream. A substitute is only offered if it arrives on time, covers the whole shortfall, has complete allergen data and keeps every free-from promise of the original (a lactose-free product is only replaced by a lactose-free one). The `best` one is chosen unless `allow_alternatives` is false.
 
 To pick another alternative, the agent asks for a new quote with `substitute_with` on the need, for example `{"product_id": "469363", "amount": 600, "unit": "L", "substitute_with": "464320"}`. The gateway refuses a product it would not offer.
 
 A stock claim of a `Stock` product is `measured` with the count. The mock answers `9999999999` for most of them: the gateway turns that into `"value": "not_given"`, `certainty: "declared"` (Valio says it can deliver, without a count).
+
+Each line carries its price per litre or kilo (`comparison_price_minor`, `comparison_unit`) as Valio's price API gives it. For the few products where it gives none (the caster sugar 460325), the gateway divides the price by the size of one sales unit in the product file. If the file has no size either, it is the price of one sales unit and `comparison_unit` is the sales unit.
 
 A line that replaces another product says so in `substitute_for`, with the replaced product's id, name, brand, category, units, pack size, storage temperature, allergens, nutritional claims, labels and origin (`LineClaims` carries the same structured facts for the substitute line itself). Because the gateway signs all of them inside the quote, the harness and the judge compare the two without another lookup. For a line that is not a substitute, `substitute_for` is `null`.
 
@@ -129,17 +132,75 @@ The spend cap is carried by the open payment mandate (`AmountRange`), so the gat
 
 ### The order
 
-`POST /checkouts/{id}/complete` takes the `Authorization` and checks, in this order: the quote exists, is still the one Valio signed and has not expired; the mandates verify against it (`trust.verify_mandates`); the quote has not been ordered yet.
+`POST /checkouts/{id}/complete` takes the `Authorization` and checks, in this order: the quote exists, is still the one Valio signed and has not expired; the mandates verify against it (`trust.verify_mandates`); the quote has not been ordered yet; the amount fits on the customer's invoice account (the sandbox payment, below).
 
 | Case | Answer |
 |---|---|
-| Everything passes | HTTP 200 with the `Order`, status `accepted`, and a receipt signed by Valio. The receipt's `reference` is the order's `mandate_reference` |
+| Everything passes | HTTP 200 with the `Order`, status `accepted`, its sandbox `payment` and a receipt signed by Valio. The receipt's `reference` is the order's `mandate_reference` |
 | The same mandate is sent again | HTTP 200 with the same `Order`. A retry after a lost answer never orders twice |
 | Another mandate for a quote that is already ordered | HTTP 403 |
 | Expired quote, mandate for another quote or amount, agent mandate above the cap, wrong key | HTTP 403 |
+| The amount does not fit on the invoice account, or the mandate names another account | HTTP 403 |
 | Unknown quote id | HTTP 404 |
 
-A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `order_accepted`, `order_replayed`, `order_refused`.
+A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created and nothing is booked on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `payment_captured`, `order_accepted`, `order_replayed`, `order_refused`.
+
+**The sandbox payment.** No real money moves. A wholesale customer pays on invoice, so the payment mandate names the customer's invoice account as its instrument (`invoice-account:<customer>`). Once the mandates verify, the gateway books the quote's total on a simulated account, one file per customer under `state/merchant/accounts/`: a credit limit, what is booked so far, one line per payment. The order then carries two more objects:
+
+| Field of `Order` | Content |
+|---|---|
+| `mandate` | what the payment mandate allowed, as Valio read it: `cap_minor` (the agent's spend cap from the open mandate, `null` when the manager signed this exact order), `amount_minor`, `currency`, `instrument` |
+| `payment` | `payment_id` (`pay_...`), `status` (`captured`), `amount_minor`, `currency`, `instrument`, `terms`, `sandbox` (always `true`), `captured_at` |
+
+The credit limit (EUR 20,000 a customer) and the terms ("Invoice at 14 days (simulated)") are made up for the sandbox: Valio's real ones are not in the challenge data. A mandate sent twice returns the same order and books nothing more. `scripts/dev.py --fresh` empties the accounts with the rest of the gateway's state.
+
+### The demo state
+
+Everything the demo page shows, as one object. The demo driver builds it from the quote, the verdict, the approval, the order and both audit logs, and the page renders it without working out a fact itself. The five example files are real runs of the gateway and the harness in live mode on 14/11, for the customer `demo-restaurant-helsinki`.
+
+| Field | Meaning |
+|---|---|
+| `scenarios` | the buttons: `id`, `title`, `hint` |
+| `scenario` | the one on screen: `id`, `title`, `status`. After a reset `id` and `title` are `null` and `status` is `idle` |
+| `kitchen` | the restaurant: `customer`, `name`, `covers_per_service`, `services`, `menu` (`course`, `dish`) |
+| `request` | what the agent was asked: `text` (the sentence the harness receives), `delivery_date`, `lines` (`product_id`, `name`, `amount`, `unit`, `dish`), in the kitchen's units |
+| `quote` | the `AimoCheckout`, without its token |
+| `verdict`, `authorization`, `approval`, `order` | `Verdict`, `AuthorizationStatus`, `ApprovalRequest`, `Order`, each `null` until it exists |
+| `attacks` | for the attack scenario: `key`, `title`, `status`, and the `problems` Valio answered |
+| `steps` | the AP2 trail: always the seven steps below, in this order |
+| `audit` | `buyer` and `merchant`: the lines each side wrote about this quote |
+
+| `scenario.status` | Meaning |
+|---|---|
+| `idle` | nothing has run |
+| `running` | the driver is between two calls |
+| `waiting_for_human` | an approval is pending: the chef signs on the page |
+| `done` | ordered, receipt signed |
+| `refused` | no order: a `deny` verdict, a rejected or expired approval, or the attacks, all refused |
+
+A step is `key`, `title`, `signer` (`manager`, `agent`, `merchant` or `none`), `status`, `detail` (one sentence to show), `proof` (a hash or an identifier, `null` when there is none) and `at`.
+
+| `key` | Signer | `proof` |
+|---|---|---|
+| `open_mandate` | `manager` | none yet: the harness shows its open mandates nowhere |
+| `signed_quote` | `merchant` | the quote hash (`checkout_hash`) |
+| `verdict` | `none` | none: the rules are in `verdict` |
+| `closed_mandates` | `agent` on `auto`, `manager` on `human`, `none` until the verdict says who | the mandate reference, the one the order and the receipt carry |
+| `merchant_verifies` | `merchant` | none |
+| `sandbox_payment` | `merchant` | the payment identifier (`order.payment.payment_id`). Its `detail` always starts with "Sandbox payment" |
+| `signed_receipt` | `merchant` | hash of the receipt token |
+
+| Step `status` | Meaning |
+|---|---|
+| `pending` | not reached yet |
+| `done` | happened |
+| `waiting` | waits for the human (only `closed_mandates`) |
+| `refused` | Valio or the harness said no |
+| `skipped` | will not happen in this scenario |
+
+An attack's `status` is `pending`, `refused` (the expected end) or `accepted`, which would mean Valio let a bad mandate through: the page must show it as a failure.
+
+The examples are recorded by `scripts/record_demo_states.py`: it runs the demo driver through the gateway and the harness in live mode and writes what `GET /state` answers. They were recorded with the restaurant's policy (limit EUR 1,500) and the gateway's own pick of substitute, the bread cheese 475072 for the squeaky cheese 474880.
 
 ## Routes
 
@@ -171,7 +232,37 @@ Harness, port 8002 (`harness/`):
 | `GET /audit` | | `[AuditEvent]` |
 | `GET /` | | serves `surface/static` (and `/contract/examples` for `?mock=1`) |
 
-Both services allow cross-origin calls from `localhost`, so the page can read both.
+Demo driver, port 8003 (`scenarios/run.py`):
+
+| Route | Input | Output |
+|---|---|---|
+| `POST /scenarios/{id}/run` | | `DemoState` once the scenario has run: `done`, `waiting_for_human` or `refused` |
+| `GET /state` | | `DemoState` |
+| `POST /reset` | | `DemoState`, idle |
+
+The driver plays the buying agent with the two calls of the MCP tools: `POST /checkouts` on the gateway, then `POST /authorize` on the harness. For an order it holds no key. It only remembers which scenario is on screen and which quote it asked for: every `GET /state` reads the quote, the verdict, the approval, the order and both audit logs again from the two services. The scenarios it knows are in `state.scenarios`: `normal-order`, `substitution` and `attack`.
+
+The chef's decision does not go through the driver: the page sends it to the harness (`POST /approvals/{id}/decision`), then reads `GET /state` again.
+
+**The attack.** The driver plays an agent whose key leaked, with a copy of the open mandates. It asks Valio for a quote above the agent's cap (twelve weeks of the normal order, EUR 1,783.15), never asks the harness, and sends three bad mandates straight to `POST /checkouts/{id}/complete`:
+
+| `attacks[].key` | What the agent tries | Why Valio refuses |
+|---|---|---|
+| `above-cap` | signs the quote itself | the amount exceeds the cap of the open mandate the manager signed |
+| `changed-quote` | halves a price in the quote and signs that | the mandate is for a token Valio never signed: the quote hash does not match |
+| `mandate-for-another-quote` | reuses a mandate signed for another, smaller quote | a mandate is bound to one quote |
+
+The state then has no verdict, no approval and no order. Its `attacks` carry Valio's own sentences, the `verdict` step is `skipped`, `merchant_verifies` is `refused`, and the buyer's audit side is empty: the harness never heard of it. The driver builds these mandates from the demo keys of the repo, as the gateway's tests do. It never attacks a quote that is under the cap, because Valio would rightly accept an agent's mandate for it: that run stops with HTTP 500 before anything is sent.
+
+| Case | Answer |
+|---|---|
+| Unknown scenario | HTTP 404 |
+| A scenario is still running | HTTP 409 |
+| The gateway or the harness does not answer, or refuses the request | HTTP 502 with a readable `detail` that names the service. The state goes back to idle: nothing half-done is shown |
+
+One step of the trail is not complete yet: `open_mandate` has no `proof`, because the harness holds the open mandates and has no route that shows them.
+
+The three services allow cross-origin calls from `localhost`, so the page can read them all.
 
 ## MCP tools (`agent_mcp/`)
 

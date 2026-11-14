@@ -9,12 +9,23 @@ The agent never sees a private key or a raw token:
 
 from __future__ import annotations
 
+import base64
+import hashlib
+from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
+from common import clock
 from contract.models import Authorization, BuyerPolicy
 from harness.policy import load_policy
 from trust.keys import KEYS_DIR, private_key, public_jwk
 from trust.mandates import OpenMandates, close_as_agent, close_as_human, issue_open_mandates
+
+HELSINKI = ZoneInfo("Europe/Helsinki")
+
+
+def _sha256_b64url(value: str) -> str:
+    return base64.urlsafe_b64encode(hashlib.sha256(value.encode("ascii")).digest()).rstrip(b"=").decode("ascii")
 
 
 class HarnessSigner:
@@ -33,6 +44,7 @@ class HarnessSigner:
         self._agent_pub = public_jwk("agent", directory=keys_dir)
         self._policy: BuyerPolicy | None = None
         self._open_mandates: OpenMandates | None = None
+        self._issued_at: datetime | None = None
         if policy is not None:
             self.refresh_policy(policy)
 
@@ -40,6 +52,7 @@ class HarnessSigner:
         """Issue fresh manager-signed open mandates (allowed merchant + spend cap) for `policy`."""
         self._policy = policy
         self._open_mandates = issue_open_mandates(policy, self._manager_key, self._agent_pub)
+        self._issued_at = clock.now().astimezone(HELSINKI)
         return self._open_mandates
 
     def open_mandates(self, policy: BuyerPolicy | None = None) -> OpenMandates:
@@ -48,6 +61,17 @@ class HarnessSigner:
         if self._open_mandates is None or self._policy != target_policy:
             return self.refresh_policy(target_policy)
         return self._open_mandates
+
+    def open_mandate_proofs(self, policy: BuyerPolicy | None = None) -> dict[str, str]:
+        """Return SHA-256 base64url fingerprints and issue timestamp of the active open mandates."""
+        mandates = self.open_mandates(policy)
+        assert self._policy is not None and self._issued_at is not None
+        return {
+            "policy_id": self._policy.policy_id,
+            "issued_at": self._issued_at.isoformat(),
+            "checkout_hash": _sha256_b64url(mandates.checkout),
+            "payment_hash": _sha256_b64url(mandates.payment),
+        }
 
     def sign_auto(self, checkout_jwt: str, policy: BuyerPolicy | None = None) -> Authorization:
         """Close the manager's open mandates with the agent's key for a verified quote."""

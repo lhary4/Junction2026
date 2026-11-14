@@ -1,0 +1,604 @@
+{
+  "scenarios": [
+    {
+      "id": "normal-order",
+      "title": "Normal order",
+      "hint": "The dairy and dry goods of the menu. Inside the limits the chef signed: the agent signs."
+    },
+    {
+      "id": "substitution",
+      "title": "Substitution",
+      "hint": "Valio cannot deliver one ingredient. The chef compares the substitutes and signs."
+    },
+    {
+      "id": "attack",
+      "title": "Attack",
+      "hint": "Three bad mandates sent straight to Valio. No valid signature, no order."
+    }
+  ],
+  "scenario": {
+    "id": "substitution",
+    "title": "Substitution",
+    "status": "waiting_for_human"
+  },
+  "kitchen": {
+    "customer": "demo-restaurant-helsinki",
+    "name": "Demo Restaurant Helsinki",
+    "covers_per_service": 50,
+    "services": [
+      "2026-11-19 dinner",
+      "2026-11-20 dinner",
+      "2026-11-21 dinner"
+    ],
+    "menu": [
+      {
+        "course": "Starter",
+        "dish": "Cured rainbow trout, roasted Finnish beetroot, horseradish smetana, rye crisp, dill"
+      },
+      {
+        "course": "Main",
+        "dish": "Sautéed reindeer (poronkäristys), butter-mashed almond potatoes, lingonberries, pickled cucumber"
+      },
+      {
+        "course": "Dessert",
+        "dish": "Warm squeaky cheese (leipäjuusto), cloudberry jam, whipped cream, oat crumble"
+      }
+    ]
+  },
+  "request": {
+    "text": "Order the squeaky cheese for the dessert: 10.5 kg for the three services.",
+    "delivery_date": "2026-11-19",
+    "lines": [
+      {
+        "product_id": "474880",
+        "name": "Squeaky cheese (leipäjuusto), lactose free",
+        "amount": 10.5,
+        "unit": "KG",
+        "dish": "Dessert"
+      }
+    ]
+  },
+  "quote": {
+    "id": "chk_6998c7fb",
+    "merchant": {
+      "id": "valio-aimo",
+      "name": "Valio Aimo",
+      "website": null
+    },
+    "line_items": [
+      {
+        "id": "li-1",
+        "item": {
+          "id": "475072",
+          "title": "Haapalan lactose-free bread cheese 500g",
+          "price": 547,
+          "image_url": null
+        },
+        "quantity": 21,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 11487
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 11487
+          }
+        ],
+        "parent_id": null
+      }
+    ],
+    "status": "ready_for_complete",
+    "currency": "EUR",
+    "totals": [
+      {
+        "type": "subtotal",
+        "display_text": null,
+        "amount": 11487
+      },
+      {
+        "type": "total",
+        "display_text": null,
+        "amount": 11487
+      }
+    ],
+    "links": [
+      {
+        "type": "terms_of_service",
+        "url": "https://example.com/tos",
+        "title": null
+      }
+    ],
+    "buyer": null,
+    "messages": null,
+    "expires_at": "2026-11-15T17:00:00+02:00",
+    "continue_url": null,
+    "aimo": {
+      "customer": "demo-restaurant-helsinki",
+      "issued_at": "2026-11-14T22:01:30.078760+02:00",
+      "totals_exclude_tax": true,
+      "requested": [
+        {
+          "product_id": "474880",
+          "amount": 10.5,
+          "unit": "KG",
+          "substitute_with": null
+        }
+      ],
+      "requested_delivery_date": "2026-11-19",
+      "delivery_date": "2026-11-16",
+      "closing_time": "2026-11-15T17:00:00+02:00",
+      "lines": {
+        "li-1": {
+          "product_id": "475072",
+          "category": "10640",
+          "brand": "Haapalan",
+          "sales_unit": "ST",
+          "base_quantity": 10.5,
+          "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 0.5,
+            "unit": "KG",
+            "how": "pack size in the name (500g) x 1 ST"
+          },
+          "temperature_condition": 3,
+          "comparison_price_minor": 1094,
+          "comparison_unit": "KG",
+          "substitute_for": {
+            "product_id": "474880",
+            "name": "Riitan Herkku Squeaky cheese ca.670g lactose-free",
+            "category": "10640",
+            "allergens": {
+              "contains": [
+                "AM"
+              ],
+              "free_from": [
+                "ML"
+              ],
+              "data": "complete"
+            },
+            "brand": "Riitan Herkku",
+            "sales_unit": "KG",
+            "base_unit": "KG",
+            "size_per_sales_unit": {
+              "value": 1.0,
+              "unit": "KG",
+              "how": "1 KG per KG in the product file"
+            },
+            "temperature_condition": 3,
+            "nutritional_claims": [
+              "FREE_FROM_LACTOSE"
+            ],
+            "labels": [
+              "GOODS_FROM_FINLAND_BLUE_SWAN"
+            ],
+            "origin": {
+              "value": "FI",
+              "unit": "country",
+              "source": "gs1_synkka",
+              "as_of": "2026-11-14T12:52:20+02:00",
+              "certainty": "declared"
+            }
+          },
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": 100.0,
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:30.078768Z",
+            "certainty": "measured"
+          },
+          "price": {
+            "value": 547,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:30.078768Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AM"
+            ],
+            "free_from": [],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": null,
+            "unit": "kg_co2e_per_kg",
+            "source": "none",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "unknown"
+          },
+          "nutritional_claims": [
+            "FREE_FROM_GLUTEN",
+            "FREE_FROM_LACTOSE",
+            "LOW_SODIUM_SALT"
+          ],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ]
+        }
+      },
+      "shortfalls": [
+        {
+          "product_id": "474880",
+          "requested_base_quantity": 10.5,
+          "available_base_quantity": 0.0,
+          "missing_base_quantity": 10.5,
+          "base_unit": "KG",
+          "reason": "late_delivery"
+        }
+      ],
+      "alternatives": [
+        {
+          "for_product_id": "474880",
+          "product_id": "475072",
+          "tier": "best",
+          "comparison_price_minor": 1094,
+          "comparison_unit": "KG",
+          "why": "same category, same declared allergens",
+          "chosen": true,
+          "catalog_listed": false
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "decision": "human",
+    "checkout_id": "chk_6998c7fb",
+    "checkout_hash": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+    "total_minor": 11487,
+    "currency": "EUR",
+    "signer": null,
+    "deadline": "2026-11-15T17:00:00+02:00",
+    "decided_at": "2026-11-14T22:01:30.650347+02:00",
+    "rules": [
+      {
+        "rule_id": "quote-signature",
+        "outcome": "pass",
+        "message": "Quote signed by valio-aimo with key merchant.",
+        "evidence": {
+          "kid": "merchant"
+        }
+      },
+      {
+        "rule_id": "quote-not-expired",
+        "outcome": "pass",
+        "message": "Quote valid until 2026-11-15 17:00.",
+        "evidence": {
+          "expires_at": "2026-11-15T17:00:00+02:00"
+        }
+      },
+      {
+        "rule_id": "merchant-allowed",
+        "outcome": "pass",
+        "message": "Valio Aimo is an allowed merchant.",
+        "evidence": {
+          "merchant_id": "valio-aimo"
+        }
+      },
+      {
+        "rule_id": "allergen-not-blocked",
+        "outcome": "pass",
+        "message": "No blocked allergen in the order.",
+        "evidence": {
+          "contains": [
+            "AM"
+          ],
+          "blocked": [
+            "AP",
+            "AN"
+          ]
+        }
+      },
+      {
+        "rule_id": "allergen-data-known",
+        "outcome": "pass",
+        "message": "Allergen data is complete for every line.",
+        "evidence": {}
+      },
+      {
+        "rule_id": "allergen-unchanged-on-substitution",
+        "outcome": "pass",
+        "message": "Substitute 475072 has the same allergens as 474880.",
+        "evidence": {
+          "original": "474880",
+          "substitute": "475072",
+          "contains": [
+            "AM"
+          ]
+        }
+      },
+      {
+        "rule_id": "delivery-on-time",
+        "outcome": "pass",
+        "message": "Delivery on 2026-11-16, as requested.",
+        "evidence": {
+          "requested": "2026-11-19",
+          "promised": "2026-11-16"
+        }
+      },
+      {
+        "rule_id": "spend-limit",
+        "outcome": "pass",
+        "message": "114.87 EUR is within the 1500.00 EUR limit.",
+        "evidence": {
+          "total_minor": 11487,
+          "limit_minor": 150000
+        }
+      },
+      {
+        "rule_id": "substitution-within-preferences",
+        "outcome": "human",
+        "message": "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
+        "evidence": {
+          "original": "474880",
+          "substitute": "475072"
+        }
+      }
+    ],
+    "judge": [
+      {
+        "question_key": "within_preferences",
+        "type": "noul",
+        "instructions": "Under the rules in `buyer_preferences`, does `candidate_product` qualify to replace `original_product` automatically without requiring human review or rejection?",
+        "subject": {
+          "original": "474880",
+          "candidate": "475072"
+        },
+        "probability": 0.6414,
+        "confidence": 0.6414,
+        "auto_threshold": 0.85,
+        "floor": 0.15,
+        "routed": "human",
+        "model": "gemini-decision-1"
+      },
+      {
+        "question_key": "same_use",
+        "type": "noul",
+        "instructions": "Can the kitchen use `candidate_product` for the same dish or purpose as `original_product` without changing the recipe, storage handling, or preparation?",
+        "subject": {
+          "original": "474880",
+          "candidate": "475072"
+        },
+        "probability": 0.9282,
+        "confidence": 0.9282,
+        "auto_threshold": 0.85,
+        "floor": 0.15,
+        "routed": "auto",
+        "model": "gemini-decision-1"
+      }
+    ]
+  },
+  "authorization": {
+    "status": "pending_approval",
+    "checkout_id": "chk_6998c7fb",
+    "decision": "human",
+    "signed_by": null,
+    "order_id": null,
+    "reasons": [
+      "substitution-within-preferences: The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign."
+    ],
+    "approval_id": "apr_f98d7c10",
+    "approval_url": "http://localhost:8002/#/approvals/apr_f98d7c10",
+    "deadline": "2026-11-15T17:00:00+02:00"
+  },
+  "approval": {
+    "approval_id": "apr_f98d7c10",
+    "checkout_id": "chk_6998c7fb",
+    "checkout_hash": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+    "status": "pending",
+    "total_minor": 11487,
+    "currency": "EUR",
+    "reasons": [
+      {
+        "rule_id": "substitution-within-preferences",
+        "outcome": "human",
+        "message": "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
+        "evidence": {
+          "original": "474880",
+          "substitute": "475072"
+        }
+      }
+    ],
+    "judge": [
+      {
+        "question_key": "within_preferences",
+        "type": "noul",
+        "instructions": "Under the rules in `buyer_preferences`, does `candidate_product` qualify to replace `original_product` automatically without requiring human review or rejection?",
+        "subject": {
+          "original": "474880",
+          "candidate": "475072"
+        },
+        "probability": 0.6414,
+        "confidence": 0.6414,
+        "auto_threshold": 0.85,
+        "floor": 0.15,
+        "routed": "human",
+        "model": "gemini-decision-1"
+      },
+      {
+        "question_key": "same_use",
+        "type": "noul",
+        "instructions": "Can the kitchen use `candidate_product` for the same dish or purpose as `original_product` without changing the recipe, storage handling, or preparation?",
+        "subject": {
+          "original": "474880",
+          "candidate": "475072"
+        },
+        "probability": 0.9282,
+        "confidence": 0.9282,
+        "auto_threshold": 0.85,
+        "floor": 0.15,
+        "routed": "auto",
+        "model": "gemini-decision-1"
+      }
+    ],
+    "request_text": "Order the squeaky cheese for the dessert: 10.5 kg for the three services.",
+    "requested_at": "2026-11-14T22:01:30.650347+02:00",
+    "deadline": "2026-11-15T17:00:00+02:00",
+    "decided_by": null,
+    "decided_at": null,
+    "order_id": null
+  },
+  "order": null,
+  "attacks": [],
+  "steps": [
+    {
+      "key": "open_mandate",
+      "title": "Open mandate",
+      "signer": "manager",
+      "status": "done",
+      "detail": "Signed in advance by the chef: the agent may order from Valio Aimo, up to EUR 1,500.00 an order, until Mon 16/11 23:59.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "signed_quote",
+      "title": "Signed quote",
+      "signer": "merchant",
+      "status": "done",
+      "detail": "1 line, EUR 114.87 before tax, signed by Valio Aimo, valid until Sun 15/11 17:00.",
+      "proof": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+      "at": "2026-11-14T22:01:30.078760+02:00"
+    },
+    {
+      "key": "verdict",
+      "title": "Verdict",
+      "signer": "none",
+      "status": "done",
+      "detail": "human: The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
+      "proof": null,
+      "at": "2026-11-14T22:01:30.650347+02:00"
+    },
+    {
+      "key": "closed_mandates",
+      "title": "Closed mandates",
+      "signer": "manager",
+      "status": "waiting",
+      "detail": "Waiting for the chef to sign this exact quote, before Sun 15/11 17:00.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "merchant_verifies",
+      "title": "Valio verifies",
+      "signer": "merchant",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "sandbox_payment",
+      "title": "Sandbox payment",
+      "signer": "merchant",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "signed_receipt",
+      "title": "Signed receipt",
+      "signer": "merchant",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    }
+  ],
+  "audit": {
+    "buyer": [
+      {
+        "seq": 6,
+        "at": "2026-11-14T22:01:30.650347+02:00",
+        "side": "buyer",
+        "actor": "agent",
+        "action": "authorization_requested",
+        "checkout_id": "chk_6998c7fb",
+        "checkout_hash": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+        "what": "The agent asked to order quote chk_6998c7fb.",
+        "why": "Request: Order the squeaky cheese for the dessert: 10.5 kg for the three services.",
+        "rule": null,
+        "prev_hash": "1f62e77804033df4ded0212778932b06bbcaf21b5bdaa854b622923dceb270de",
+        "hash": "cd7d993ed22efe2e28675d7158cddfe72f6b7747e8a3e086a14ae7177a19a08c"
+      },
+      {
+        "seq": 7,
+        "at": "2026-11-14T22:01:30.650347+02:00",
+        "side": "buyer",
+        "actor": "harness",
+        "action": "quote_verified",
+        "checkout_id": "chk_6998c7fb",
+        "checkout_hash": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+        "what": "Quote signature and expiry checked.",
+        "why": "Signed by valio-aimo, valid until 2026-11-15 17:00.",
+        "rule": "quote-signature",
+        "prev_hash": "cd7d993ed22efe2e28675d7158cddfe72f6b7747e8a3e086a14ae7177a19a08c",
+        "hash": "71fdd1a460eac47a6d11ccf4679b459d1b72bdfb959f247d10132e9f7512838c"
+      },
+      {
+        "seq": 8,
+        "at": "2026-11-14T22:01:30.650347+02:00",
+        "side": "buyer",
+        "actor": "harness",
+        "action": "verdict",
+        "checkout_id": "chk_6998c7fb",
+        "checkout_hash": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+        "what": "Verdict human for 114.87 EUR.",
+        "why": "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
+        "rule": "substitution-within-preferences",
+        "prev_hash": "71fdd1a460eac47a6d11ccf4679b459d1b72bdfb959f247d10132e9f7512838c",
+        "hash": "590bab094964e320cbf4bc07340bdb927bfd522489f1b964743a16f9d2babaa5"
+      },
+      {
+        "seq": 9,
+        "at": "2026-11-14T22:01:30.650347+02:00",
+        "side": "buyer",
+        "actor": "harness",
+        "action": "approval_requested",
+        "checkout_id": "chk_6998c7fb",
+        "checkout_hash": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+        "what": "Approval apr_f98d7c10 opened for 114.87 EUR.",
+        "why": "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign.",
+        "rule": "substitution-within-preferences",
+        "prev_hash": "590bab094964e320cbf4bc07340bdb927bfd522489f1b964743a16f9d2babaa5",
+        "hash": "da60012e65dc4a615ee1e9ada399c7f2488fcb22645e24d3877cde0fa074d148"
+      }
+    ],
+    "merchant": [
+      {
+        "seq": 5,
+        "at": "2026-11-14T22:01:30.648247+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "quote_issued",
+        "checkout_id": "chk_6998c7fb",
+        "checkout_hash": "mra329orfmvyTMAvpWcL3R6zRztOm-VsWcyMzFd9Wos",
+        "what": "Quote for 21 ST of 475072, 114.87 EUR excl. tax.",
+        "why": "Asked by demo-restaurant-helsinki for delivery on 2026-11-19, valid until 2026-11-15 17:00.",
+        "rule": null,
+        "prev_hash": "4120c2c2f7f3e29dc98e21c4a57e92ecb82cb777f99716fd8d0b378c13886ccc",
+        "hash": "6bde5e4398118b7d7f6da81dc0499e19e8fdb38adb25406a101c9b768c9061ca"
+      }
+    ]
+  }
+}

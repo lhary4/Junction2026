@@ -1,5 +1,95 @@
 {
   "$defs": {
+    "MandateFacts": {
+      "additionalProperties": false,
+      "description": "What the payment mandate allows, as Valio read it once the signatures verified.",
+      "properties": {
+        "cap_minor": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cap Minor"
+        },
+        "amount_minor": {
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "instrument": {
+          "title": "Instrument",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount_minor",
+        "currency",
+        "instrument"
+      ],
+      "title": "MandateFacts",
+      "type": "object"
+    },
+    "Payment": {
+      "additionalProperties": false,
+      "description": "The sandbox charge: the order's amount booked on a simulated invoice account. No real money moves.",
+      "properties": {
+        "payment_id": {
+          "title": "Payment Id",
+          "type": "string"
+        },
+        "status": {
+          "const": "captured",
+          "title": "Status",
+          "type": "string"
+        },
+        "amount_minor": {
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "instrument": {
+          "title": "Instrument",
+          "type": "string"
+        },
+        "terms": {
+          "title": "Terms",
+          "type": "string"
+        },
+        "sandbox": {
+          "const": true,
+          "default": true,
+          "title": "Sandbox",
+          "type": "boolean"
+        },
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "payment_id",
+        "status",
+        "amount_minor",
+        "currency",
+        "instrument",
+        "terms",
+        "captured_at"
+      ],
+      "title": "Payment",
+      "type": "object"
+    },
     "Receipt": {
       "additionalProperties": false,
       "description": "Decoded payload of the receipt JWT the gateway signs.",
@@ -118,6 +208,28 @@
       "anyOf": [
         {
           "$ref": "#/$defs/Receipt"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "mandate": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MandateFacts"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "payment": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Payment"
         },
         {
           "type": "null"

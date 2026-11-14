@@ -2,6 +2,120 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## A10: button 3, the attack (14/11, 22:00)
+
+The driver has its third scenario. It plays an agent whose key leaked: it asks Valio for a quote above the cap, never asks the harness, and sends three bad mandates straight to the gateway. The gateway needed no change: it already refused all three.
+
+| What the agent tries | What Valio answers (live, on the restaurant case) |
+|---|---|
+| Signs EUR 1,783.15 itself, above its EUR 1,500 cap | "Amount 178315 exceeds maximum 150000" |
+| Halves a price in the quote and signs that | "Checkout checkout_hash mismatch", and two more problems |
+| Reuses a mandate signed for another, smaller quote (EUR 186.89) | "mandate rejected: ValueError: KB-SD-JWT nonce mismatch" |
+
+- **The quote** is twelve weeks of the normal order at once. Ten weeks is EUR 1,497.65, under the cap, and Valio would rightly accept the agent's mandate for it. So the driver checks the total against the cap first and sends nothing when the quote is under it.
+- **The third attack is not a replay of a used mandate.** Sending the same mandate twice on its own quote is not an attack for Valio: it answers the same order again, so that a lost answer never orders twice. What it refuses is a mandate used on another quote, and that is what the driver sends. The smaller quote is asked for and never ordered.
+- **Nothing is ordered, nothing is booked**, and the buyer's audit side is empty: the harness never heard of it. Valio's log has one line per refusal.
+- **Checked** on the page in Chrome, live, three services: three buttons, "No order was placed", the trail red on "Valio verifies", the three refusals with Valio's sentences.
+- **The example file** `demo-state.attack.json` is now recorded by `scripts/record_demo_states.py` like the four others.
+
+To decide for the video: Valio's sentences are the SDK's own words. They are true and they are on screen as they are. If the pitch wants plain words ("the quote was changed after Valio signed it"), the place is `trust/mandates.py`, where the problems are written, not the page.
+
+## A9: the sandbox payment (14/11, 21:55)
+
+Once the mandates verify, the gateway books the order's amount on a simulated invoice account, and the order comes back with its payment. No real money moves, and every sentence about it says "sandbox".
+
+- **The order has two more objects** (`contract/models.py`, both `null` on an order taken before this step): `mandate` is what the payment mandate allowed as Valio read it (the agent's cap, or `null` when the chef signed, the amount, the instrument), `payment` is the booking (`payment_id`, `status: "captured"`, `amount_minor`, `instrument`, `terms`, `sandbox: true`, `captured_at`).
+- **The account** is one file per customer in `state/merchant/accounts/`: credit limit, amount used, one line per payment. `dev.py --fresh` empties it. A mandate sent twice books once. A refused order books nothing.
+- **One more refusal**: an order that does not fit on the account is refused with HTTP 403, like one above the cap. A mandate that names another customer's account is refused too.
+- **The trail**: step 6 is `done`, its sentence starts with "Sandbox payment" and its proof is the payment id. Step 5 now ends with the amount and the cap Valio read in the mandate. One more audit line on Valio's side, `payment_captured`.
+- **Checked** on the page in Chrome, live, three services: button 1 lights the seven steps, and the receipt card reads "Sandbox payment: EUR 186.89 booked on invoice-account:demo-restaurant-helsinki. Invoice at 14 days (simulated). No real money moves."
+
+**Two values are made up for the sandbox**, and the code and `TECH-CHOICES.md` say so: the credit limit, EUR 20,000 a customer, and the terms, "Invoice at 14 days (simulated)". Valio's real ones are not in the challenge data. Change them in `merchant/payments.py` if the pitch needs other words.
+
+**Rehearsals.** With EUR 20,000 the account takes about a hundred demo orders. Past that, orders are refused with "exceeds what is left on the invoice account". Start with `uv run python scripts/dev.py --fresh` before a rehearsal or a recording.
+
+**The example files are now recorded by a script**, `scripts/record_demo_states.py`: it runs the driver through the gateway and the harness in live mode and writes what `GET /state` answers. The four files it writes (idle, normal order, substitution pending and approved) carry the payment. Step 1 has no hash in them any more: the first recording took it from inside the harness, which the driver cannot do. The attack file is the older one, until A10.
+
+For Colette: nothing to change on the page. It already reads the payment line from step 6.
+
+## A8: the demo driver, buttons 1 and 2 (14/11, 21:45)
+
+`scenarios/run.py`, port 8003. `uv run python scripts/dev.py` now starts three services, and the page is on `http://localhost:8002/portal.html` (the harness serves it, with `kitchen/` and the example files: checked, HTTP 200 for the three).
+
+**How I checked.** Three real processes on spare ports, `VALIO_MODE=live`, called over HTTP the way the page calls them, with `main`'s policy file (still the hotel's, limit EUR 1,500).
+
+| Button | Time | End | What the state says |
+|---|---|---|---|
+| 1 Normal order | 1.3 s | `done` | 10 lines, EUR 186.89, verdict `auto`, signed by the agent, receipt |
+| 2 Substitution | 1.0 s | `waiting_for_human` | bread cheese 475072 for the squeaky cheese, EUR 114.87, judge 0.52 and 0.89 |
+| 2, after `POST /approvals/{id}/decision` on the harness | | `done` | signed by the chef, receipt |
+
+`GET /state` answers in 1 ms when idle and 5 ms after a run. The page waits 1.5 s at most.
+
+With the hotel policy the judge gives 0.52. With Léon's restaurant policy it gave 0.64 (A7). Both end `human`. The number on screen changes when his policy is merged.
+
+**The page, clicked through in Chrome against the three services** (`portal.html` served by the harness, live mode, 21:42). The strip says "driver live, harness live". Button 1: recipes, stock, "Agent order", then the quote table with its ten lines, the trail lit to the receipt, the receipt card. Button 2: the verdict card, the card with both cheeses side by side, "Approve and sign", then "Signed by chef" and the receipt. No error from the page in the console.
+
+Three things show on screen and are not the driver's to fix:
+
+- "Delivery Mon 16 Nov" next to "Needed by Thu 19 Nov". The quote's `delivery_date` is the day Valio can deliver. To decide before the video.
+- The account name, top right, is `kitchen.name`: "Demo Restaurant Helsinki", still a placeholder.
+- The payment line of the receipt card reads "No payment is booked yet: the sandbox payment is not built." Right for tonight, gone with A9. Do not record the final video before A9.
+
+**For Colette, answers to your questions.**
+
+- Lines sent to `POST /scenarios/{id}/run`: not tonight. A scenario sends its own lines, a test holds them equal to the example files your stock files are built on. Letting the chef change a line means the request no longer matches a recorded run, and the video is recorded in replay.
+- Recipes, stock and bookings in `DemoState`: not tonight, they stay your files. The same test keeps the request and your "to order" lines from drifting apart: if I change a scenario's lines, it fails.
+- A rejected approval: it works live. The state ends `refused`, step 4 says "The chef rejected this order", steps 5 to 7 are `skipped`. No example file for it yet.
+- The harness serves `portal.html` and `kitchen/` as they are: yes.
+- In live mode the page shows two buttons, because `state.scenarios` has two. The attack comes with A10.
+- If the gateway or the harness is down, a run answers HTTP 502 with a sentence that names the service. Your page shows it under "Something did not answer".
+
+**Two steps of the trail are incomplete in the live state.**
+
+- Step 1 has no hash. For Léon: the harness holds the open mandates and shows them nowhere. One route would do, for example `GET /mandates/open` answering the hash of each token and the time they were issued, or one audit line when they are issued.
+- Step 6 is `skipped` and says "No payment is booked yet". It turns `done` with A9.
+
+**What the driver cannot do yet.** Replay mode: the menu's products are not in the recorded answers (A11), so in replay a run answers HTTP 502 with the gateway's sentence. The tests run the flow on the recorded milk instead.
+
+## A7: the live probe, the ranking fix and the ingredient of button 2 (14/11, 21:00)
+
+How I looked: this branch on `main` at `b4f70de`, `VALIO_MODE=live`, delivery on 2026-11-19, the real `merchant.app` behind the real harness, the real Gemini judge, and Léon's restaurant policy taken unchanged from `feat/leon-saturday-evening` (it is not on `main` yet: limit EUR 1,500, thresholds 0.85 and 0.15).
+
+**What the gateway proposed, before and after the fix.** Each need in kilos, as the kitchen states it. No `substitute_with`: this is the gateway's own pick.
+
+| Need | Why it is short | Pick before (cheapest of the tier) | Pick now (closest name, then price) | Judge on the pick now | Verdict |
+|---|---|---|---|---|---|
+| Squeaky cheese 474880, 10.5 kg | `late_delivery`, cut-off passed on 11/11 | 474404 Nacho&Taco cheddar cheese creme, judge 0.01 | 475072 Haapalan lactose-free bread cheese 500 g, 21 pieces, EUR 114.87 | `within_preferences` 0.64, `same_use` 0.93 | `human`: "The judge is unsure about this substitute (0.64, threshold 0.85): a human must sign." |
+| Lingonberry jam 465815, 4.5 kg | `out_of_stock`, no delivery on any date | 475860 Saarioinen apple filling, judge 0.01 | 462198 Dronningholm lingonberry jam 1 kg, 5 tubs, EUR 32.70 | 0.31 and 0.75 | `human`, same sentence with 0.31 |
+
+The scores are the ones Léon measured in L5, to the fourth decimal.
+
+**The pick for button 2: the squeaky cheese.** Both cases end with the chef signing, so the fourth button "Above the limit" is not needed. The cheese is the first choice of the plan, it is the dessert's main ingredient, and its two scores tell a clear story: the same use (0.93), but another maker and 500 g pieces instead of 670 g (0.64). The jam stays the fallback, it works the same way.
+
+**What changed in the gateway (`merchant/quotes.py`).**
+
+- Inside a tier: Valio's listed substitutes first, then the closest product name, then the cheapest. Closest is the number of name words the two names share, pack sizes left out, and a word may sit inside a longer one ("lingonberry" and "jam" both count against "lingonberryjam"). Nothing changes in replay: the 201 tests of `main` pass unchanged.
+- A product with no `comparisonPrice` in Valio's price API no longer answers HTTP 500. The caster sugar 460325 is the one on the menu. The quote works the price per kilo out from the price and the size in the product file.
+
+**Button 1, live.** The ten dairy and dry goods lines: EUR 186.89, verdict `auto`, signed by the agent, receipt verified.
+
+**Button 3, live.** Twelve weeks of the normal order at once, EUR 1,783.15, above the EUR 1,500 cap: the three bad mandates are refused. Ten weeks is EUR 1,497.65, under the cap, and the gateway accepted that agent mandate, as it should. The sentences Valio answers are the SDK's own ("KB-SD-JWT nonce mismatch"): true, hard to read in a video.
+
+**The example files are recorded again** (`contract/examples/demo-state.*.json`) from these runs. The cheddar cream is gone from the substitution files.
+
+**Not done, and why.**
+
+- The frozen squeaky cheese 467148 is not offered. Its category, 41770, also holds ice cubes, coffee and banana leaves: declaring it "related" to cheese would offer those too. Léon measured it at 0.01 anyway ("frozen instead of fresh"). So the card shows one substitute, not two.
+- The list of alternatives has one entry: one per tier, and only `best` has a candidate.
+
+**Open, for the three of us.**
+
+- For Colette: `state.quote` is the `AimoCheckout` itself (`state.quote.line_items`, `state.quote.aimo`), not a `CheckoutResponse` as your brief says. `linesTable(state.quote)` works as it is. The token is left out on purpose. `request.lines[].dish` is "Starter", "Main", "Dessert" or "Shared".
+- For Colette and Léon: `kitchen.name` is still "Demo Restaurant Helsinki", made from the customer id. I found no name for the restaurant in the repo. Tell me the name and I record the files again.
+- For Léon, for A8: the driver cannot read the open mandate over HTTP. To show its hash on step 1 of the trail, the harness needs a small route or an audit line when it issues the open mandates.
+- The order's `delivery_date` is 16/11, the day Valio can deliver, while the kitchen asked for 19/11. To decide before the video: show the date asked, or say "from 16/11".
+
 ## After PR #21 (Léon's harness hardening): what is closed, what is left (14/11, evening)
 
 How I looked: `main` at `12bded1`, replay mode, the real `merchant.app` behind the real harness, and the real Gemini judge this time (about 70 calls, under one cent). `uv run pytest` gives 189 passed. The sections below this one describe the harness before PR #21.

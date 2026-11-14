@@ -1,0 +1,1392 @@
+{
+  "scenarios": [
+    {
+      "id": "normal-order",
+      "title": "Normal order",
+      "hint": "The dairy and dry goods of the menu. Inside the limits the chef signed: the agent signs."
+    },
+    {
+      "id": "substitution",
+      "title": "Substitution",
+      "hint": "Valio cannot deliver one ingredient. The chef compares the substitutes and signs."
+    },
+    {
+      "id": "attack",
+      "title": "Attack",
+      "hint": "Three bad mandates sent straight to Valio. No valid signature, no order."
+    }
+  ],
+  "scenario": {
+    "id": "attack",
+    "title": "Attack",
+    "status": "refused"
+  },
+  "kitchen": {
+    "customer": "demo-restaurant-helsinki",
+    "name": "Demo Restaurant Helsinki",
+    "covers_per_service": 50,
+    "services": [
+      "2026-11-19 dinner",
+      "2026-11-20 dinner",
+      "2026-11-21 dinner"
+    ],
+    "menu": [
+      {
+        "course": "Starter",
+        "dish": "Cured rainbow trout, roasted Finnish beetroot, horseradish smetana, rye crisp, dill"
+      },
+      {
+        "course": "Main",
+        "dish": "Sautéed reindeer (poronkäristys), butter-mashed almond potatoes, lingonberries, pickled cucumber"
+      },
+      {
+        "course": "Dessert",
+        "dish": "Warm squeaky cheese (leipäjuusto), cloudberry jam, whipped cream, oat crumble"
+      }
+    ]
+  },
+  "request": {
+    "text": "Order twelve weeks of the menu's dairy and dry goods at once.",
+    "delivery_date": "2026-11-19",
+    "lines": [
+      {
+        "product_id": "463437",
+        "name": "Butter, lactose free, salted",
+        "amount": 77.4,
+        "unit": "KG",
+        "dish": "Shared"
+      },
+      {
+        "product_id": "464194",
+        "name": "Whipping cream, lactose free",
+        "amount": 45.0,
+        "unit": "L",
+        "dish": "Dessert"
+      },
+      {
+        "product_id": "476890",
+        "name": "Smetana, lactose free",
+        "amount": 54.0,
+        "unit": "KG",
+        "dish": "Starter"
+      },
+      {
+        "product_id": "464306",
+        "name": "Lactose-free semi-skimmed milk",
+        "amount": 90.0,
+        "unit": "L",
+        "dish": "Main"
+      },
+      {
+        "product_id": "460200",
+        "name": "Wholegrain oat flakes",
+        "amount": 18.0,
+        "unit": "KG",
+        "dish": "Dessert"
+      },
+      {
+        "product_id": "467958",
+        "name": "Thin rye crispbread",
+        "amount": 72.0,
+        "unit": "ST",
+        "dish": "Starter"
+      },
+      {
+        "product_id": "468513",
+        "name": "Pickled cucumbers",
+        "amount": 24.0,
+        "unit": "ST",
+        "dish": "Main"
+      },
+      {
+        "product_id": "468172",
+        "name": "Fine sea salt",
+        "amount": 11.28,
+        "unit": "KG",
+        "dish": "Shared"
+      },
+      {
+        "product_id": "460325",
+        "name": "Caster sugar",
+        "amount": 12.6,
+        "unit": "KG",
+        "dish": "Shared"
+      },
+      {
+        "product_id": "466608",
+        "name": "Rapeseed oil",
+        "amount": 7.2,
+        "unit": "L",
+        "dish": "Shared"
+      }
+    ]
+  },
+  "quote": {
+    "id": "chk_10b0ec81",
+    "merchant": {
+      "id": "valio-aimo",
+      "name": "Valio Aimo",
+      "website": null
+    },
+    "line_items": [
+      {
+        "id": "li-1",
+        "item": {
+          "id": "463437",
+          "title": "Valio Eila® butter 500 g salted lactose free",
+          "price": 331,
+          "image_url": null
+        },
+        "quantity": 155,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 51305
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 51305
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-2",
+        "item": {
+          "id": "464194",
+          "title": "Valio whipping cream 1 l UHT lactose free",
+          "price": 391,
+          "image_url": null
+        },
+        "quantity": 45,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 17595
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 17595
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-3",
+        "item": {
+          "id": "476890",
+          "title": "Valio smetana 2 kg lactose free",
+          "price": 1306,
+          "image_url": null
+        },
+        "quantity": 27,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 35262
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 35262
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-4",
+        "item": {
+          "id": "464306",
+          "title": "Valio Hyvä suomalainen Arki® Eila® semi skimmed milk drink 1 l lactose free",
+          "price": 101,
+          "image_url": null
+        },
+        "quantity": 90,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 9090
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 9090
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-5",
+        "item": {
+          "id": "460200",
+          "title": "Elovena 1kg wholegrain oat flakes",
+          "price": 276,
+          "image_url": null
+        },
+        "quantity": 18,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 4968
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 4968
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-6",
+        "item": {
+          "id": "467958",
+          "title": "VAASAN Original Thin Rye Crispbread 300g",
+          "price": 170,
+          "image_url": null
+        },
+        "quantity": 72,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 12240
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 12240
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-7",
+        "item": {
+          "id": "468513",
+          "title": "Myrttisen Pickled cucumber 4500g",
+          "price": 1722,
+          "image_url": null
+        },
+        "quantity": 24,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 41328
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 41328
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-8",
+        "item": {
+          "id": "468172",
+          "title": "Meira Sea salt fine 800g",
+          "price": 134,
+          "image_url": null
+        },
+        "quantity": 15,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 2010
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 2010
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-9",
+        "item": {
+          "id": "460325",
+          "title": "Dansukker Caster Sugar 1kg",
+          "price": 155,
+          "image_url": null
+        },
+        "quantity": 13,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 2015
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 2015
+          }
+        ],
+        "parent_id": null
+      },
+      {
+        "id": "li-10",
+        "item": {
+          "id": "466608",
+          "title": "Apetit Rapeseed oil 10L",
+          "price": 2502,
+          "image_url": null
+        },
+        "quantity": 1,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 2502
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 2502
+          }
+        ],
+        "parent_id": null
+      }
+    ],
+    "status": "ready_for_complete",
+    "currency": "EUR",
+    "totals": [
+      {
+        "type": "subtotal",
+        "display_text": null,
+        "amount": 178315
+      },
+      {
+        "type": "total",
+        "display_text": null,
+        "amount": 178315
+      }
+    ],
+    "links": [
+      {
+        "type": "terms_of_service",
+        "url": "https://example.com/tos",
+        "title": null
+      }
+    ],
+    "buyer": null,
+    "messages": null,
+    "expires_at": "2026-11-15T17:00:00+02:00",
+    "continue_url": null,
+    "aimo": {
+      "customer": "demo-restaurant-helsinki",
+      "issued_at": "2026-11-14T22:01:31.949175+02:00",
+      "totals_exclude_tax": true,
+      "requested": [
+        {
+          "product_id": "463437",
+          "amount": 77.4,
+          "unit": "KG",
+          "substitute_with": null
+        },
+        {
+          "product_id": "464194",
+          "amount": 45.0,
+          "unit": "L",
+          "substitute_with": null
+        },
+        {
+          "product_id": "476890",
+          "amount": 54.0,
+          "unit": "KG",
+          "substitute_with": null
+        },
+        {
+          "product_id": "464306",
+          "amount": 90.0,
+          "unit": "L",
+          "substitute_with": null
+        },
+        {
+          "product_id": "460200",
+          "amount": 18.0,
+          "unit": "KG",
+          "substitute_with": null
+        },
+        {
+          "product_id": "467958",
+          "amount": 72.0,
+          "unit": "ST",
+          "substitute_with": null
+        },
+        {
+          "product_id": "468513",
+          "amount": 24.0,
+          "unit": "ST",
+          "substitute_with": null
+        },
+        {
+          "product_id": "468172",
+          "amount": 11.28,
+          "unit": "KG",
+          "substitute_with": null
+        },
+        {
+          "product_id": "460325",
+          "amount": 12.6,
+          "unit": "KG",
+          "substitute_with": null
+        },
+        {
+          "product_id": "466608",
+          "amount": 7.2,
+          "unit": "L",
+          "substitute_with": null
+        }
+      ],
+      "requested_delivery_date": "2026-11-19",
+      "delivery_date": "2026-11-16",
+      "closing_time": "2026-11-15T17:00:00+02:00",
+      "lines": {
+        "li-1": {
+          "product_id": "463437",
+          "category": "10500",
+          "brand": "Valio",
+          "sales_unit": "ST",
+          "base_quantity": 77.5,
+          "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 0.5,
+            "unit": "KG",
+            "how": "pack size in the name (500 g) x 1 ST"
+          },
+          "temperature_condition": 4,
+          "comparison_price_minor": 662,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": "not_given",
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "declared"
+          },
+          "price": {
+            "value": 331,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AM"
+            ],
+            "free_from": [],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 0.999,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 6.635,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ]
+        },
+        "li-2": {
+          "product_id": "464194",
+          "category": "10401",
+          "brand": "Valio",
+          "sales_unit": "ST",
+          "base_quantity": 45.0,
+          "base_unit": "L",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "L",
+            "how": "pack size in the name (1 l) x 1 ST"
+          },
+          "temperature_condition": 4,
+          "comparison_price_minor": 391,
+          "comparison_unit": "L",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": "not_given",
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "declared"
+          },
+          "price": {
+            "value": 391,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AM"
+            ],
+            "free_from": [],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 1.81,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "LOW_SODIUM_SALT",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ]
+        },
+        "li-3": {
+          "product_id": "476890",
+          "category": "10419",
+          "brand": "Valio",
+          "sales_unit": "ST",
+          "base_quantity": 54.0,
+          "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 2.0,
+            "unit": "KG",
+            "how": "pack size in the name (2 kg) x 1 ST"
+          },
+          "temperature_condition": 4,
+          "comparison_price_minor": 653,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": "not_given",
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "declared"
+          },
+          "price": {
+            "value": 1306,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AM"
+            ],
+            "free_from": [],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 0.997,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 1.93,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "LOW_SODIUM_SALT",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ]
+        },
+        "li-4": {
+          "product_id": "464306",
+          "category": "10400",
+          "brand": "Valio",
+          "sales_unit": "ST",
+          "base_quantity": 90.0,
+          "base_unit": "L",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "L",
+            "how": "pack size in the name (1 l) x 1 ST"
+          },
+          "temperature_condition": 4,
+          "comparison_price_minor": 101,
+          "comparison_unit": "L",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": "not_given",
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "declared"
+          },
+          "price": {
+            "value": 101,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AM"
+            ],
+            "free_from": [],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 1.1,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_COLOURING_AGENTS",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "FREE_FROM_SWEETENERS",
+            "LOW_FAT",
+            "LOW_SODIUM_SALT",
+            "NO_ADDED_SUGARS",
+            "VEGETARIAN"
+          ],
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ]
+        },
+        "li-5": {
+          "product_id": "460200",
+          "category": "21370",
+          "brand": "Elovena",
+          "sales_unit": "ST",
+          "base_quantity": 18.0,
+          "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "KG",
+            "how": "pack size in the name (1kg) x 1 ST"
+          },
+          "temperature_condition": 8,
+          "comparison_price_minor": 276,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": 137.0,
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "price": {
+            "value": 276,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AW",
+              "GO"
+            ],
+            "free_from": [],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": null,
+            "unit": "share_delivered",
+            "source": "none",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "unknown"
+          },
+          "carbon_footprint": {
+            "value": 0.995,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [
+            "HIGH_FIBRE",
+            "VEGAN"
+          ],
+          "labels": [
+            "FINNISH_HEART_SYMBOL",
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ]
+        },
+        "li-6": {
+          "product_id": "467958",
+          "category": "21200",
+          "brand": "VAASAN",
+          "sales_unit": "ST",
+          "base_quantity": 72.0,
+          "base_unit": "ST",
+          "size_per_sales_unit": {
+            "value": 0.3,
+            "unit": "KG",
+            "how": "pack size in the name (300g) x 1 ST"
+          },
+          "temperature_condition": 8,
+          "comparison_price_minor": 567,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": 160.0,
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "price": {
+            "value": 170,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AW",
+              "NR"
+            ],
+            "free_from": [
+              "AC",
+              "AE",
+              "AF",
+              "AM",
+              "AN",
+              "AP",
+              "AU",
+              "AY",
+              "BC",
+              "BM",
+              "NL",
+              "UM"
+            ],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 1.62,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [
+            "FREE_FROM_ADDITIVES",
+            "FREE_FROM_LACTOSE",
+            "FREE_FROM_PRESERVATIVES",
+            "HIGH_FIBRE"
+          ],
+          "labels": [
+            "FINNISH_HEART_SYMBOL",
+            "MADE_IN_FINLAND_FLAG_WITH_KEY"
+          ]
+        },
+        "li-7": {
+          "product_id": "468513",
+          "category": "21591",
+          "brand": "Myrttisen",
+          "sales_unit": "ST",
+          "base_quantity": 24.0,
+          "base_unit": "ST",
+          "size_per_sales_unit": {
+            "value": 4.5,
+            "unit": "KG",
+            "how": "pack size in the name (4500g) x 1 ST"
+          },
+          "temperature_condition": 8,
+          "comparison_price_minor": 383,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": 37.0,
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "price": {
+            "value": 1722,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [],
+            "free_from": [
+              "AC",
+              "AE",
+              "AF",
+              "AM",
+              "AN",
+              "AP",
+              "AS",
+              "AU",
+              "AW",
+              "AY",
+              "BC",
+              "BM",
+              "NL",
+              "UM"
+            ],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 8.025,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [],
+          "labels": [
+            "MADE_IN_FINLAND_FLAG_WITH_KEY"
+          ]
+        },
+        "li-8": {
+          "product_id": "468172",
+          "category": "22600",
+          "brand": "Meira",
+          "sales_unit": "ST",
+          "base_quantity": 12.0,
+          "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 0.8,
+            "unit": "KG",
+            "how": "pack size in the name (800g) x 1 ST"
+          },
+          "temperature_condition": 8,
+          "comparison_price_minor": 168,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": 2633.0,
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "price": {
+            "value": 134,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "ES",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [],
+            "free_from": [
+              "AC",
+              "AE",
+              "AF",
+              "AM",
+              "AN",
+              "AP",
+              "AS",
+              "AU",
+              "AW",
+              "AY",
+              "BC",
+              "BM",
+              "NL",
+              "UM"
+            ],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 0.42,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [],
+          "labels": []
+        },
+        "li-9": {
+          "product_id": "460325",
+          "category": "22100",
+          "brand": "Dansukker Siro",
+          "sales_unit": "BAG",
+          "base_quantity": 13.0,
+          "base_unit": "KG",
+          "size_per_sales_unit": {
+            "value": 1.0,
+            "unit": "KG",
+            "how": "pack size in the name (1kg) x 1 BAG"
+          },
+          "temperature_condition": 8,
+          "comparison_price_minor": 155,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": "not_given",
+            "unit": "BAG",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "declared"
+          },
+          "price": {
+            "value": 155,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [],
+            "free_from": [
+              "AC",
+              "AE",
+              "AF",
+              "AM",
+              "AN",
+              "AP",
+              "AS",
+              "AU",
+              "AW",
+              "AY",
+              "BC",
+              "BM",
+              "NL",
+              "UM"
+            ],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 0.885,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [],
+          "labels": []
+        },
+        "li-10": {
+          "product_id": "466608",
+          "category": "10530",
+          "brand": "Apetit",
+          "sales_unit": "ST",
+          "base_quantity": 10.0,
+          "base_unit": "L",
+          "size_per_sales_unit": {
+            "value": 10.0,
+            "unit": "L",
+            "how": "pack size in the name (10L) x 1 ST"
+          },
+          "temperature_condition": 8,
+          "comparison_price_minor": 250,
+          "comparison_unit": "L",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": "not_given",
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "declared"
+          },
+          "price": {
+            "value": 2502,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T20:01:31.949187Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [],
+            "free_from": [
+              "AC",
+              "AE",
+              "AF",
+              "AM",
+              "AN",
+              "AP",
+              "AS",
+              "AU",
+              "AW",
+              "AY",
+              "BC",
+              "BM",
+              "NL",
+              "UM"
+            ],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 1.0,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 2.425,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "nutritional_claims": [
+            "VEGAN",
+            "VEGETARIAN"
+          ],
+          "labels": [
+            "FINNISH_HEART_SYMBOL"
+          ]
+        }
+      },
+      "shortfalls": [],
+      "alternatives": []
+    }
+  },
+  "verdict": null,
+  "authorization": null,
+  "approval": null,
+  "order": null,
+  "attacks": [
+    {
+      "key": "above-cap",
+      "title": "The agent signs EUR 1,783.15 itself, above its EUR 1,500.00 cap",
+      "status": "refused",
+      "problems": [
+        "Amount 178315 exceeds maximum 150000"
+      ]
+    },
+    {
+      "key": "changed-quote",
+      "title": "The agent lowers a price in the quote and signs that",
+      "status": "refused",
+      "problems": [
+        "Checkout checkout_hash mismatch: expected 7byPRaSxgbIesjCF4UReK9eBVQ4DhloSITZUw2D5YQY, got QY-b5wpOLr06wXHQAz6dnKV6_3S2N95kafBsRSXQFz4",
+        "Amount 178315 exceeds maximum 150000",
+        "payment mandate is for another quote"
+      ]
+    },
+    {
+      "key": "mandate-for-another-quote",
+      "title": "The agent reuses a mandate signed for another, smaller quote (EUR 186.89)",
+      "status": "refused",
+      "problems": [
+        "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_10b0ec81', got 'chk_e0646cff'"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "key": "open_mandate",
+      "title": "Open mandate",
+      "signer": "manager",
+      "status": "done",
+      "detail": "Signed in advance by the chef: the agent may order from Valio Aimo, up to EUR 1,500.00 an order, until Mon 16/11 23:59.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "signed_quote",
+      "title": "Signed quote",
+      "signer": "merchant",
+      "status": "done",
+      "detail": "10 lines, EUR 1,783.15 before tax, signed by Valio Aimo, valid until Sun 15/11 17:00.",
+      "proof": "7byPRaSxgbIesjCF4UReK9eBVQ4DhloSITZUw2D5YQY",
+      "at": "2026-11-14T22:01:31.949175+02:00"
+    },
+    {
+      "key": "verdict",
+      "title": "Verdict",
+      "signer": "none",
+      "status": "skipped",
+      "detail": "The agent did not ask the harness: no verdict, so nobody was allowed to sign.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "closed_mandates",
+      "title": "Closed mandates",
+      "signer": "agent",
+      "status": "done",
+      "detail": "3 mandates built with the agent's key, outside the harness.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "merchant_verifies",
+      "title": "Valio verifies",
+      "signer": "merchant",
+      "status": "refused",
+      "detail": "3 of 3 refused by Valio. No valid signature, no order.",
+      "proof": null,
+      "at": "2026-11-14T22:01:32.713156+02:00"
+    },
+    {
+      "key": "sandbox_payment",
+      "title": "Sandbox payment",
+      "signer": "merchant",
+      "status": "skipped",
+      "detail": "Nothing is booked.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "signed_receipt",
+      "title": "Signed receipt",
+      "signer": "merchant",
+      "status": "skipped",
+      "detail": "No order, no receipt.",
+      "proof": null,
+      "at": null
+    }
+  ],
+  "audit": {
+    "buyer": [],
+    "merchant": [
+      {
+        "seq": 9,
+        "at": "2026-11-14T22:01:32.245264+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "quote_issued",
+        "checkout_id": "chk_10b0ec81",
+        "checkout_hash": "7byPRaSxgbIesjCF4UReK9eBVQ4DhloSITZUw2D5YQY",
+        "what": "Quote for 155 ST of 463437 and 45 ST of 464194 and 27 ST of 476890 and 90 ST of 464306 and 18 ST of 460200 and 72 ST of 467958 and 24 ST of 468513 and 15 ST of 468172 and 13 BAG of 460325 and 1 ST of 466608, 1783.15 EUR excl. tax.",
+        "why": "Asked by demo-restaurant-helsinki for delivery on 2026-11-19, valid until 2026-11-15 17:00.",
+        "rule": null,
+        "prev_hash": "90f39cfa49f0f02fc7a4260177793e0a4c2487b5d3ea5924623dfc80ec47151c",
+        "hash": "6c9d5d0729627faebbdac08811b8f21c41326de78127e4201cea1ce87e243709"
+      },
+      {
+        "seq": 11,
+        "at": "2026-11-14T22:01:32.703921+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "order_refused",
+        "checkout_id": "chk_10b0ec81",
+        "checkout_hash": "7byPRaSxgbIesjCF4UReK9eBVQ4DhloSITZUw2D5YQY",
+        "what": "Order refused for quote chk_10b0ec81.",
+        "why": "Amount 178315 exceeds maximum 150000",
+        "rule": null,
+        "prev_hash": "bbe78be860cfc9dc8ee3577dca19d4058eb6b9a2744957af86309c9953a6e66e",
+        "hash": "f6e7ae660876dfe8b9c5c689426e029720a967dfa4d63b2bc4b3176e4c884ce9"
+      },
+      {
+        "seq": 12,
+        "at": "2026-11-14T22:01:32.709500+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "order_refused",
+        "checkout_id": "chk_10b0ec81",
+        "checkout_hash": "7byPRaSxgbIesjCF4UReK9eBVQ4DhloSITZUw2D5YQY",
+        "what": "Order refused for quote chk_10b0ec81.",
+        "why": "Checkout checkout_hash mismatch: expected 7byPRaSxgbIesjCF4UReK9eBVQ4DhloSITZUw2D5YQY, got QY-b5wpOLr06wXHQAz6dnKV6_3S2N95kafBsRSXQFz4; Amount 178315 exceeds maximum 150000; payment mandate is for another quote",
+        "rule": null,
+        "prev_hash": "f6e7ae660876dfe8b9c5c689426e029720a967dfa4d63b2bc4b3176e4c884ce9",
+        "hash": "66790f62186b00d207e3609b6f48ffc545291ef3f9636a6dbcb3775f8888025c"
+      },
+      {
+        "seq": 13,
+        "at": "2026-11-14T22:01:32.713156+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "order_refused",
+        "checkout_id": "chk_10b0ec81",
+        "checkout_hash": "7byPRaSxgbIesjCF4UReK9eBVQ4DhloSITZUw2D5YQY",
+        "what": "Order refused for quote chk_10b0ec81.",
+        "why": "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_10b0ec81', got 'chk_e0646cff'",
+        "rule": null,
+        "prev_hash": "66790f62186b00d207e3609b6f48ffc545291ef3f9636a6dbcb3775f8888025c",
+        "hash": "b6568ce8bb3961a2b41374ba223f5b8f32f84cda7390cfd943367c31fce51cd5"
+      }
+    ]
+  }
+}

@@ -1,0 +1,2579 @@
+{
+  "$defs": {
+    "AimoCheckout": {
+      "additionalProperties": false,
+      "description": "UCP's Checkout as typed by the AP2 SDK, plus our `aimo` key. No SDK field is renamed or removed.",
+      "properties": {
+        "id": {
+          "description": "Unique identifier of the checkout session.",
+          "title": "Id",
+          "type": "string"
+        },
+        "merchant": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Merchant"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "The merchant associated with the checkout."
+        },
+        "line_items": {
+          "description": "Array of line items in the checkout.",
+          "items": {
+            "$ref": "#/$defs/LineItem"
+          },
+          "title": "Line Items",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/Status"
+        },
+        "currency": {
+          "description": "ISO-4217 3-letter alphabetic currency code.",
+          "title": "Currency",
+          "type": "string"
+        },
+        "totals": {
+          "description": "Pricing breakdown. Must contain exactly one subtotal and one total entry.",
+          "items": {
+            "$ref": "#/$defs/Total"
+          },
+          "title": "Totals",
+          "type": "array"
+        },
+        "links": {
+          "items": {
+            "$ref": "#/$defs/Link"
+          },
+          "title": "Links",
+          "type": "array"
+        },
+        "buyer": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Buyer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Representation of the buyer."
+        },
+        "messages": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/Message"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "List of messages with error and info about the checkout session state.",
+          "title": "Messages"
+        },
+        "expires_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Expires At"
+        },
+        "continue_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Continue Url"
+        },
+        "aimo": {
+          "$ref": "#/$defs/AimoExtension"
+        }
+      },
+      "required": [
+        "id",
+        "line_items",
+        "status",
+        "currency",
+        "totals",
+        "links",
+        "aimo"
+      ],
+      "title": "AimoCheckout",
+      "type": "object"
+    },
+    "AimoExtension": {
+      "additionalProperties": false,
+      "description": "Everything of ours, under the one extra top-level key `aimo` that UCP's Checkout allows.",
+      "properties": {
+        "customer": {
+          "title": "Customer",
+          "type": "string"
+        },
+        "issued_at": {
+          "format": "date-time",
+          "title": "Issued At",
+          "type": "string"
+        },
+        "totals_exclude_tax": {
+          "default": true,
+          "title": "Totals Exclude Tax",
+          "type": "boolean"
+        },
+        "requested": {
+          "items": {
+            "$ref": "#/$defs/Need"
+          },
+          "title": "Requested",
+          "type": "array"
+        },
+        "requested_delivery_date": {
+          "format": "date",
+          "title": "Requested Delivery Date",
+          "type": "string"
+        },
+        "delivery_date": {
+          "format": "date",
+          "title": "Delivery Date",
+          "type": "string"
+        },
+        "closing_time": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closing Time"
+        },
+        "lines": {
+          "additionalProperties": {
+            "$ref": "#/$defs/LineClaims"
+          },
+          "title": "Lines",
+          "type": "object"
+        },
+        "shortfalls": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Shortfall"
+          },
+          "title": "Shortfalls",
+          "type": "array"
+        },
+        "alternatives": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/Alternative"
+          },
+          "title": "Alternatives",
+          "type": "array"
+        }
+      },
+      "required": [
+        "customer",
+        "issued_at",
+        "requested",
+        "requested_delivery_date",
+        "delivery_date",
+        "lines"
+      ],
+      "title": "AimoExtension",
+      "type": "object"
+    },
+    "AllergenInfo": {
+      "additionalProperties": false,
+      "description": "GS1 allergen codes. data='missing' never means 'free from'.",
+      "properties": {
+        "contains": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Contains",
+          "type": "array"
+        },
+        "free_from": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Free From",
+          "type": "array"
+        },
+        "data": {
+          "enum": [
+            "complete",
+            "missing"
+          ],
+          "title": "Data",
+          "type": "string"
+        }
+      },
+      "required": [
+        "data"
+      ],
+      "title": "AllergenInfo",
+      "type": "object"
+    },
+    "Alternative": {
+      "additionalProperties": false,
+      "properties": {
+        "for_product_id": {
+          "title": "For Product Id",
+          "type": "string"
+        },
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "tier": {
+          "enum": [
+            "best",
+            "better",
+            "good"
+          ],
+          "title": "Tier",
+          "type": "string"
+        },
+        "comparison_price_minor": {
+          "title": "Comparison Price Minor",
+          "type": "integer"
+        },
+        "comparison_unit": {
+          "title": "Comparison Unit",
+          "type": "string"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        },
+        "chosen": {
+          "title": "Chosen",
+          "type": "boolean"
+        },
+        "catalog_listed": {
+          "default": false,
+          "title": "Catalog Listed",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "for_product_id",
+        "product_id",
+        "tier",
+        "comparison_price_minor",
+        "comparison_unit",
+        "why",
+        "chosen"
+      ],
+      "title": "Alternative",
+      "type": "object"
+    },
+    "ApprovalRequest": {
+      "additionalProperties": false,
+      "properties": {
+        "approval_id": {
+          "title": "Approval Id",
+          "type": "string"
+        },
+        "checkout_id": {
+          "title": "Checkout Id",
+          "type": "string"
+        },
+        "checkout_hash": {
+          "title": "Checkout Hash",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "approved",
+            "rejected",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "total_minor": {
+          "title": "Total Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "reasons": {
+          "items": {
+            "$ref": "#/$defs/RuleResult"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "judge": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/JudgeAnswer"
+          },
+          "title": "Judge",
+          "type": "array"
+        },
+        "request_text": {
+          "title": "Request Text",
+          "type": "string"
+        },
+        "requested_at": {
+          "format": "date-time",
+          "title": "Requested At",
+          "type": "string"
+        },
+        "deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline"
+        },
+        "decided_by": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decided By"
+        },
+        "decided_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Decided At"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Id"
+        }
+      },
+      "required": [
+        "approval_id",
+        "checkout_id",
+        "checkout_hash",
+        "status",
+        "total_minor",
+        "currency",
+        "reasons",
+        "request_text",
+        "requested_at"
+      ],
+      "title": "ApprovalRequest",
+      "type": "object"
+    },
+    "AuditEvent": {
+      "additionalProperties": false,
+      "description": "One line of a hash-chained audit log. Each side keeps its own chain.",
+      "properties": {
+        "seq": {
+          "minimum": 1,
+          "title": "Seq",
+          "type": "integer"
+        },
+        "at": {
+          "format": "date-time",
+          "title": "At",
+          "type": "string"
+        },
+        "side": {
+          "enum": [
+            "buyer",
+            "merchant"
+          ],
+          "title": "Side",
+          "type": "string"
+        },
+        "actor": {
+          "enum": [
+            "agent",
+            "harness",
+            "human",
+            "merchant"
+          ],
+          "title": "Actor",
+          "type": "string"
+        },
+        "action": {
+          "title": "Action",
+          "type": "string"
+        },
+        "checkout_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checkout Id"
+        },
+        "checkout_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Checkout Hash"
+        },
+        "what": {
+          "title": "What",
+          "type": "string"
+        },
+        "why": {
+          "title": "Why",
+          "type": "string"
+        },
+        "rule": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rule"
+        },
+        "prev_hash": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prev Hash"
+        },
+        "hash": {
+          "title": "Hash",
+          "type": "string"
+        }
+      },
+      "required": [
+        "seq",
+        "at",
+        "side",
+        "actor",
+        "action",
+        "what",
+        "why",
+        "hash"
+      ],
+      "title": "AuditEvent",
+      "type": "object"
+    },
+    "AuthorizationStatus": {
+      "additionalProperties": false,
+      "properties": {
+        "status": {
+          "enum": [
+            "ordered",
+            "pending_approval",
+            "denied",
+            "rejected",
+            "expired"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "checkout_id": {
+          "title": "Checkout Id",
+          "type": "string"
+        },
+        "decision": {
+          "enum": [
+            "auto",
+            "human",
+            "deny"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "signed_by": {
+          "anyOf": [
+            {
+              "enum": [
+                "agent",
+                "human"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signed By"
+        },
+        "order_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Order Id"
+        },
+        "reasons": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Reasons",
+          "type": "array"
+        },
+        "approval_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approval Id"
+        },
+        "approval_url": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approval Url"
+        },
+        "deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline"
+        }
+      },
+      "required": [
+        "status",
+        "checkout_id",
+        "decision"
+      ],
+      "title": "AuthorizationStatus",
+      "type": "object"
+    },
+    "Buyer": {
+      "additionalProperties": true,
+      "description": "Representation of the buyer. Matches UCP types/buyer.json (2026-04-08).",
+      "properties": {
+        "first_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "First name of the buyer.",
+          "title": "First Name"
+        },
+        "last_name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Last name of the buyer.",
+          "title": "Last Name"
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Email of the buyer.",
+          "title": "Email"
+        },
+        "phone_number": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "E.164 standard.",
+          "title": "Phone Number"
+        }
+      },
+      "title": "Buyer",
+      "type": "object"
+    },
+    "Claim": {
+      "additionalProperties": false,
+      "description": "One fact Valio states, with where it comes from and how sure it is. `value` is null when unknown.",
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "unit": {
+          "title": "Unit",
+          "type": "string"
+        },
+        "source": {
+          "enum": [
+            "aimo_stock_count",
+            "supplier_warehouse",
+            "aimo_availability_api",
+            "aimo_price_api",
+            "gs1_synkka",
+            "aimo_delivery_history",
+            "product_group_average",
+            "none"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "as_of": {
+          "format": "date-time",
+          "title": "As Of",
+          "type": "string"
+        },
+        "certainty": {
+          "enum": [
+            "measured",
+            "declared",
+            "estimated",
+            "unknown"
+          ],
+          "title": "Certainty",
+          "type": "string"
+        }
+      },
+      "required": [
+        "unit",
+        "source",
+        "as_of",
+        "certainty"
+      ],
+      "title": "Claim",
+      "type": "object"
+    },
+    "ContentType": {
+      "enum": [
+        "plain",
+        "markdown"
+      ],
+      "title": "ContentType",
+      "type": "string"
+    },
+    "DemoAttack": {
+      "additionalProperties": false,
+      "description": "One bad mandate sent straight to the gateway. `accepted` must never happen: it would mean Valio let it through.",
+      "properties": {
+        "key": {
+          "title": "Key",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "refused",
+            "accepted"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "problems": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Problems",
+          "type": "array"
+        }
+      },
+      "required": [
+        "key",
+        "title",
+        "status"
+      ],
+      "title": "DemoAttack",
+      "type": "object"
+    },
+    "DemoAudit": {
+      "additionalProperties": false,
+      "description": "The lines both sides wrote about the quote on screen: the harness's log and the gateway's log.",
+      "properties": {
+        "buyer": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuditEvent"
+          },
+          "title": "Buyer",
+          "type": "array"
+        },
+        "merchant": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/AuditEvent"
+          },
+          "title": "Merchant",
+          "type": "array"
+        }
+      },
+      "title": "DemoAudit",
+      "type": "object"
+    },
+    "DemoKitchen": {
+      "additionalProperties": false,
+      "description": "The restaurant whose portal the page shows.",
+      "properties": {
+        "customer": {
+          "title": "Customer",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "covers_per_service": {
+          "exclusiveMinimum": 0,
+          "title": "Covers Per Service",
+          "type": "integer"
+        },
+        "services": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Services",
+          "type": "array"
+        },
+        "menu": {
+          "items": {
+            "$ref": "#/$defs/MenuCourse"
+          },
+          "title": "Menu",
+          "type": "array"
+        }
+      },
+      "required": [
+        "customer",
+        "name",
+        "covers_per_service",
+        "services",
+        "menu"
+      ],
+      "title": "DemoKitchen",
+      "type": "object"
+    },
+    "DemoRequest": {
+      "additionalProperties": false,
+      "description": "What the buying agent was asked: the sentence the harness receives, and the needs sent to the gateway.",
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "delivery_date": {
+          "format": "date",
+          "title": "Delivery Date",
+          "type": "string"
+        },
+        "lines": {
+          "items": {
+            "$ref": "#/$defs/DemoRequestLine"
+          },
+          "minItems": 1,
+          "title": "Lines",
+          "type": "array"
+        }
+      },
+      "required": [
+        "text",
+        "delivery_date",
+        "lines"
+      ],
+      "title": "DemoRequest",
+      "type": "object"
+    },
+    "DemoRequestLine": {
+      "additionalProperties": false,
+      "description": "One ingredient the kitchen needs, in the kitchen's unit. The quote says how many sales units that makes.",
+      "properties": {
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "unit": {
+          "enum": [
+            "L",
+            "KG",
+            "ST"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "dish": {
+          "title": "Dish",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product_id",
+        "name",
+        "amount",
+        "unit",
+        "dish"
+      ],
+      "title": "DemoRequestLine",
+      "type": "object"
+    },
+    "DemoScenario": {
+      "additionalProperties": false,
+      "description": "One button of the page.",
+      "properties": {
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "hint": {
+          "title": "Hint",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "hint"
+      ],
+      "title": "DemoScenario",
+      "type": "object"
+    },
+    "DemoScenarioRun": {
+      "additionalProperties": false,
+      "description": "The scenario on screen. After a reset nothing has run: `id` and `title` are null and `status` is idle.",
+      "properties": {
+        "id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Id"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "status": {
+          "enum": [
+            "idle",
+            "running",
+            "waiting_for_human",
+            "done",
+            "refused"
+          ],
+          "title": "Status",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status"
+      ],
+      "title": "DemoScenarioRun",
+      "type": "object"
+    },
+    "DemoStep": {
+      "additionalProperties": false,
+      "description": "One step of the AP2 trail: who signed it, and a hash or an identifier that proves it.",
+      "properties": {
+        "key": {
+          "enum": [
+            "open_mandate",
+            "signed_quote",
+            "verdict",
+            "closed_mandates",
+            "merchant_verifies",
+            "sandbox_payment",
+            "signed_receipt"
+          ],
+          "title": "Key",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "signer": {
+          "enum": [
+            "manager",
+            "agent",
+            "merchant",
+            "none"
+          ],
+          "title": "Signer",
+          "type": "string"
+        },
+        "status": {
+          "enum": [
+            "pending",
+            "done",
+            "waiting",
+            "refused",
+            "skipped"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "detail": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Detail"
+        },
+        "proof": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proof"
+        },
+        "at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "At"
+        }
+      },
+      "required": [
+        "key",
+        "title",
+        "signer",
+        "status"
+      ],
+      "title": "DemoStep",
+      "type": "object"
+    },
+    "Item": {
+      "description": "Product details for a line item. Matches UCP types/item.json (2026-04-08).",
+      "properties": {
+        "id": {
+          "description": "The product identifier, often the SKU, required to resolve the product details associated with this line item.",
+          "title": "Id",
+          "type": "string"
+        },
+        "title": {
+          "description": "Product title.",
+          "title": "Title",
+          "type": "string"
+        },
+        "price": {
+          "description": "Unit price in the currency's minor unit as defined by ISO 4217.",
+          "minimum": 0,
+          "title": "Price",
+          "type": "integer"
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Product image URI.",
+          "title": "Image Url"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "price"
+      ],
+      "title": "Item",
+      "type": "object"
+    },
+    "JudgeAnswer": {
+      "additionalProperties": false,
+      "description": "What we asked the judge and what came back. The model gives no explanation, so we keep the question.",
+      "properties": {
+        "question_key": {
+          "title": "Question Key",
+          "type": "string"
+        },
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "instructions": {
+          "title": "Instructions",
+          "type": "string"
+        },
+        "subject": {
+          "$ref": "#/$defs/JudgeSubject"
+        },
+        "probability": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Probability"
+        },
+        "confidence": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confidence"
+        },
+        "auto_threshold": {
+          "title": "Auto Threshold",
+          "type": "number"
+        },
+        "floor": {
+          "title": "Floor",
+          "type": "number"
+        },
+        "routed": {
+          "enum": [
+            "auto",
+            "human"
+          ],
+          "title": "Routed",
+          "type": "string"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        }
+      },
+      "required": [
+        "question_key",
+        "type",
+        "instructions",
+        "subject",
+        "auto_threshold",
+        "floor",
+        "routed",
+        "model"
+      ],
+      "title": "JudgeAnswer",
+      "type": "object"
+    },
+    "JudgeSubject": {
+      "additionalProperties": false,
+      "properties": {
+        "original": {
+          "title": "Original",
+          "type": "string"
+        },
+        "candidate": {
+          "title": "Candidate",
+          "type": "string"
+        }
+      },
+      "required": [
+        "original",
+        "candidate"
+      ],
+      "title": "JudgeSubject",
+      "type": "object"
+    },
+    "LineClaims": {
+      "additionalProperties": false,
+      "description": "Our facts for one line item, under aimo.lines[<line item id>].",
+      "properties": {
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "brand": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brand"
+        },
+        "sales_unit": {
+          "title": "Sales Unit",
+          "type": "string"
+        },
+        "base_quantity": {
+          "title": "Base Quantity",
+          "type": "number"
+        },
+        "base_unit": {
+          "enum": [
+            "L",
+            "KG",
+            "ST"
+          ],
+          "title": "Base Unit",
+          "type": "string"
+        },
+        "size_per_sales_unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SizePerSalesUnit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "temperature_condition": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Temperature Condition"
+        },
+        "comparison_price_minor": {
+          "title": "Comparison Price Minor",
+          "type": "integer"
+        },
+        "comparison_unit": {
+          "title": "Comparison Unit",
+          "type": "string"
+        },
+        "substitute_for": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SubstituteFor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "logistic_model": {
+          "enum": [
+            "Stock",
+            "Terminal"
+          ],
+          "title": "Logistic Model",
+          "type": "string"
+        },
+        "available_date": {
+          "anyOf": [
+            {
+              "format": "date",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Available Date"
+        },
+        "closing_time": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closing Time"
+        },
+        "stock": {
+          "$ref": "#/$defs/Claim"
+        },
+        "price": {
+          "$ref": "#/$defs/Claim"
+        },
+        "origin": {
+          "$ref": "#/$defs/Claim"
+        },
+        "allergens": {
+          "$ref": "#/$defs/AllergenInfo"
+        },
+        "delivery_reliability": {
+          "$ref": "#/$defs/Claim"
+        },
+        "carbon_footprint": {
+          "$ref": "#/$defs/Claim"
+        },
+        "nutritional_claims": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Nutritional Claims",
+          "type": "array"
+        },
+        "labels": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "array"
+        }
+      },
+      "required": [
+        "product_id",
+        "category",
+        "sales_unit",
+        "base_quantity",
+        "base_unit",
+        "comparison_price_minor",
+        "comparison_unit",
+        "logistic_model",
+        "stock",
+        "price",
+        "origin",
+        "allergens",
+        "delivery_reliability",
+        "carbon_footprint"
+      ],
+      "title": "LineClaims",
+      "type": "object"
+    },
+    "LineItem": {
+      "description": "UCP line item (dev.ucp.shopping 2026-04-08). Uses nested item object for product details.",
+      "properties": {
+        "id": {
+          "description": "Unique line-item identifier.",
+          "title": "Id",
+          "type": "string"
+        },
+        "item": {
+          "$ref": "#/$defs/Item"
+        },
+        "quantity": {
+          "description": "Quantity of the item being purchased.",
+          "minimum": 1,
+          "title": "Quantity",
+          "type": "integer"
+        },
+        "totals": {
+          "description": "Per-line-item totals breakdown.",
+          "items": {
+            "$ref": "#/$defs/Total"
+          },
+          "title": "Totals",
+          "type": "array"
+        },
+        "parent_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Parent line item identifier for nested structures.",
+          "title": "Parent Id"
+        }
+      },
+      "required": [
+        "id",
+        "item",
+        "quantity",
+        "totals"
+      ],
+      "title": "LineItem",
+      "type": "object"
+    },
+    "Link": {
+      "description": "A typed URL reference for legal compliance or informational links.",
+      "properties": {
+        "type": {
+          "title": "Type",
+          "type": "string"
+        },
+        "url": {
+          "format": "uri",
+          "minLength": 1,
+          "title": "Url",
+          "type": "string"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "required": [
+        "type",
+        "url"
+      ],
+      "title": "Link",
+      "type": "object"
+    },
+    "MandateFacts": {
+      "additionalProperties": false,
+      "description": "What the payment mandate allows, as Valio read it once the signatures verified.",
+      "properties": {
+        "cap_minor": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Cap Minor"
+        },
+        "amount_minor": {
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "instrument": {
+          "title": "Instrument",
+          "type": "string"
+        }
+      },
+      "required": [
+        "amount_minor",
+        "currency",
+        "instrument"
+      ],
+      "title": "MandateFacts",
+      "type": "object"
+    },
+    "MenuCourse": {
+      "additionalProperties": false,
+      "properties": {
+        "course": {
+          "title": "Course",
+          "type": "string"
+        },
+        "dish": {
+          "title": "Dish",
+          "type": "string"
+        }
+      },
+      "required": [
+        "course",
+        "dish"
+      ],
+      "title": "MenuCourse",
+      "type": "object"
+    },
+    "Merchant": {
+      "description": "Schema defining a Mechant object",
+      "properties": {
+        "id": {
+          "description": "Unique identifier for the merchant.",
+          "title": "Id",
+          "type": "string"
+        },
+        "name": {
+          "description": "Human-readable name of the merchant.",
+          "title": "Name",
+          "type": "string"
+        },
+        "website": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Website belonging to the merchant.",
+          "title": "Website"
+        }
+      },
+      "required": [
+        "id",
+        "name"
+      ],
+      "title": "Merchant",
+      "type": "object"
+    },
+    "Message": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/MessageError"
+        },
+        {
+          "$ref": "#/$defs/MessageWarning"
+        },
+        {
+          "$ref": "#/$defs/MessageInfo"
+        }
+      ],
+      "description": "Container for error, warning, or info messages. Matches UCP types/message.json (2026-04-08).",
+      "title": "Message"
+    },
+    "MessageError": {
+      "description": "Error message. Matches UCP types/message_error.json (2026-04-08).",
+      "properties": {
+        "type": {
+          "const": "error",
+          "description": "Message type discriminator.",
+          "title": "Type",
+          "type": "string"
+        },
+        "code": {
+          "description": "Error code identifying the type of error.",
+          "title": "Code",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "RFC 9535 JSONPath to the component the message refers to.",
+          "title": "Path"
+        },
+        "content_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "plain"
+        },
+        "content": {
+          "description": "Human-readable message.",
+          "title": "Content",
+          "type": "string"
+        },
+        "severity": {
+          "$ref": "#/$defs/Severity"
+        }
+      },
+      "required": [
+        "type",
+        "code",
+        "content",
+        "severity"
+      ],
+      "title": "MessageError",
+      "type": "object"
+    },
+    "MessageInfo": {
+      "description": "Informational message. Matches UCP types/message_info.json (2026-04-08).",
+      "properties": {
+        "type": {
+          "const": "info",
+          "description": "Message type discriminator.",
+          "title": "Type",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "RFC 9535 JSONPath to the component the message refers to.",
+          "title": "Path"
+        },
+        "code": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Info code for programmatic handling.",
+          "title": "Code"
+        },
+        "content_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "plain"
+        },
+        "content": {
+          "description": "Human-readable message.",
+          "title": "Content",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "content"
+      ],
+      "title": "MessageInfo",
+      "type": "object"
+    },
+    "MessageWarning": {
+      "description": "Warning message. Matches UCP types/message_warning.json (2026-04-08).",
+      "properties": {
+        "type": {
+          "const": "warning",
+          "description": "Message type discriminator.",
+          "title": "Type",
+          "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "JSONPath (RFC 9535) to related field.",
+          "title": "Path"
+        },
+        "code": {
+          "description": "Warning code.",
+          "title": "Code",
+          "type": "string"
+        },
+        "content": {
+          "description": "Human-readable warning message.",
+          "title": "Content",
+          "type": "string"
+        },
+        "content_type": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentType"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "plain"
+        },
+        "presentation": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "notice",
+          "description": "Rendering contract: 'notice' or 'disclosure'.",
+          "title": "Presentation"
+        },
+        "image_url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "URL to a required visual element.",
+          "title": "Image Url"
+        },
+        "url": {
+          "anyOf": [
+            {
+              "format": "uri",
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Reference URL for more information.",
+          "title": "Url"
+        }
+      },
+      "required": [
+        "type",
+        "code",
+        "content"
+      ],
+      "title": "MessageWarning",
+      "type": "object"
+    },
+    "Need": {
+      "additionalProperties": false,
+      "description": "What the buyer asked for, in their own unit (litres, kilos or sales units).",
+      "properties": {
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "amount": {
+          "exclusiveMinimum": 0,
+          "title": "Amount",
+          "type": "number"
+        },
+        "unit": {
+          "enum": [
+            "L",
+            "KG",
+            "ST"
+          ],
+          "title": "Unit",
+          "type": "string"
+        },
+        "substitute_with": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Substitute With"
+        }
+      },
+      "required": [
+        "product_id",
+        "amount",
+        "unit"
+      ],
+      "title": "Need",
+      "type": "object"
+    },
+    "Order": {
+      "additionalProperties": false,
+      "properties": {
+        "order_id": {
+          "title": "Order Id",
+          "type": "string"
+        },
+        "status": {
+          "const": "accepted",
+          "title": "Status",
+          "type": "string"
+        },
+        "checkout_id": {
+          "title": "Checkout Id",
+          "type": "string"
+        },
+        "checkout_hash": {
+          "title": "Checkout Hash",
+          "type": "string"
+        },
+        "mandate_reference": {
+          "title": "Mandate Reference",
+          "type": "string"
+        },
+        "signed_by": {
+          "enum": [
+            "agent",
+            "human"
+          ],
+          "title": "Signed By",
+          "type": "string"
+        },
+        "total_minor": {
+          "title": "Total Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "delivery_date": {
+          "format": "date",
+          "title": "Delivery Date",
+          "type": "string"
+        },
+        "created_at": {
+          "format": "date-time",
+          "title": "Created At",
+          "type": "string"
+        },
+        "accepted_at": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Accepted At"
+        },
+        "receipt_jwt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Receipt Jwt"
+        },
+        "receipt": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Receipt"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "mandate": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MandateFacts"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "payment": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Payment"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "order_id",
+        "status",
+        "checkout_id",
+        "checkout_hash",
+        "mandate_reference",
+        "signed_by",
+        "total_minor",
+        "currency",
+        "delivery_date",
+        "created_at"
+      ],
+      "title": "Order",
+      "type": "object"
+    },
+    "Payment": {
+      "additionalProperties": false,
+      "description": "The sandbox charge: the order's amount booked on a simulated invoice account. No real money moves.",
+      "properties": {
+        "payment_id": {
+          "title": "Payment Id",
+          "type": "string"
+        },
+        "status": {
+          "const": "captured",
+          "title": "Status",
+          "type": "string"
+        },
+        "amount_minor": {
+          "title": "Amount Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "instrument": {
+          "title": "Instrument",
+          "type": "string"
+        },
+        "terms": {
+          "title": "Terms",
+          "type": "string"
+        },
+        "sandbox": {
+          "const": true,
+          "default": true,
+          "title": "Sandbox",
+          "type": "boolean"
+        },
+        "captured_at": {
+          "format": "date-time",
+          "title": "Captured At",
+          "type": "string"
+        }
+      },
+      "required": [
+        "payment_id",
+        "status",
+        "amount_minor",
+        "currency",
+        "instrument",
+        "terms",
+        "captured_at"
+      ],
+      "title": "Payment",
+      "type": "object"
+    },
+    "Receipt": {
+      "additionalProperties": false,
+      "description": "Decoded payload of the receipt JWT the gateway signs.",
+      "properties": {
+        "status": {
+          "enum": [
+            "Success",
+            "Error"
+          ],
+          "title": "Status",
+          "type": "string"
+        },
+        "iss": {
+          "title": "Iss",
+          "type": "string"
+        },
+        "iat": {
+          "title": "Iat",
+          "type": "integer"
+        },
+        "reference": {
+          "title": "Reference",
+          "type": "string"
+        },
+        "order_id": {
+          "title": "Order Id",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "iss",
+        "iat",
+        "reference",
+        "order_id"
+      ],
+      "title": "Receipt",
+      "type": "object"
+    },
+    "RuleResult": {
+      "additionalProperties": false,
+      "properties": {
+        "rule_id": {
+          "enum": [
+            "quote-signature",
+            "quote-not-expired",
+            "merchant-allowed",
+            "allergen-not-blocked",
+            "allergen-data-known",
+            "allergen-unchanged-on-substitution",
+            "delivery-on-time",
+            "spend-limit",
+            "substitution-within-preferences"
+          ],
+          "title": "Rule Id",
+          "type": "string"
+        },
+        "outcome": {
+          "enum": [
+            "pass",
+            "human",
+            "deny"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "evidence": {
+          "additionalProperties": true,
+          "default": {},
+          "title": "Evidence",
+          "type": "object"
+        }
+      },
+      "required": [
+        "rule_id",
+        "outcome",
+        "message"
+      ],
+      "title": "RuleResult",
+      "type": "object"
+    },
+    "Severity": {
+      "description": "Reflects the resource state and recommended action.",
+      "enum": [
+        "recoverable",
+        "requires_buyer_input",
+        "requires_buyer_review",
+        "unrecoverable"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "Shortfall": {
+      "additionalProperties": false,
+      "properties": {
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "requested_base_quantity": {
+          "title": "Requested Base Quantity",
+          "type": "number"
+        },
+        "available_base_quantity": {
+          "title": "Available Base Quantity",
+          "type": "number"
+        },
+        "missing_base_quantity": {
+          "title": "Missing Base Quantity",
+          "type": "number"
+        },
+        "base_unit": {
+          "enum": [
+            "L",
+            "KG",
+            "ST"
+          ],
+          "title": "Base Unit",
+          "type": "string"
+        },
+        "reason": {
+          "enum": [
+            "partial_stock",
+            "out_of_stock",
+            "late_delivery",
+            "not_found"
+          ],
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "product_id",
+        "requested_base_quantity",
+        "available_base_quantity",
+        "missing_base_quantity",
+        "base_unit",
+        "reason"
+      ],
+      "title": "Shortfall",
+      "type": "object"
+    },
+    "SizePerSalesUnit": {
+      "additionalProperties": false,
+      "properties": {
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Value"
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Unit"
+        },
+        "how": {
+          "title": "How",
+          "type": "string"
+        }
+      },
+      "required": [
+        "how"
+      ],
+      "title": "SizePerSalesUnit",
+      "type": "object"
+    },
+    "Status": {
+      "description": "Checkout state indicating the current phase.",
+      "enum": [
+        "incomplete",
+        "requires_escalation",
+        "ready_for_complete",
+        "complete_in_progress",
+        "completed",
+        "canceled"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "SubstituteFor": {
+      "additionalProperties": false,
+      "description": "The product a substitute line replaces, signed with the quote so the harness can compare.",
+      "properties": {
+        "product_id": {
+          "title": "Product Id",
+          "type": "string"
+        },
+        "name": {
+          "title": "Name",
+          "type": "string"
+        },
+        "category": {
+          "title": "Category",
+          "type": "string"
+        },
+        "allergens": {
+          "$ref": "#/$defs/AllergenInfo"
+        },
+        "brand": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Brand"
+        },
+        "sales_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sales Unit"
+        },
+        "base_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Base Unit"
+        },
+        "size_per_sales_unit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SizePerSalesUnit"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "temperature_condition": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Temperature Condition"
+        },
+        "nutritional_claims": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Nutritional Claims",
+          "type": "array"
+        },
+        "labels": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "title": "Labels",
+          "type": "array"
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Claim"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "product_id",
+        "name",
+        "category",
+        "allergens"
+      ],
+      "title": "SubstituteFor",
+      "type": "object"
+    },
+    "Total": {
+      "description": "A cost breakdown entry with a category, amount, and optional display text.",
+      "properties": {
+        "type": {
+          "description": "Cost category: subtotal, discount, items_discount, fulfillment, tax, fee, total.",
+          "title": "Type",
+          "type": "string"
+        },
+        "display_text": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Display Text"
+        },
+        "amount": {
+          "description": "Signed amount in minor currency units.",
+          "title": "Amount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "type",
+        "amount"
+      ],
+      "title": "Total",
+      "type": "object"
+    },
+    "Verdict": {
+      "additionalProperties": false,
+      "properties": {
+        "decision": {
+          "enum": [
+            "auto",
+            "human",
+            "deny"
+          ],
+          "title": "Decision",
+          "type": "string"
+        },
+        "checkout_id": {
+          "title": "Checkout Id",
+          "type": "string"
+        },
+        "checkout_hash": {
+          "title": "Checkout Hash",
+          "type": "string"
+        },
+        "total_minor": {
+          "title": "Total Minor",
+          "type": "integer"
+        },
+        "currency": {
+          "title": "Currency",
+          "type": "string"
+        },
+        "signer": {
+          "anyOf": [
+            {
+              "enum": [
+                "agent",
+                "human"
+              ],
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Signer"
+        },
+        "deadline": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deadline"
+        },
+        "decided_at": {
+          "format": "date-time",
+          "title": "Decided At",
+          "type": "string"
+        },
+        "rules": {
+          "items": {
+            "$ref": "#/$defs/RuleResult"
+          },
+          "title": "Rules",
+          "type": "array"
+        },
+        "judge": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/JudgeAnswer"
+          },
+          "title": "Judge",
+          "type": "array"
+        }
+      },
+      "required": [
+        "decision",
+        "checkout_id",
+        "checkout_hash",
+        "total_minor",
+        "currency",
+        "decided_at",
+        "rules"
+      ],
+      "title": "Verdict",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "Everything the page shows, in one object. The page never rebuilds a fact: it renders what is here.",
+  "properties": {
+    "scenarios": {
+      "items": {
+        "$ref": "#/$defs/DemoScenario"
+      },
+      "title": "Scenarios",
+      "type": "array"
+    },
+    "scenario": {
+      "$ref": "#/$defs/DemoScenarioRun"
+    },
+    "kitchen": {
+      "$ref": "#/$defs/DemoKitchen"
+    },
+    "request": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/DemoRequest"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "quote": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AimoCheckout"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "verdict": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Verdict"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "authorization": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/AuthorizationStatus"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "approval": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ApprovalRequest"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "order": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Order"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "attacks": {
+      "default": [],
+      "items": {
+        "$ref": "#/$defs/DemoAttack"
+      },
+      "title": "Attacks",
+      "type": "array"
+    },
+    "steps": {
+      "items": {
+        "$ref": "#/$defs/DemoStep"
+      },
+      "title": "Steps",
+      "type": "array"
+    },
+    "audit": {
+      "$ref": "#/$defs/DemoAudit"
+    }
+  },
+  "required": [
+    "scenarios",
+    "scenario",
+    "kitchen",
+    "steps",
+    "audit"
+  ],
+  "title": "DemoState",
+  "type": "object"
+}

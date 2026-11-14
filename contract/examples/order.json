@@ -17,5 +17,21 @@
     "iat": 1794654905,
     "reference": "Qm9J2t1cVb8rXw0sYk3LzN5aPf7UeHd6GiC4oTnRmEA",
     "order_id": "ord_4b9d2a10"
+  },
+  "mandate": {
+    "cap_minor": 150000,
+    "amount_minor": 101000,
+    "currency": "EUR",
+    "instrument": "invoice-account:demo-hotel-chain"
+  },
+  "payment": {
+    "payment_id": "pay_7d3a91c2",
+    "status": "captured",
+    "amount_minor": 101000,
+    "currency": "EUR",
+    "instrument": "invoice-account:demo-hotel-chain",
+    "terms": "Invoice at 14 days (simulated)",
+    "sandbox": true,
+    "captured_at": "2026-11-14T13:15:05+02:00"
   }
 }

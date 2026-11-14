@@ -2,6 +2,12 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## L8: sandbox payment round-trip (`Order.payment` / `Order.mandate`) & `GET /mandates/open`
+
+- Merged `main` after Adrien's A8 (`#30`) and A9 (`#31`) PRs and verified all harness + scenario driver tests pass cleanly (`241 passed`, `ruff` clean).
+- Added `test_real_gateway_sandbox_payment_auto_and_human_round_trip` in `tests/test_harness_service.py` covering `auto` booking, `human`-approved booking (`cap_minor=None`), and simulated EUR 20,000 invoice credit-limit exhaustion (`HTTP 403` -> clean refusal + intact buyer audit chain).
+- **For Adrien (A8 step 1 hash):** Added `GET /mandates/open` on the harness (`harness/app.py` + `harness/signer.py`) returning `policy_id`, `issued_at`, `checkout_hash`, and `payment_hash` (43-char SHA-256 base64url fingerprints, never raw SD-JWT tokens) so `scenarios/run.py` can populate `steps["open_mandate"].proof` over HTTP. Also removed the last `ap2.sdk` helper import from `harness/app.py`.
+
 ## L7: 1:55 demo script, 5-slide pitch deck & exported PDF (`docs/demo-script.md`, `docs/pitch-deck.md`, `docs/pitch-deck.pdf`)
 
 - Wrote the second-by-second **1:55** video script (`docs/demo-script.md`) across all 6 `PLAN.md` beats with exact on-screen clicks, spoken lines (~135 wpm using `"mandate"` and `"sandbox payment"`), and instant fallbacks per beat (`VALIO_MODE=replay uv run python scripts/dev.py --fresh`, `?mock=1`, lingonberry jam fallback).

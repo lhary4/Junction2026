@@ -563,3 +563,102 @@ def test_network_error_malformed_outer_checkout_and_lost_complete_retry(tmp_path
             assert recovered.order_id is not None
             assert complete_attempts == 2
             assert AuditLog(default_log_path("buyer")).verify() is None
+
+
+def test_real_gateway_sandbox_payment_auto_and_human_round_trip(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Step L8: verify `Order.payment`, `Order.mandate`, and simulated invoice credit-limit refusal end-to-end."""
+    from merchant.app import app as real_merchant_app
+
+    monkeypatch.setenv("VALIO_MODE", "replay")
+    monkeypatch.setenv("AIMO_FROZEN_NOW", "2026-11-14T13:29:07+02:00")
+    monkeypatch.setenv("AIMO_STATE_DIR", str(tmp_path))
+
+    with TestClient(real_merchant_app) as real_gw:
+        app = create_app(http_client=real_gw)
+        with TestClient(app) as client:
+            # 1) Auto order (1,000 L = 1,010.00 EUR < 1,500.00 EUR cap) books sandbox payment
+            q_auto = real_gw.post(
+                "/checkouts",
+                json={
+                    "customer": "demo-restaurant-helsinki",
+                    "delivery_date": "2026-11-16",
+                    "needs": [{"product_id": "464306", "amount": 1000, "unit": "L"}],
+                },
+            ).json()
+            res_auto = client.post("/authorize", json={"checkout_id": q_auto["checkout_id"], "request_text": "1000 L milk."})
+            assert res_auto.status_code == 200
+            status_auto = AuthorizationStatus.model_validate(res_auto.json())
+            assert status_auto.status == "ordered" and status_auto.order_id is not None
+
+            order_auto = Order.model_validate(real_gw.get(f"/orders/{status_auto.order_id}").json())
+            assert order_auto.payment is not None
+            assert order_auto.payment.sandbox is True
+            assert order_auto.payment.status == "captured"
+            assert order_auto.payment.amount_minor == 101000
+            assert order_auto.payment.instrument == "invoice-account:demo-restaurant-helsinki"
+            assert order_auto.mandate is not None and order_auto.mandate.cap_minor == 150000
+
+            # 2) Human-approved order above cap (2,000 L = 2,020.00 EUR) books sandbox payment with cap_minor=None
+            q_human = real_gw.post(
+                "/checkouts",
+                json={
+                    "customer": "demo-restaurant-helsinki",
+                    "delivery_date": "2026-11-16",
+                    "needs": [{"product_id": "464306", "amount": 2000, "unit": "L"}],
+                },
+            ).json()
+            res_pending = client.post(
+                "/authorize", json={"checkout_id": q_human["checkout_id"], "request_text": "2000 L milk."}
+            )
+            assert res_pending.status_code == 200
+            pending = AuthorizationStatus.model_validate(res_pending.json())
+            assert pending.status == "pending_approval" and pending.approval_id is not None
+
+            res_approved = client.post(
+                f"/approvals/{pending.approval_id}/decision",
+                json={"decision": "approve", "decided_by": "chef@demo-restaurant.example"},
+            )
+            assert res_approved.status_code == 200
+            approved = AuthorizationStatus.model_validate(res_approved.json())
+            assert approved.status == "ordered" and approved.order_id is not None
+
+            order_human = Order.model_validate(real_gw.get(f"/orders/{approved.order_id}").json())
+            assert order_human.payment is not None and order_human.payment.amount_minor == 202000
+            assert order_human.mandate is not None and order_human.mandate.cap_minor is None
+
+            # 3) Order exceeding the EUR 20,000 simulated invoice credit limit is cleanly refused on approve
+            q_huge = real_gw.post(
+                "/checkouts",
+                json={
+                    "customer": "demo-restaurant-helsinki",
+                    "delivery_date": "2026-11-16",
+                    "needs": [{"product_id": "464306", "amount": 20000, "unit": "L"}],
+                },
+            ).json()
+            res_huge_pending = client.post(
+                "/authorize", json={"checkout_id": q_huge["checkout_id"], "request_text": "20000 L milk."}
+            )
+            huge_pending = AuthorizationStatus.model_validate(res_huge_pending.json())
+            assert huge_pending.status == "pending_approval" and huge_pending.approval_id is not None
+
+            res_huge_refused = client.post(
+                f"/approvals/{huge_pending.approval_id}/decision",
+                json={"decision": "approve", "decided_by": "chef@demo-restaurant.example"},
+            )
+            assert res_huge_refused.status_code == 403
+            assert any("invoice account" in p for p in res_huge_refused.json()["detail"]["problems"])
+            assert AuditLog(default_log_path("buyer")).verify() is None
+
+
+def test_get_open_mandate_proofs_returns_hashes_without_raw_tokens(harness_env: tuple) -> None:
+    """`GET /mandates/open` returns SHA-256 base64url proofs and timestamp for step 1 of the AP2 trail."""
+    client, _, _, _ = harness_env
+    resp = client.get("/mandates/open")
+    assert resp.status_code == 200
+    payload = resp.json()
+    assert payload["policy_id"] == "pol_demo_restaurant_1"
+    assert payload["issued_at"] == FROZEN_NOW
+    for key in ("checkout_hash", "payment_hash"):
+        digest = payload[key]
+        assert isinstance(digest, str) and len(digest) == 43
+        assert "." not in digest and "~" not in digest

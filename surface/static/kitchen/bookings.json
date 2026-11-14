@@ -1,0 +1,35 @@
+{
+  "_sample": "Synthetic sample data for the demo: it stands in for the restaurant's own system (recipes, stock count, bookings). Not Valio data.",
+  "services": [
+    {
+      "date": "2026-11-19",
+      "meal": "dinner",
+      "booked": 38,
+      "planned": 50,
+      "usual": [
+        30,
+        50
+      ]
+    },
+    {
+      "date": "2026-11-20",
+      "meal": "dinner",
+      "booked": 46,
+      "planned": 50,
+      "usual": [
+        40,
+        50
+      ]
+    },
+    {
+      "date": "2026-11-21",
+      "meal": "dinner",
+      "booked": 50,
+      "planned": 50,
+      "usual": [
+        45,
+        50
+      ]
+    }
+  ]
+}

@@ -196,12 +196,12 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Substitutes: the gateway proposes, ranked in three tiers, and never breaks a free-from promise
 - Status: decided (the ranking inside a tier is open: Colette may change what counts first)
-- What it is: when stock is short, Valio's gateway takes what there is and proposes up to three replacements: `best` (same kind of product, same allergens), `better` (same kind, other allergens), `good` (a related kind, plant-based drinks for milk). Inside a tier, the substitutes Valio itself lists come first, then the cheapest per litre. The best one goes into the quote automatically. The agent may ask for another one from the list, never one the gateway did not offer.
-- Why: the agent never decides a fact, so it cannot invent a substitute. A lactose-free kitchen must never receive normal milk because it was cheaper, even if the allergen codes look the same: the data often lists milk but forgets lactose.
+- What it is: when stock is short, Valio's gateway takes what there is and proposes up to three replacements: `best` (same kind of product, same allergens), `better` (same kind, other allergens), `good` (a related kind, plant-based drinks for milk). Inside a tier, the substitutes Valio itself lists come first, then the product whose name is closest to the original's, then the cheapest per litre or kilo. The best one goes into the quote automatically. The agent may ask for another one from the list, never one the gateway did not offer.
+- Why: the agent never decides a fact, so it cannot invent a substitute. A lactose-free kitchen must never receive normal milk because it was cheaper, even if the allergen codes look the same: the data often lists milk but forgets lactose. The name counts before the price because Valio's categories are wide: on the restaurant menu, the cheapest product of the category was a cheddar cream for a squeaky cheese and an apple filling for a lingonberry jam. The judge sent both to a human, but the quote should not propose them in the first place.
 - What it changes for us: a substitute must arrive on time, cover the whole missing quantity, have complete allergen data, and keep every "free from" of the original. The harness still checks allergens and asks the judge, this is a first filter on Valio's side. Most stock counts from the mock are "plenty" (9,999,999,999): the quote says "available, count not given" instead of showing that number. Inside one quote the same stock is never promised twice: a second line for the same product, or a second shortfall covered by the same substitute, only gets what the first one left.
 - If we change it: `merchant/quotes.py` only. The related kinds of product are one line in it.
-- Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none).
-- Decided in: PR #11, 14/11/2026.
+- Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none); the cheapest of the tier first (what we had until the live run on the restaurant menu); a frozen version as a related kind (the frozen squeaky cheese sits in a category with ice cubes and coffee, so the category says nothing).
+- Decided in: PR #11, 14/11/2026. Name before price: PR #27, 14/11/2026.
 
 ## Orders: one per quote, and a repeated request gets the same order back
 - Status: decided
@@ -239,14 +239,14 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: a database table; a single shared log.
 - Decided in: PR #7, 14/11/2026. Shared verifier in `common/audit.py`: PR #17, 14/11/2026. Gateway moved to the shared code: PR #18, 14/11/2026. Shared per-file lock inside `common/audit.py`: PR #21, 14/11/2026.
 
-## Payments: none, the spend cap travels in an AP2 payment mandate
+## Payments: a sandbox, the order is booked on a simulated invoice account and no real money moves
 - Status: decided
-- What it is: no money moves. Wholesale orders are invoiced on the customer's account, so the "payment instrument" in the mandate is that invoice account. The mandate carries the maximum amount the agent may commit.
-- Why: payment is outside the brief, but the mandate is where AP2 puts the spend limit, and it lets Valio check the limit itself.
-- What it changes for us: nothing to integrate with a bank or a network.
-- If we change it: real payment would add AP2's other roles (credential provider, payment processor).
-- Alternatives we looked at: x402, Nevermined (named in the brief as context, not required).
-- Decided in: PR #7, 14/11/2026.
+- What it is: wholesale orders are invoiced on the customer's account, so the "payment instrument" in the AP2 payment mandate is that invoice account, and the mandate carries the maximum amount the agent may commit. Once Valio's gateway has verified the mandates, it books the order's amount on a pretend account it keeps in a file: a credit limit, what is used so far, one line per payment. The order comes back with that payment, marked `sandbox`.
+- Why: the video has to show the end of the chain, a charge after the signatures. AP2 is a payment protocol, and stopping at "mandate verified" left its last step invisible. A sandbox shows it without a bank, a card network or a payment provider's account.
+- What it changes for us: every screen and every log line about the payment says "sandbox", and the page carries the banner "Concept mock-up". In the video we say "mandate" for what is signed and "sandbox payment" for the charge. The credit limit (EUR 20,000 a customer) and the terms ("Invoice at 14 days") are made up, because Valio's real ones are not in the challenge data. An order that does not fit on the account is refused, like one above the spend cap. Starting the services with `--fresh` empties the accounts.
+- If we change it: real payment would add AP2's other roles (credential provider, payment processor) and a real provider's test mode. Only `merchant/payments.py` and the payment step of the trail would change.
+- Alternatives we looked at: no payment at all (what we had until Saturday evening: the trail stopped at the receipt); a payment provider's test mode such as Stripe (one more account and one more integration for a step the brief does not ask for); x402, Nevermined (named in the brief as context, not required).
+- Decided in: PR #7, 14/11/2026 (the spend cap in the mandate). Sandbox payment: PR #31, 14/11/2026.
 
 ## Approval page: three plain files, with a mock mode that reads the examples
 - Status: decided
@@ -259,12 +259,36 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Demo format: a 2-minute video on a portal page with scenario buttons
 - Status: decided
-- What it is: what we hand in is a video of 2 minutes at most, not a live demo. It is recorded on one page that looks like a Valio Aimo customer portal for one restaurant. A panel on the left has one button per scenario: a normal order, a substitution, an attack. A click runs the real flow. The right side shows the seven steps of the authorization (the AP2 trail) and who signed each one. A small service, the demo driver, plays the buying agent: it sends the same requests an MCP agent would send, and gives the page everything it shows as one piece of data (the demo state).
+- What it is: what we hand in is a video of 2 minutes at most, not a live demo. It is recorded on one page that looks like a Valio Aimo customer portal for one restaurant. There is one button per scenario: a normal order, a substitution, an attack. A click runs the real flow. The page shows the seven steps of the authorization (the AP2 trail) and who signed each one. How the page is laid out is the next entry. A small service, the demo driver, plays the buying agent: it sends the same requests an MCP agent would send, and gives the page everything it shows as one piece of data (the demo state). For the attack button it plays an agent whose key was stolen: it skips the guardrails and sends three bad authorizations straight to Valio, which refuses all three.
 - Why: Junction asks for a video, strictly 2 minutes. A scripted driver makes every take the same, where a live assistant took about 2 minutes for one round in our only test. One piece of data for the page lets the page be built on example files before the services are wired.
-- What it changes for us: the demo runs on the restaurant case (`scenarios/restaurant-case/`), not on the milk example of the brief. The page carries a banner "Concept mock-up, Junction 2026, synthetic data", because the video is public and the challenge data must not be shown as real Valio data. The video is recorded in replay mode, so the menu's products must be in the recorded answers.
+- What it changes for us: the demo runs on the restaurant case (`scenarios/restaurant-case/`), not on the milk example of the brief. The page carries a banner "Concept mock-up, Junction 2026, synthetic data", because the video is public and the challenge data must not be shown as real Valio data. The video is recorded in replay mode, so the menu's products must be in the recorded answers. For an order the driver holds no key. For the attack it uses the demo keys that sit in the repo, marked "DEMO ONLY": that is what a leaked key looks like, and it is why the attack proves Valio's own checks and not the guardrails.
 - If we change it: a live pitch would use the same page and the same buttons. Showing a real assistant instead of the driver needs the MCP live mode.
 - Alternatives we looked at: Claude Desktop on screen (too slow, and a chat is what the brief says this is not); an automation tool showing its steps (n8n: one more tool, and the trail already shows the real steps); the four milk acts of the first plan.
-- Decided in: PR #23, 14/11/2026.
+- Decided in: PR #23, 14/11/2026. The driver: PR #30. The attack button: PR #32, 14/11/2026.
+
+## Demo page: the chef's order in three steps, with a replay of recorded runs
+- Status: trying it
+- What it is: `surface/static/portal.html` is the page of the video. The chef goes through three steps, like a checkout: the recipes, the stock (what is needed, what the last count found, what is missing), then the order, sent by one button. The seven signing steps sit at the top and light up one by one. A side panel shows the exchange with the buying agent as a conversation. The scenario buttons are in a dark strip at the bottom, drawn so that nobody takes them for part of the customer's page.
+- Why: the first screen showed products as shop cards and did not show how an order comes to exist. A kitchen thinks in recipes and stock, so the page starts there, and the order is the last step.
+- What it changes for us:
+  - The page reads three sources. The demo driver gives the demo state. The harness gives the spend limit and takes the chef's signature. The kitchen's recipes, stock count and bookings are three small files in `surface/static/kitchen/`.
+  - The kitchen files are synthetic: they stand in for the restaurant's own system, which Valio told us we may mock. They are written so that what is missing is exactly what each recorded scenario orders, and a test checks it.
+  - When the demo driver does not answer, the page replays the runs recorded in `contract/examples/demo-state.*.json`. The strip at the bottom says which mode is on. The video can be recorded this way if a service fails.
+  - The chef cannot change a line on the page yet: a scenario always sends its own lines.
+  - The look follows the Valio Aimo web shop: its colours and its logo. Its two fonts are commercial and we have no licence, so the page ships the closest free fonts (Sofia Sans Extra Condensed and Figtree, under the SIL Open Font License) and no internet is needed.
+  - The conversation is not a chat with a model. It shows what each step reports. The chef signs with a button on the page, never in the conversation.
+- If we change it: only `surface/` changes. If the demo state changes shape, this page changes with it. If the scenarios order other lines, the kitchen files must follow, and the test says so.
+- Alternatives we looked at: product cards as in the shop (too big, and it is not a shop); a free chat with the agent (slow, and approval must not happen in a chat); the three-zone screen of the first plan, with the buttons on the left (the buttons looked like part of the product).
+- Decided in: PR for the branch `feat/surface-portal-v1`, 14/11/2026.
+
+## Chef notification: one Telegram alert when an approval is waiting, never an approval in chat
+- Status: decided
+- What it is: when the harness decides that a human must review an order, it sends one short message to the chef on Telegram with the reason in one sentence, the total in euros, the Helsinki deadline, and a link to the approval page.
+- Why: a chef in service is not watching a browser tab, so the phone needs to buzz right away. Telegram's bot service is free, arrives right away on a phone, and needs only a bot key and a chat number, unlike paid text message services or slow email setup.
+- What it changes for us: the two Telegram settings in the local environment file are optional; when either one is empty, the harness makes no network call at all. When set, the alert has a strict two-second time limit, and any failure is written to the warning log without revealing the bot key, so a broken notification never changes, blocks, or delays a verdict. Asking to authorize the same pending quote a second time does not send a second message. Above all, the chef never approves inside Telegram: the link opens the web page, which is the only place that shows and signs the exact quote.
+- If we change it: only harness/notify.py changes. Nothing in the rules, the signatures, or Valio's gateway depends on it.
+- Alternatives we looked at: approving directly inside Telegram chat (dropped because chat has no browser passkey or quote-fingerprint signing boundary); email or SMS text messages (slower on stage or require paid sender setup).
+- Decided in: PR #33, 14/11/2026.
 
 ## Chef notification: one Telegram alert when an approval is waiting, never an approval in chat
 - Status: decided
@@ -277,7 +301,6 @@ None of us is a seasoned developer. This file explains every technical choice in
 
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
-- **Sandbox payment** (planned for Saturday evening): the gateway books each order on a simulated invoice account, so the video can show a charge. It will replace "Payments: none" below when its PR is merged.
 - **Customer token on the gateway** (planned, after the demo flow): today anyone who can reach the gateway can ask a quote for any customer. Valio told us prices are per customer, so a token must say who is asking.
 
 ## Choices we dropped
@@ -288,6 +311,7 @@ None of us is a seasoned developer. This file explains every technical choice in
 - **React, Vite and SQLite**: a plain page and files are enough and need no build.
 - **Ed25519 signatures**: AP2 does not allow them for quotes.
 - **Running the whole demo inside the chat**: the brief says this is not a chatbot, and approval must happen where the agent cannot reach.
+- **No payment step at all** ("Payments: none"): the trail stopped at the signed receipt, and a video about a payment protocol never showed a charge. Replaced by the sandbox payment.
 - **Claude Desktop as the agent on screen**: our only test of a live assistant took about 2 minutes for one round (on another client, Claude Desktop itself could not run on that laptop), and the video is 2 minutes long. A scripted demo driver sends the same requests.
 - **Search results limited to the most common kind of product**: it hid the right answer whenever another kind matched more often ("butter" returned butter buns only). Every kind is returned now.
 - **Pre-accepting every substitute in the same category and allergen group**: coffee milk and sweetened vanilla milk sit in the same category and allergen group as plain milk, so only catalog-listed replacements in the top tier that lose no origin, label or dietary promise skip the judge now.

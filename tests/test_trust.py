@@ -14,7 +14,7 @@ from common import clock
 from contract.ap2 import Amount, Merchant, PaymentInstrument, PaymentMandate
 from contract.models import AimoCheckout, Authorization, BuyerPolicy
 from trust import TrustError
-from trust.checkout import checkout_hash, sign_checkout, verify_checkout
+from trust.checkout import checkout_hash, read_checkout, sign_checkout, verify_checkout
 from trust.keys import private_key, public_jwk, public_jwks
 from trust.mandates import (
     OpenMandates,
@@ -104,6 +104,11 @@ def test_1_inside_the_mandate_is_accepted(open_mandates):
     check = verify_mandates(close_as_agent(open_mandates, AGENT, jwt), jwt, MANAGER_PUB)
     assert check.ok and check.signed_by == "agent" and check.problems == []
     assert check.reference
+    # What the payment mandate allows, for the gateway's sandbox payment: the amount, and the cap the manager signed.
+    checkout = read_checkout(jwt)
+    assert (check.facts.amount_minor, check.facts.currency) == (checkout.total_minor(), "EUR")
+    assert check.facts.cap_minor == policy().autonomous_limit_minor >= checkout.total_minor()
+    assert check.facts.instrument == f"invoice-account:{checkout.aimo.customer}"
 
 
 def test_2_tampered_quote_is_refused(open_mandates):
@@ -182,6 +187,8 @@ def test_12_human_signed_order_above_the_cap_is_accepted():
     jwt = quote(2)
     check = verify_mandates(close_as_human(MANAGER, jwt), jwt, MANAGER_PUB)
     assert check.ok and check.signed_by == "human"
+    assert check.facts.cap_minor is None  # the manager signs this exact order: no cap applies
+    assert check.facts.amount_minor == read_checkout(jwt).total_minor() > policy().autonomous_limit_minor
 
 
 def test_13_human_form_signed_with_the_agent_key_is_refused():

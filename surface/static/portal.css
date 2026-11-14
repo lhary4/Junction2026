@@ -1,0 +1,1461 @@
+/*
+ * The kitchen order page, in the look of the Valio Aimo web shop (pikatukku.valioaimo.fi):
+ * petrol #005670, lime band #ecf6bc, mist #f2f6f8, line #dee4e6, condensed headlines, pill chips.
+ *
+ * It is a working tool, not a shop: three steps like a checkout (recipes, stock, order),
+ * compact tables, and the seven signing steps at the top.
+ *
+ * Fonts. The shop uses "National 2 Compressed" (headlines, tags, buttons) and "Matter" (text).
+ * Both are commercial fonts we have no licence for, so they are named first and the page
+ * falls back to the closest open fonts stored in fonts/ (no internet needed):
+ * Sofia Sans Extra Condensed and Figtree.
+ */
+
+@font-face {
+  font-family: "Sofia Sans Extra Condensed";
+  src: url("fonts/sofia-sans-extra-condensed.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Figtree";
+  src: url("fonts/figtree.woff2") format("woff2");
+  font-weight: 300 900;
+  font-display: swap;
+}
+
+:root {
+  --petrol: #005670;
+  --petrol-deep: #003747;
+  --lime-band: #ecf6bc;
+  --lime: #c0e021;
+  --mist: #f2f6f8;
+  --line: #dee4e6;
+  --ink: #14293a;
+  --grey: #5d6670;
+
+  --done: #256f3a;
+  --done-soft: #f0fbe4;
+  --waiting: #9a4300;
+  --waiting-soft: #fff5df;
+  --refused: #aa0808;
+  --refused-soft: #fff1f1;
+
+  --focus: #1f3a93;
+
+  --font-display: "National 2 Compressed", "National2Compressed", "Sofia Sans Extra Condensed", "Arial Narrow", sans-serif;
+  --font-text: "Matter", "Figtree", system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --side: 48px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  font-size: 17px;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr auto;
+  background: #fff;
+  color: var(--ink);
+  font-family: var(--font-text);
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p,
+ol,
+ul,
+dl,
+dd {
+  margin: 0;
+  padding: 0;
+}
+
+ol,
+ul {
+  list-style: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: default;
+}
+
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.site__top :focus-visible,
+.demo :focus-visible {
+  outline-color: #fff;
+}
+
+.wrap {
+  width: 100%;
+  max-width: 1880px;
+  margin: 0 auto;
+  padding: 0 var(--side);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  color: var(--petrol);
+}
+
+.mono {
+  font-family: var(--font-mono);
+  font-size: 0.85em;
+}
+
+.muted {
+  color: var(--grey);
+}
+
+.icon {
+  flex: none;
+  vertical-align: -4px;
+}
+
+/* ---------- Header ---------- */
+
+.site__top {
+  background: var(--petrol);
+  color: #fff;
+}
+
+.site__top .wrap {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.account {
+  position: relative;
+}
+
+.account__btn {
+  min-height: 36px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.account__btn:hover,
+.account__btn[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.account__chevron {
+  transition: transform 0.15s ease;
+}
+
+.account__btn[aria-expanded="true"] .account__chevron {
+  transform: rotate(180deg);
+}
+
+.account__menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 10;
+  min-width: 260px;
+  padding: 8px;
+  border-radius: 16px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--line);
+}
+
+.account__who {
+  padding: 10px 12px 12px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--grey);
+}
+
+.account__who strong {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--petrol);
+}
+
+.account__item {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  display: flex;
+  align-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--petrol);
+  text-align: left;
+}
+
+.account__item:hover {
+  background: var(--mist);
+}
+
+.site__band {
+  background: var(--lime-band);
+}
+
+.site__band .wrap {
+  height: 76px;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.logo {
+  flex: none;
+  display: block;
+  border-radius: 4px;
+}
+
+.logo img {
+  display: block;
+  height: 40px;
+  width: auto;
+}
+
+.band__title {
+  padding-left: 28px;
+  border-left: 2px solid rgba(0, 86, 112, 0.25);
+  font-size: 2.1rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* The dates to cook for. The first one is the date that matters: the goods must be there. */
+.planning {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.needby {
+  padding: 6px 16px 7px;
+  border-radius: 6px;
+  background: var(--lime);
+  line-height: 1.05;
+}
+
+.needby span {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--petrol-deep);
+}
+
+.needby b {
+  font-size: 1.7rem;
+  color: var(--petrol-deep);
+  white-space: nowrap;
+}
+
+.days {
+  display: flex;
+  gap: 8px;
+}
+
+.day {
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-radius: 6px;
+  background: #fff;
+}
+
+.day__date {
+  font-size: 1.5rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.day__covers {
+  font-size: 0.72rem;
+  line-height: 1.25;
+  color: var(--grey);
+  white-space: nowrap;
+}
+
+.day__covers b {
+  color: var(--ink);
+}
+
+.planning__src {
+  font-size: 0.7rem;
+  line-height: 1.3;
+  color: var(--petrol-deep);
+}
+
+/* ---------- The chef's three steps and the button ---------- */
+
+.flow {
+  border-bottom: 1px solid var(--line);
+}
+
+.flow .wrap {
+  height: 68px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.flow__steps {
+  display: flex;
+  align-items: center;
+}
+
+.flow__steps li {
+  display: flex;
+  align-items: center;
+}
+
+/* The line between two steps */
+.flow__steps li + li::before {
+  content: "";
+  width: 44px;
+  height: 2px;
+  margin: 0 6px;
+  background: var(--line);
+}
+
+.flow__step {
+  min-height: 52px;
+  padding: 4px 16px 4px 6px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  text-align: left;
+}
+
+.flow__step:not(:disabled):hover {
+  background: var(--mist);
+}
+
+.flow__n {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2px solid var(--line);
+  color: var(--grey);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.4rem;
+}
+
+.flow__text b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.45rem;
+  line-height: 1;
+  color: var(--grey);
+}
+
+.flow__text span {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: var(--grey);
+}
+
+.flow__step[aria-current="step"] {
+  background: var(--mist);
+}
+
+.flow__step[aria-current="step"] .flow__n {
+  border-color: var(--petrol);
+  background: var(--petrol);
+  color: #fff;
+}
+
+.flow__step[aria-current="step"] .flow__text b,
+.flow__step.is-done .flow__text b {
+  color: var(--petrol);
+}
+
+.flow__step.is-done .flow__n {
+  border-color: var(--petrol);
+  color: var(--petrol);
+  background: #fff;
+}
+
+.flow__step:disabled {
+  opacity: 0.6;
+}
+
+.flow__cta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.btn {
+  min-height: 48px;
+  padding: 0 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--petrol);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.3rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: var(--petrol-deep);
+}
+
+/* The one button that sends the order: the shop's highlighted button, and bigger. */
+.btn--go {
+  min-height: 52px;
+  padding: 0 30px;
+  background: var(--lime);
+  color: var(--petrol-deep);
+  font-size: 1.45rem;
+  box-shadow: 0 6px 18px -6px rgba(96, 120, 0, 0.7);
+}
+
+.btn--go:hover {
+  background: #cfee2c;
+}
+
+.btn--quiet {
+  background: #fff;
+  color: var(--petrol);
+  box-shadow: inset 0 0 0 2px var(--petrol);
+}
+
+.btn--quiet:hover {
+  background: var(--mist);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+}
+
+.cta__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.45rem;
+  color: var(--petrol);
+}
+
+.cta__status--waiting_for_human {
+  color: var(--waiting);
+}
+.cta__status--refused {
+  color: var(--refused);
+}
+.cta__status--done {
+  color: var(--done);
+}
+
+/* ---------- Who signs ---------- */
+
+.trail {
+  background: var(--mist);
+}
+
+.trail .wrap {
+  min-height: 56px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.trail__title {
+  flex: none;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.steps {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+}
+
+.step {
+  min-height: 40px;
+  padding: 0 14px 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--grey);
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+.step__dot {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--mist);
+  font-size: 0.75rem;
+}
+
+.step__dot .icon {
+  width: 16px;
+  height: 16px;
+  vertical-align: 0;
+}
+
+.step__signer {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.22);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.step--done {
+  background: var(--petrol);
+  color: #fff;
+}
+.step--done .step__dot {
+  background: #fff;
+  color: var(--petrol);
+}
+.step--waiting {
+  background: var(--waiting-soft);
+  color: var(--waiting);
+  box-shadow: inset 0 0 0 2px var(--waiting);
+}
+.step--waiting .step__dot {
+  background: var(--waiting);
+  color: #fff;
+}
+.step--waiting .step__signer {
+  background: #fff;
+}
+.step--refused {
+  background: var(--refused);
+  color: #fff;
+}
+.step--refused .step__dot {
+  background: #fff;
+  color: var(--refused);
+}
+.step--skipped {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--line);
+}
+
+/* ---------- Work area ---------- */
+
+.work {
+  padding-top: 16px;
+  padding-bottom: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 380px;
+  gap: 28px;
+  align-items: start;
+}
+
+.loading {
+  color: var(--grey);
+}
+
+.problem {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  background: var(--refused-soft);
+  font-size: 0.9rem;
+}
+
+.problem strong {
+  color: var(--refused);
+}
+
+.head {
+  margin-bottom: 10px;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.head h2 {
+  font-size: 2rem;
+  line-height: 1.1;
+}
+
+.head__meta {
+  font-size: 0.85rem;
+  color: var(--grey);
+}
+
+.chips {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+}
+
+.chip {
+  min-height: 36px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--mist);
+  color: var(--petrol);
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.chip span {
+  color: var(--grey);
+  font-weight: 400;
+}
+
+.chip[aria-pressed="true"] {
+  background: var(--petrol);
+  color: #fff;
+}
+
+.chip[aria-pressed="true"] span {
+  color: #fff;
+}
+
+/* Tables: compact, like a back-office tool */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.tbl th {
+  padding: 7px 12px;
+  background: var(--mist);
+  color: var(--petrol);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.tbl td {
+  padding: 5px 12px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: middle;
+}
+
+.tbl .num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.tbl--quote td:last-child {
+  white-space: nowrap;
+}
+
+.tbl tfoot td {
+  padding: 9px 12px;
+  border-bottom: 0;
+  background: var(--mist);
+  font-weight: 700;
+}
+
+.tbl--stock td {
+  height: 30px;
+}
+
+.is-covered td {
+  color: var(--grey);
+}
+
+.is-short td:first-child {
+  font-weight: 700;
+  box-shadow: inset 4px 0 0 var(--lime);
+}
+
+.short {
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: var(--lime-band);
+  color: var(--petrol-deep);
+}
+
+.covered {
+  font-size: 0.8rem;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 1px;
+  background: var(--lime-band);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tag--warn {
+  background: var(--waiting-soft);
+  color: var(--waiting);
+}
+
+/* Step 1: the list of recipes and, beside it, what goes into the chosen one */
+.split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.pick td {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.pick__btn {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.pick__btn b {
+  display: block;
+  font-size: 1rem;
+  color: var(--petrol);
+}
+
+.pick__btn span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--grey);
+}
+
+.pick:hover td {
+  background: var(--mist);
+}
+
+.pick.is-chosen td {
+  background: var(--lime-band);
+}
+
+.panel {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.panel__title {
+  padding: 12px 14px;
+  font-size: 1.05rem;
+  color: var(--petrol);
+}
+
+.tbl--tight td {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.panel .tbl tr:last-child td {
+  border-bottom: 0;
+}
+
+/* Step 3: the quote on the left, what was decided about it on the right */
+.order {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+.order__side {
+  display: grid;
+  gap: 12px;
+}
+
+.working {
+  margin-top: 14px;
+  color: var(--grey);
+  font-size: 0.9rem;
+}
+
+.card {
+  padding: 14px 16px 15px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--petrol);
+  border-radius: 6px;
+  background: #fff;
+  animation: arrive 0.3s ease both;
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+.card--human {
+  border-left-color: var(--waiting);
+}
+.card--deny {
+  border-left-color: var(--refused);
+}
+.card--done {
+  border-left-color: var(--done);
+}
+
+.card__label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--grey);
+}
+
+.card__label--gap {
+  margin-top: 12px;
+}
+
+.card__lead {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.98rem;
+}
+
+.card--done .card__lead {
+  color: var(--done);
+}
+
+.card__note {
+  margin-top: 6px;
+  font-size: 0.85rem;
+}
+
+.badge {
+  flex: none;
+  padding: 2px 10px;
+  border-radius: 2px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.badge--auto {
+  background: var(--done-soft);
+  color: var(--done);
+}
+.badge--human {
+  background: var(--waiting-soft);
+  color: var(--waiting);
+}
+.badge--deny {
+  background: var(--refused-soft);
+  color: var(--refused);
+}
+
+.rules {
+  margin-top: 6px;
+  font-size: 0.8rem;
+}
+
+.rules summary {
+  color: var(--petrol);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.rules ul {
+  margin-top: 6px;
+  display: grid;
+  gap: 3px;
+}
+
+.rule {
+  display: flex;
+  gap: 6px;
+}
+
+.rule .icon {
+  width: 16px;
+  height: 16px;
+  margin-top: 1px;
+  vertical-align: 0;
+  color: var(--done);
+}
+
+.rule--human .icon,
+.rule--deny .icon {
+  color: var(--waiting);
+}
+
+.reasons {
+  margin-top: 4px;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--waiting);
+}
+
+.versus {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.versus__side {
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: var(--mist);
+}
+
+.versus__name {
+  margin: 2px 0 6px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--petrol);
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 12px;
+  font-size: 0.8rem;
+}
+
+.facts dt {
+  color: var(--grey);
+}
+
+.card--done .facts {
+  margin-top: 8px;
+}
+
+.judges {
+  margin-top: 4px;
+  display: grid;
+  gap: 4px;
+}
+
+.judge {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px 44px;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.82rem;
+}
+
+.judge__bar {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--line);
+}
+
+.judge__fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 999px;
+  background: var(--waiting);
+}
+
+.judge__fill--auto {
+  background: var(--done);
+}
+
+/* The threshold above which the agent may sign alone */
+.judge__mark {
+  position: absolute;
+  top: -4px;
+  bottom: -4px;
+  width: 2px;
+  background: var(--ink);
+}
+
+.judge__p {
+  text-align: right;
+  font-weight: 700;
+}
+
+.sign {
+  margin-top: 12px;
+  padding-top: 12px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.sign__deadline {
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.85rem;
+  color: var(--waiting);
+}
+
+.sign__done {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--refused);
+}
+
+.sign__done--approved {
+  color: var(--done);
+}
+
+.attacks {
+  margin-top: 6px;
+  display: grid;
+  gap: 8px;
+}
+
+.attack {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--refused-soft);
+}
+
+.attack__title {
+  display: flex;
+  gap: 6px;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.attack__title .icon {
+  color: var(--refused);
+}
+
+.attack__status {
+  margin: 2px 0 0 26px;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 1rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--refused);
+}
+
+.attack--accepted {
+  background: var(--refused);
+  color: #fff;
+}
+
+.attack--accepted .attack__status,
+.attack--accepted .icon {
+  color: #fff;
+}
+
+.attack__problems {
+  margin: 2px 0 0 26px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--grey);
+  overflow-wrap: anywhere;
+}
+
+/* ---------- Side column: the menu, small, and the agent ---------- */
+
+.work__side {
+  display: grid;
+  gap: 14px;
+}
+
+.side__title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.menu {
+  padding: 12px 16px;
+  border-radius: 6px;
+  background: var(--petrol);
+  color: #fff;
+}
+
+.menu .side__title {
+  color: #fff;
+}
+
+.menu__list {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.menu__list li {
+  padding: 3px 0;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  align-items: baseline;
+}
+
+.menu__course {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 0.95rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--lime);
+}
+
+.agent {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.agent .side__title {
+  padding: 12px 16px;
+  background: var(--mist);
+}
+
+.talk {
+  max-height: calc(100vh - 522px);
+  min-height: 220px;
+  padding: 12px 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  overflow-y: auto;
+}
+
+.say {
+  max-width: 92%;
+  padding: 8px 12px 9px;
+  border-radius: 14px 14px 14px 4px;
+  background: var(--mist);
+  font-size: 0.84rem;
+  animation: arrive 0.25s ease both;
+}
+
+.say__who {
+  display: block;
+  margin-bottom: 1px;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--petrol);
+}
+
+.say__proof {
+  display: block;
+  margin-top: 3px;
+  color: var(--grey);
+  font-size: 0.68rem;
+}
+
+.say--chef {
+  align-self: flex-end;
+  border-radius: 14px 14px 4px 14px;
+  background: var(--petrol);
+  color: #fff;
+}
+
+.say--chef .say__who,
+.say--chef .say__proof {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.say--waiting {
+  background: var(--waiting-soft);
+}
+.say--refused {
+  background: var(--refused-soft);
+}
+
+.say__dots {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.say__dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--petrol);
+  animation: blink 1s infinite ease-in-out;
+}
+
+.say__dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.say__dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* ---------- Demo strip: for the team, drawn so that it does not look like the customer's page ---------- */
+
+.demo {
+  padding: 5px var(--side);
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  background: #1c2126;
+  border-top: 2px dashed #6b7680;
+  color: #c9d1d9;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.demo__label {
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: #c9d1d9;
+  color: #1c2126;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.demo__btn {
+  min-height: 24px;
+  padding: 2px 10px;
+  border: 1px solid #6b7680;
+  border-radius: 3px;
+  background: transparent;
+  color: #fff;
+}
+
+.demo__btn:hover {
+  background: #2c343b;
+}
+
+.demo__btn[aria-pressed="true"] {
+  background: #c9d1d9;
+  border-color: #c9d1d9;
+  color: #1c2126;
+}
+
+.demo__src {
+  margin-left: 10px;
+}
+
+.demo__note {
+  margin-left: auto;
+}
+
+/* ---------- Smaller screens ---------- */
+
+@media (max-width: 1500px) {
+  .planning__src {
+    display: none;
+  }
+
+  .order {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 1180px) {
+  :root {
+    --side: 24px;
+  }
+
+  .work {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .site__band .wrap,
+  .flow .wrap {
+    height: auto;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .planning {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .talk {
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --side: 14px;
+  }
+
+  .band__title {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .days,
+  .split,
+  .versus {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .days {
+    display: grid;
+    width: 100%;
+  }
+
+  .flow__steps li + li::before {
+    width: 10px;
+    margin: 0 2px;
+  }
+
+  .flow__text span {
+    display: none;
+  }
+
+  .flow__step {
+    padding-right: 8px;
+    gap: 6px;
+  }
+
+  .flow__cta {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .flow__cta .btn {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .tbl {
+    font-size: 0.8rem;
+  }
+
+  .tbl th,
+  .tbl td {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+
+  .tbl--stock td:nth-child(2),
+  .tbl--stock th:nth-child(2),
+  .tbl--quote td:nth-child(5),
+  .tbl--quote th:nth-child(5) {
+    display: none;
+  }
+
+  .judge {
+    grid-template-columns: minmax(0, 1fr) 80px 40px;
+  }
+
+  .demo__src,
+  .demo__note {
+    margin-left: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

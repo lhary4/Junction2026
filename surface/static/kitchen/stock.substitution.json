@@ -1,0 +1,253 @@
+{
+  "_sample": "Synthetic sample data for the demo: it stands in for the restaurant's own system (recipes, stock count, bookings). Not Valio data.",
+  "counted_at": "2026-11-14",
+  "counted_by": "by hand, weekly count",
+  "for_services": 3,
+  "lines": [
+    {
+      "product_id": "461921",
+      "name": "Rainbow trout fillet",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "KG",
+      "need": 9.9,
+      "in_stock": 10,
+      "to_order": 0
+    },
+    {
+      "product_id": "460837",
+      "name": "Red beetroot",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "KG",
+      "need": 12,
+      "in_stock": 12,
+      "to_order": 0
+    },
+    {
+      "product_id": "460810",
+      "name": "Yellow beetroot",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "KG",
+      "need": 4.5,
+      "in_stock": 5,
+      "to_order": 0
+    },
+    {
+      "product_id": "476890",
+      "name": "Smetana, lactose free",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "KG",
+      "need": 4.5,
+      "in_stock": 6,
+      "to_order": 0
+    },
+    {
+      "product_id": "460727",
+      "name": "Fresh horseradish",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "KG",
+      "need": 0.45,
+      "in_stock": 0.5,
+      "to_order": 0
+    },
+    {
+      "product_id": "460395",
+      "name": "Dill",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "ST",
+      "need": 6,
+      "in_stock": 6,
+      "to_order": 0
+    },
+    {
+      "product_id": "467958",
+      "name": "Thin rye crispbread",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "ST",
+      "need": 6,
+      "in_stock": 6,
+      "to_order": 0
+    },
+    {
+      "product_id": "465607",
+      "name": "Reindeer strips for sautéing, frozen",
+      "dishes": [
+        "Main"
+      ],
+      "unit": "KG",
+      "need": 22.5,
+      "in_stock": 25,
+      "to_order": 0
+    },
+    {
+      "product_id": "460078",
+      "name": "Almond potatoes",
+      "dishes": [
+        "Main"
+      ],
+      "unit": "KG",
+      "need": 33,
+      "in_stock": 35,
+      "to_order": 0
+    },
+    {
+      "product_id": "464306",
+      "name": "Lactose-free semi-skimmed milk",
+      "dishes": [
+        "Main"
+      ],
+      "unit": "L",
+      "need": 7.5,
+      "in_stock": 8,
+      "to_order": 0
+    },
+    {
+      "product_id": "460195",
+      "name": "Onions",
+      "dishes": [
+        "Main"
+      ],
+      "unit": "KG",
+      "need": 4.5,
+      "in_stock": 10,
+      "to_order": 0
+    },
+    {
+      "product_id": "465815",
+      "name": "Lingonberry jam",
+      "dishes": [
+        "Main"
+      ],
+      "unit": "KG",
+      "need": 4.5,
+      "in_stock": 6,
+      "to_order": 0
+    },
+    {
+      "product_id": "468513",
+      "name": "Pickled cucumbers",
+      "dishes": [
+        "Main"
+      ],
+      "unit": "ST",
+      "need": 2,
+      "in_stock": 2,
+      "to_order": 0
+    },
+    {
+      "product_id": "474880",
+      "name": "Squeaky cheese (leipäjuusto), lactose free",
+      "dishes": [
+        "Dessert"
+      ],
+      "unit": "KG",
+      "need": 10.5,
+      "in_stock": 0,
+      "to_order": 10.5
+    },
+    {
+      "product_id": "469044",
+      "name": "Cloudberry jam",
+      "dishes": [
+        "Dessert"
+      ],
+      "unit": "KG",
+      "need": 4.5,
+      "in_stock": 5,
+      "to_order": 0
+    },
+    {
+      "product_id": "464194",
+      "name": "Whipping cream, lactose free",
+      "dishes": [
+        "Dessert"
+      ],
+      "unit": "L",
+      "need": 3.75,
+      "in_stock": 4,
+      "to_order": 0
+    },
+    {
+      "product_id": "460200",
+      "name": "Wholegrain oat flakes",
+      "dishes": [
+        "Dessert"
+      ],
+      "unit": "KG",
+      "need": 1.5,
+      "in_stock": 2,
+      "to_order": 0
+    },
+    {
+      "product_id": "463437",
+      "name": "Butter, lactose free, salted",
+      "dishes": [
+        "Main",
+        "Dessert"
+      ],
+      "unit": "KG",
+      "need": 6.45,
+      "in_stock": 6.5,
+      "to_order": 0
+    },
+    {
+      "product_id": "468172",
+      "name": "Fine sea salt",
+      "dishes": [
+        "Starter",
+        "Main"
+      ],
+      "unit": "KG",
+      "need": 0.94,
+      "in_stock": 1.6,
+      "to_order": 0
+    },
+    {
+      "product_id": "460325",
+      "name": "Caster sugar",
+      "dishes": [
+        "Starter",
+        "Dessert"
+      ],
+      "unit": "KG",
+      "need": 1.05,
+      "in_stock": 2,
+      "to_order": 0
+    },
+    {
+      "product_id": "461009",
+      "name": "Ground black pepper",
+      "dishes": [
+        "Main"
+      ],
+      "unit": "KG",
+      "need": 0.03,
+      "in_stock": 0.48,
+      "to_order": 0
+    },
+    {
+      "product_id": "466608",
+      "name": "Rapeseed oil",
+      "dishes": [
+        "Starter"
+      ],
+      "unit": "L",
+      "need": 0.6,
+      "in_stock": 10,
+      "to_order": 0
+    }
+  ]
+}

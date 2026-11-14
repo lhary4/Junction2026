@@ -4,6 +4,7 @@ Checks, in this order:
   1. the quote exists, is still the one Valio signed, and has not expired
   2. the mandates verify against it (trust.verify_mandates: signatures, merchant, quote hash, amount, spend cap)
   3. the quote has not been ordered yet
+  4. the amount fits on the customer's invoice account (merchant/payments.py: a sandbox, no real money moves)
 
 A mandate is bound to one quote by its hash, so "this mandate was already used" can only mean "this quote was already
 ordered". The same mandate sent again gets the same order back: a retry after a lost answer never orders twice.
@@ -12,12 +13,13 @@ Another mandate for an ordered quote is refused.
 
 import threading
 import uuid
+from datetime import datetime
 
 from pydantic import BaseModel
 
 from common import clock
-from contract.models import AimoCheckout, Authorization, Order, Receipt
-from merchant import audit, store
+from contract.models import AimoCheckout, Authorization, Order, Payment, Receipt
+from merchant import audit, payments, store
 from merchant.catalog import HELSINKI
 from trust import TrustError
 from trust.checkout import checkout_hash, verify_checkout
@@ -77,16 +79,23 @@ def _complete(checkout_jwt: str, digest: str, authorization: Authorization) -> O
         raise OrderRefused([f"quote {checkout.id} was already ordered as {existing.order_id} with another mandate"])
 
     audit.record("mandate_verified", *_mandate_story(check), checkout.id, digest)
-    order = _accept(checkout, digest, check)
+    order_id = f"ord_{uuid.uuid4().hex[:8]}"
+    now = clock.now().astimezone(HELSINKI)
+    try:
+        payment = payments.capture(checkout, check.facts, order_id, now)
+    except payments.PaymentRefused as e:
+        raise OrderRefused([str(e)]) from e
+    order = _accept(checkout, digest, check, order_id, now, payment)
     store.save_order(order)
+    audit.record("payment_captured", *_payment_story(payment, checkout.aimo.customer), checkout.id, digest)
     why = "Valid mandate for a quote Valio signed and that has not expired."
     audit.record("order_accepted", f"Order {order.order_id} accepted, receipt signed.", why, checkout.id, digest)
     return order
 
 
-def _accept(checkout: AimoCheckout, digest: str, check: MandateCheck) -> Order:
-    order_id = f"ord_{uuid.uuid4().hex[:8]}"
-    now = clock.now().astimezone(HELSINKI)
+def _accept(
+    checkout: AimoCheckout, digest: str, check: MandateCheck, order_id: str, now: datetime, payment: Payment
+) -> Order:
     receipt_jwt = sign_receipt(order_id, check.reference, private_key("merchant"))
     return Order(
         order_id=order_id,
@@ -102,6 +111,19 @@ def _accept(checkout: AimoCheckout, digest: str, check: MandateCheck) -> Order:
         accepted_at=now,
         receipt_jwt=receipt_jwt,
         receipt=Receipt.model_validate(verify_receipt(receipt_jwt, public_jwks())),
+        mandate=check.facts,
+        payment=payment,
+    )
+
+
+def _payment_story(payment: Payment, customer: str) -> tuple[str, str]:
+    """What and why for the audit line of the sandbox payment."""
+    booked = payments.account(customer, payment.currency)
+    amount = f"{payment.amount_minor / 100:.2f} {payment.currency}"
+    used = f"{booked.used_minor / 100:.2f} of {booked.credit_limit_minor / 100:.2f} {booked.currency}"
+    return (
+        f"Sandbox payment {payment.payment_id}: {amount} booked on {payment.instrument}.",
+        f"The mandates verify. Simulated account: {used} used. No real money moves.",
     )
 
 
