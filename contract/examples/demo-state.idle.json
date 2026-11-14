@@ -1,0 +1,124 @@
+{
+  "scenarios": [
+    {
+      "id": "normal-order",
+      "title": "Normal order",
+      "hint": "The dairy and dry goods of the menu. Inside the limits the chef signed: the agent signs."
+    },
+    {
+      "id": "substitution",
+      "title": "Substitution",
+      "hint": "Valio cannot deliver one ingredient. The chef compares the substitutes and signs."
+    },
+    {
+      "id": "attack",
+      "title": "Attack",
+      "hint": "Three bad mandates sent straight to Valio. No valid signature, no order."
+    }
+  ],
+  "scenario": {
+    "id": null,
+    "title": null,
+    "status": "idle"
+  },
+  "kitchen": {
+    "customer": "demo-restaurant-helsinki",
+    "name": "Demo Restaurant Helsinki",
+    "covers_per_service": 50,
+    "services": [
+      "2026-11-19 dinner",
+      "2026-11-20 dinner",
+      "2026-11-21 dinner"
+    ],
+    "menu": [
+      {
+        "course": "Starter",
+        "dish": "Cured rainbow trout, roasted Finnish beetroot, horseradish smetana, rye crisp, dill"
+      },
+      {
+        "course": "Main",
+        "dish": "Sautéed reindeer (poronkäristys), butter-mashed almond potatoes, lingonberries, pickled cucumber"
+      },
+      {
+        "course": "Dessert",
+        "dish": "Warm squeaky cheese (leipäjuusto), cloudberry jam, whipped cream, oat crumble"
+      }
+    ]
+  },
+  "request": null,
+  "quote": null,
+  "verdict": null,
+  "authorization": null,
+  "approval": null,
+  "order": null,
+  "attacks": [],
+  "steps": [
+    {
+      "key": "open_mandate",
+      "title": "Open mandate",
+      "signer": "manager",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "signed_quote",
+      "title": "Signed quote",
+      "signer": "merchant",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "verdict",
+      "title": "Verdict",
+      "signer": "none",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "closed_mandates",
+      "title": "Closed mandates",
+      "signer": "none",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "merchant_verifies",
+      "title": "Valio verifies",
+      "signer": "merchant",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "sandbox_payment",
+      "title": "Sandbox payment",
+      "signer": "merchant",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "signed_receipt",
+      "title": "Signed receipt",
+      "signer": "merchant",
+      "status": "pending",
+      "detail": null,
+      "proof": null,
+      "at": null
+    }
+  ],
+  "audit": {
+    "buyer": [],
+    "merchant": []
+  }
+}

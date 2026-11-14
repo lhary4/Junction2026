@@ -32,6 +32,7 @@ EXPORTED = [
     models.Authorization,
     models.Order,
     models.AuditEvent,
+    models.DemoState,
 ]
 
 

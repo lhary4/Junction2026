@@ -56,6 +56,7 @@ Allergens are not a claim but have the same idea: `{"contains": [...], "free_fro
 | `Authorization` (the mandates) | `authorization.json` | harness | gateway |
 | `Order` | `order.json` | gateway | harness, agent, surface |
 | `AuditEvent` | `audit-events.json` | both sides | surface |
+| `DemoState` | `demo-state.idle.json`, `.normal-order`, `.substitution.pending`, `.substitution.approved`, `.attack` | demo driver (`GET /state`) | surface |
 
 ### The lookup
 
@@ -141,6 +142,54 @@ The spend cap is carried by the open payment mandate (`AmountRange`), so the gat
 
 A refusal is `{"problems": ["...", "..."]}`: every problem found, as readable sentences. Nothing is created on a refusal. Each of these cases writes a line in the gateway's audit log: `quote_issued`, `mandate_verified`, `order_accepted`, `order_replayed`, `order_refused`.
 
+### The demo state
+
+Everything the demo page shows, as one object. The demo driver builds it from the quote, the verdict, the approval, the order and both audit logs, and the page renders it without working out a fact itself. The five example files are real runs of the gateway and the harness in live mode on 14/11, for the customer `demo-restaurant-helsinki`.
+
+| Field | Meaning |
+|---|---|
+| `scenarios` | the buttons: `id`, `title`, `hint` |
+| `scenario` | the one on screen: `id`, `title`, `status`. After a reset `id` and `title` are `null` and `status` is `idle` |
+| `kitchen` | the restaurant: `customer`, `name`, `covers_per_service`, `services`, `menu` (`course`, `dish`) |
+| `request` | what the agent was asked: `text` (the sentence the harness receives), `delivery_date`, `lines` (`product_id`, `name`, `amount`, `unit`, `dish`), in the kitchen's units |
+| `quote` | the `AimoCheckout`, without its token |
+| `verdict`, `authorization`, `approval`, `order` | `Verdict`, `AuthorizationStatus`, `ApprovalRequest`, `Order`, each `null` until it exists |
+| `attacks` | for the attack scenario: `key`, `title`, `status`, and the `problems` Valio answered |
+| `steps` | the AP2 trail: always the seven steps below, in this order |
+| `audit` | `buyer` and `merchant`: the lines each side wrote about this quote |
+
+| `scenario.status` | Meaning |
+|---|---|
+| `idle` | nothing has run |
+| `running` | the driver is between two calls |
+| `waiting_for_human` | an approval is pending: the chef signs on the page |
+| `done` | ordered, receipt signed |
+| `refused` | no order: a `deny` verdict, a rejected or expired approval, or the attacks, all refused |
+
+A step is `key`, `title`, `signer` (`manager`, `agent`, `merchant` or `none`), `status`, `detail` (one sentence to show), `proof` (a hash or an identifier, `null` when there is none) and `at`.
+
+| `key` | Signer | `proof` |
+|---|---|---|
+| `open_mandate` | `manager` | hash of the open payment mandate |
+| `signed_quote` | `merchant` | the quote hash (`checkout_hash`) |
+| `verdict` | `none` | none: the rules are in `verdict` |
+| `closed_mandates` | `agent` on `auto`, `manager` on `human`, `none` until the verdict says who | the mandate reference, the one the order and the receipt carry |
+| `merchant_verifies` | `merchant` | none |
+| `sandbox_payment` | `merchant` | the payment identifier |
+| `signed_receipt` | `merchant` | hash of the receipt token |
+
+| Step `status` | Meaning |
+|---|---|
+| `pending` | not reached yet |
+| `done` | happened |
+| `waiting` | waits for the human (only `closed_mandates`) |
+| `refused` | Valio or the harness said no |
+| `skipped` | will not happen in this scenario |
+
+An attack's `status` is `pending`, `refused` (the expected end) or `accepted`, which would mean Valio let a bad mandate through: the page must show it as a failure.
+
+Two things in the examples are ahead of the code: the `sandbox_payment` step is illustrative until the gateway books payments (step A9), and the substitution examples will be recorded again once the ranking of substitutes is settled (step A7).
+
 ## Routes
 
 Valio gateway, port 8001 (`merchant/`):
@@ -171,7 +220,17 @@ Harness, port 8002 (`harness/`):
 | `GET /audit` | | `[AuditEvent]` |
 | `GET /` | | serves `surface/static` (and `/contract/examples` for `?mock=1`) |
 
-Both services allow cross-origin calls from `localhost`, so the page can read both.
+Demo driver, port 8003 (`scenarios/run.py`, arrives with step A8):
+
+| Route | Input | Output |
+|---|---|---|
+| `POST /scenarios/{id}/run` | | `DemoState` |
+| `GET /state` | | `DemoState` |
+| `POST /reset` | | `DemoState`, idle |
+
+The chef's decision does not go through the driver: the page sends it to the harness (`POST /approvals/{id}/decision`), then reads `GET /state` again.
+
+The three services allow cross-origin calls from `localhost`, so the page can read them all.
 
 ## MCP tools (`agent_mcp/`)
 
