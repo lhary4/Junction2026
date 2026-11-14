@@ -1,0 +1,8 @@
+{
+  "kty": "EC",
+  "kid": "manager",
+  "crv": "P-256",
+  "x": "HMlTTBU80HOCFXW7A3yL9aa61VGBb50TBGp7sGfK0jQ",
+  "y": "qYUD8hiMw2XHlntIEi3yLmOURrvSR6czqQzccd0geWc",
+  "d": "SUg7aV4qdA63ikAWa09BGDAf8ZsOM7ZhfceBfHLY7z0"
+}

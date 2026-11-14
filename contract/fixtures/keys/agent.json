@@ -1,0 +1,8 @@
+{
+  "kty": "EC",
+  "kid": "agent",
+  "crv": "P-256",
+  "x": "ar7Fz52pigSBUngQ0DKy_fWK0TQC9ouC6HQpWPLg1zw",
+  "y": "5AIQnh4bmEOHlgCyY3OEgc05GJaDBCvhyVDaTQm2ZYc",
+  "d": "ezx-UI6wdKsiSWnSFmY5gPvBZYHRS9rGQKQdMT_OATw"
+}
