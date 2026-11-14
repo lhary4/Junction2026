@@ -222,15 +222,25 @@ Harness, port 8002 (`harness/`):
 | `GET /audit` | | `[AuditEvent]` |
 | `GET /` | | serves `surface/static` (and `/contract/examples` for `?mock=1`) |
 
-Demo driver, port 8003 (`scenarios/run.py`, arrives with step A8):
+Demo driver, port 8003 (`scenarios/run.py`):
 
 | Route | Input | Output |
 |---|---|---|
-| `POST /scenarios/{id}/run` | | `DemoState` |
+| `POST /scenarios/{id}/run` | | `DemoState` once the scenario has run: `done`, `waiting_for_human` or `refused` |
 | `GET /state` | | `DemoState` |
 | `POST /reset` | | `DemoState`, idle |
 
+The driver plays the buying agent with the two calls of the MCP tools: `POST /checkouts` on the gateway, then `POST /authorize` on the harness. It holds no key. It only remembers which scenario is on screen and which quote it asked for: every `GET /state` reads the quote, the verdict, the approval, the order and both audit logs again from the two services. The scenarios it knows are in `state.scenarios`: `normal-order` and `substitution` today, the attack comes with step A10.
+
 The chef's decision does not go through the driver: the page sends it to the harness (`POST /approvals/{id}/decision`), then reads `GET /state` again.
+
+| Case | Answer |
+|---|---|
+| Unknown scenario | HTTP 404 |
+| A scenario is still running | HTTP 409 |
+| The gateway or the harness does not answer, or refuses the request | HTTP 502 with a readable `detail` that names the service. The state goes back to idle: nothing half-done is shown |
+
+Two steps of the trail are not complete yet in the live state. `open_mandate` has no `proof`: the harness holds the open mandates and has no route that shows them. `sandbox_payment` is `skipped` with a sentence saying so, until the gateway books payments (step A9).
 
 The three services allow cross-origin calls from `localhost`, so the page can read them all.
 
