@@ -3,25 +3,36 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Valio Aimo: kitchen order (concept mock-up)</title>
+    <title>Valio Aimo · Kitchen Order Desk (Concept Mock-up)</title>
     <link rel="preload" href="fonts/figtree.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="fonts/sofia-sans-extra-condensed.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="portal.css" />
   </head>
   <body>
-    <!-- The Valio Aimo header: a petrol row with the signed-in customer, then the lime band. -->
+    <!-- Top utility bar + white masthead with unified service covers ledger -->
     <header class="site">
       <div class="site__top">
         <div class="wrap">
+          <p class="site__eyebrow">
+            <span class="site__brand-tag">Valio Aimo Wholesale</span>
+            <span class="site__sep" aria-hidden="true">/</span>
+            <span>Kitchen Procurement Desk</span>
+            <span class="site__mock">Concept mock-up · synthetic kitchen data</span>
+          </p>
           <div class="account" id="account"></div>
         </div>
       </div>
       <div class="site__band">
         <div class="wrap">
-          <a class="logo" href="portal.html" aria-label="Valio Aimo, home">
-            <img src="img/valio-aimo-logo-petrol.svg" alt="Valio Aimo" width="120" height="40" />
-          </a>
-          <h1 class="band__title display">Kitchen order</h1>
+          <div class="site__identity">
+            <a class="logo" href="portal.html" aria-label="Valio Aimo, home">
+              <img src="img/valio-aimo-logo-petrol.svg" alt="Valio Aimo" width="114" height="38" />
+            </a>
+            <div class="band__heading">
+              <h1 class="band__title display">Kitchen order</h1>
+              <p class="band__sub">50-cover Nordic menu · Helsinki</p>
+            </div>
+          </div>
           <!-- The services to cook for, from the kitchen's bookings and planning. -->
           <div class="planning" id="planning"></div>
         </div>
@@ -29,16 +40,19 @@
     </header>
 
     <div class="shell wrap">
-      <!-- Who signs: the steps of the order, always on the left, lit one by one while the assistant works. -->
+      <!-- Who signs: cryptographic AP2 mandate docket on the left -->
       <aside class="trail" id="trail" aria-label="Who signs, step by step">
-        <h2 class="trail__title display">Who signs</h2>
+        <div class="trail__head">
+          <h2 class="trail__title display">Who signs</h2>
+          <span class="trail__proto mono">AP2 chain</span>
+        </div>
         <div class="limit" id="limit"></div>
         <ol class="steps" id="steps"></ol>
         <div id="seal"></div>
       </aside>
 
       <main class="work">
-        <!-- The chef's three steps, like a checkout, and the button of the current step. -->
+        <!-- The chef's three steps, framed as an architectural ledger bar -->
         <nav class="flow" aria-label="Order steps">
           <ol class="flow__steps" id="flow"></ol>
           <div class="flow__cta" id="cta"></div>
@@ -53,7 +67,14 @@
           <ol class="talk" id="talk" aria-live="polite"></ol>
           <form class="ask" id="ask" autocomplete="off">
             <label class="visually-hidden" for="ask-text">Message to Aimo Personal Assistant</label>
-            <input class="ask__text" id="ask-text" name="text" type="text" maxlength="500" placeholder="Ask, or say what changed in the stock" />
+            <input
+              class="ask__text"
+              id="ask-text"
+              name="text"
+              type="text"
+              maxlength="500"
+              placeholder="Ask a question, or update a stock count…"
+            />
             <button class="ask__send" id="ask-send" type="submit" aria-label="Send"></button>
           </form>
           <p class="ask__note" id="ask-note"></p>
@@ -61,11 +82,11 @@
       </aside>
     </div>
 
-    <!-- A short confirmation after each step, and the window that asks before a signature. -->
+    <!-- Short confirmation toast and confirmation dialog before signing -->
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <dialog class="dialog" id="dialog" aria-labelledby="dialog-title"></dialog>
 
-    <!-- For the team only: not part of the customer's page. -->
+    <!-- Stage console for the team only: visually distinct from the customer portal -->
     <footer class="demo" id="demo" aria-label="Demo controls"></footer>
 
     <script src="portal.js"></script>

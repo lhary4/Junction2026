@@ -248,17 +248,19 @@ function stockText(claim) {
 
 function icon(name) {
   const paths = {
-    check: '<path d="M4 10.500l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
-    cross: '<path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
-    wait: '<circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M10 6v4.500l3 1.500" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
-    skip: '<path d="M5 10h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
-    spark: '<path d="M9 2l1.700 4.600L15.300 8.300l-4.600 1.700L9 14.600 7.300 10 2.700 8.300l4.600-1.700z" fill="currentColor"/><path d="M15.500 12.500l.8 2.200 2.200.8-2.200.8-.8 2.200-.8-2.200-2.200-.8 2.200-.8z" fill="currentColor"/>',
-    user: '<circle cx="10" cy="6.500" r="3.500" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 17.500c.6-3.400 3.400-5.500 7-5.500s6.400 2.100 7 5.500" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
-    arrow: '<path d="M4 10h11M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>',
-    lock: '<rect x="4.500" y="9" width="11" height="8" rx="1.800" fill="currentColor"/><path d="M7 9V6.500a3 3 0 0 1 6 0V9" fill="none" stroke="currentColor" stroke-width="2"/>',
-    shield: '<path d="M10 2l6.500 2.400v4.800c0 4-2.700 7.300-6.500 8.800-3.800-1.500-6.500-4.800-6.500-8.800V4.400z" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linejoin="round"/><path d="M7 10l2.200 2.200L13.200 8" fill="none" stroke="currentColor" stroke-width="1.800" stroke-linecap="round" stroke-linejoin="round"/>',
-    pen: '<path d="M3 17l1-4L14 3l3 3L7 16z" fill="none" stroke="currentColor" stroke-width="1.700" stroke-linejoin="round"/><path d="M12 5l3 3" stroke="currentColor" stroke-width="1.700"/>',
-    send: '<path d="M3 10l14-6.500-5 14-2.800-5.700z" fill="currentColor"/>',
+    check: '<path d="M4 10.500l4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>',
+    cross: '<path d="M5.5 5.5l9 9M14.5 5.5l-9 9" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>',
+    wait: '<circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="1.9"/><path d="M10 6v4.4l2.8 1.6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>',
+    skip: '<path d="M5.5 10h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    dispatch: '<path d="M4 3.5h8.5L16 7v9.5H4z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M12 3.5V7h4M7 11.5h6M10.5 9l2.5 2.5-2.5 2.5" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>',
+    terminal: '<rect x="2.75" y="3.75" width="14.5" height="12.5" rx="1.75" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M6.25 8l2.5 2-2.5 2M10.25 12h3.25" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
+    gauge: '<path d="M3.5 13.5a6.5 6.5 0 1 1 13 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M10 13l3.2-4.2" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/><circle cx="10" cy="13" r="1.4" fill="currentColor"/>',
+    user: '<circle cx="10" cy="6.500" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 17c.6-3.1 3.2-5 6.5-5s5.9 1.9 6.5 5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+    arrow: '<path d="M4 10h11M11 5.5L15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    lock: '<rect x="4.75" y="9" width="10.5" height="7.75" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7.2 9V6.6a2.8 2.8 0 0 1 5.6 0V9" fill="none" stroke="currentColor" stroke-width="1.7"/>',
+    shield: '<path d="M10 2.2l6.3 2.3v4.7c0 3.9-2.6 7.1-6.3 8.6-3.7-1.5-6.3-4.7-6.3-8.6V4.5z" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linejoin="round"/><path d="M7.1 10.1l2.1 2.1 3.9-4.1" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>',
+    pen: '<path d="M3.5 16.5l.9-3.7L13.7 3.5l2.8 2.8-9.3 9.3z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M11.8 5.4l2.8 2.8" stroke="currentColor" stroke-width="1.7"/>',
+    send: '<path d="M4 10h11.5M11 5.5L15.5 10 11 14.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
   };
   return `<svg class="icon" width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">${paths[name]}</svg>`;
 }
@@ -531,7 +533,7 @@ function drawFlow() {
         (item) => `<li>
           <button class="flow__step${item.done ? " is-done" : ""}" type="button" data-step="${item.n}"
             ${app.step === item.n ? 'aria-current="step"' : ""} ${item.open ? "" : "disabled"}>
-            <span class="flow__n">${item.done ? icon("check") : item.n}</span>
+            <span class="flow__n">${item.done ? icon("check") : String(item.n).padStart(2, "0")}</span>
             <span class="flow__text"><b>${item.title}</b><span>${esc(item.sub)}</span></span>
           </button>
         </li>`
@@ -556,7 +558,7 @@ function drawFlow() {
       ${done ? "" : '<button class="btn" type="button" data-action="correct">Correct quantities</button>'}
       <button class="btn btn--quiet" type="button" data-action="reset">New order</button>`;
   } else {
-    cta = `<button class="btn btn--go" type="button" data-action="run" ${missing ? "" : "disabled"}>${icon("spark")} Order with my assistant</button>`;
+    cta = `<button class="btn btn--go" type="button" data-action="run" ${missing ? "" : "disabled"}>${icon("dispatch")} Order with my assistant</button>`;
   }
   setHtml(el("cta"), cta);
 }
@@ -584,7 +586,7 @@ function drawTrail() {
     .map((step, index) => {
       const on = index < shown;
       const state = on ? step.status : "pending";
-      const mark = { done: icon("check"), refused: icon("cross"), waiting: icon("wait"), skipped: icon("skip") }[state] ?? index + 1;
+      const mark = { done: icon("check"), refused: icon("cross"), waiting: icon("wait"), skipped: icon("skip") }[state] ?? String(index + 1).padStart(2, "0");
       const signer = on && state !== "skipped" && SIGNER_WORDS[step.signer] ? `<span class="step__signer">${esc(SIGNER_WORDS[step.signer])}</span>` : "";
       const classes = [
         `step--${state}`,
@@ -896,7 +898,7 @@ function approvalCard(state) {
       <ul class="keys">
         ${allergenFact ? `<li class="key key--${esc(allergenFact.outcome)}">${allergenFact.outcome === "pass" ? icon("check") : icon("pen")}${esc(allergenFact.label)}${allergenFact.value ? `: ${esc(allergenFact.value)}` : ""}</li>` : `<li class="key">Contains: ${esc(allergenText(facts.allergens))}</li>`}
         <li class="key">${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}, ${esc(money(approval.total_minor, approval.currency))} for the order</li>
-        <li class="key key--human">${icon("spark")}${esc(sure)}</li>
+        <li class="key key--human">${icon("gauge")}${esc(sure)}</li>
       </ul>
       <button class="toggle" type="button" data-action="details" role="switch" aria-checked="${app.detailsOpen}">
         <span class="toggle__track" aria-hidden="true"><span class="toggle__knob"></span></span>All details of both products
@@ -1021,10 +1023,13 @@ function drawTalk() {
   setHtml(talk, bubbles);
   if (before !== bubbles) talk.scrollTop = talk.scrollHeight;
 
-  setHtml(el("agent-title"), `${icon("spark")}${ASSISTANT}<span class="dot dot--${app.up.assistant ? "on" : "off"}" title="${app.up.assistant ? "Online" : "Offline"}"></span>`);
+  setHtml(
+    el("agent-title"),
+    `${icon("terminal")}<span>${ASSISTANT}</span><span class="agent__state"><i class="dot dot--${app.up.assistant ? "on" : "off"}"></i>${app.up.assistant ? "Live" : "Log only"}</span>`
+  );
   el("ask-text").disabled = !app.up.assistant || app.chatBusy;
   el("ask-send").disabled = !app.up.assistant || app.chatBusy;
-  setHtml(el("ask-send"), icon("send"));
+  setHtml(el("ask-send"), `<span>Send</span>${icon("send")}`);
   setHtml(el("ask-note"), app.up.assistant ? "It can change the stock table. It never signs: you do, with the buttons." : `${ASSISTANT} is offline. You can still change the table by hand.`);
 }
 

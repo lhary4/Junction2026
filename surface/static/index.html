@@ -3,23 +3,35 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Trusted Trade Agents: approvals</title>
+    <title>Trusted Trade Agents · Approvals &amp; Audit Ledger</title>
+    <link rel="preload" href="fonts/figtree.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="fonts/sofia-sans-extra-condensed.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
-    <header class="topbar">
-      <div class="topbar__brand">
-        <span class="topbar__mark" aria-hidden="true"></span>
-        <div>
-          <div class="topbar__title">Trusted Trade Agents</div>
-          <div class="topbar__sub" id="buyer-line">Buyer side</div>
+    <header class="masthead">
+      <div class="masthead__util">
+        <div class="masthead__wrap">
+          <span class="masthead__desk">Valio Aimo Wholesale <span aria-hidden="true">/</span> Cryptographic Verification &amp; Approval Desk</span>
+          <span class="masthead__stamp">AP2 Mandate &amp; Audit Inspector</span>
         </div>
       </div>
-      <nav class="tabs" aria-label="Areas">
-        <a class="tab" data-view="offers" href="#/offers">Offers</a>
-        <a class="tab" data-view="approvals" href="#/approvals">Approvals <span class="tab__count" id="pending-count" hidden></span></a>
-        <a class="tab" data-view="audit" href="#/audit">Audit</a>
-      </nav>
+      <div class="topbar">
+        <div class="topbar__wrap">
+          <div class="topbar__brand">
+            <img class="topbar__logo" src="img/valio-aimo-logo-petrol.svg" width="90" height="39" alt="Valio Aimo" />
+            <div class="topbar__heading">
+              <div class="topbar__title">Trusted Trade Agents</div>
+              <div class="topbar__sub" id="buyer-line">Buyer verification ledger</div>
+            </div>
+          </div>
+          <nav class="tabs" aria-label="Areas">
+            <a class="tab" data-view="offers" href="#/offers">Offers</a>
+            <a class="tab" data-view="approvals" href="#/approvals">Approvals <span class="tab__count" id="pending-count" hidden></span></a>
+            <a class="tab" data-view="audit" href="#/audit">Audit</a>
+          </nav>
+        </div>
+      </div>
     </header>
 
     <!-- Everything below is drawn by app.js from the data it loads. -->
