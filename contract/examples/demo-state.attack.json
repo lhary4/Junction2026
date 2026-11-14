@@ -1,0 +1,355 @@
+{
+  "scenarios": [
+    {
+      "id": "normal-order",
+      "title": "Normal order",
+      "hint": "The dairy and dry goods of the menu. Inside the limits the chef signed: the agent signs."
+    },
+    {
+      "id": "substitution",
+      "title": "Substitution",
+      "hint": "Valio cannot deliver one ingredient. The chef compares the substitutes and signs."
+    },
+    {
+      "id": "attack",
+      "title": "Attack",
+      "hint": "Three bad mandates sent straight to Valio. No valid signature, no order."
+    }
+  ],
+  "scenario": {
+    "id": "attack",
+    "title": "Attack",
+    "status": "refused"
+  },
+  "kitchen": {
+    "customer": "demo-restaurant-helsinki",
+    "name": "Demo Restaurant Helsinki",
+    "covers_per_service": 50,
+    "services": [
+      "2026-11-19 dinner",
+      "2026-11-20 dinner",
+      "2026-11-21 dinner"
+    ],
+    "menu": [
+      {
+        "course": "Starter",
+        "dish": "Cured rainbow trout, roasted Finnish beetroot, horseradish smetana, rye crisp, dill"
+      },
+      {
+        "course": "Main",
+        "dish": "Sautéed reindeer (poronkäristys), butter-mashed almond potatoes, lingonberries, pickled cucumber"
+      },
+      {
+        "course": "Dessert",
+        "dish": "Warm squeaky cheese (leipäjuusto), cloudberry jam, whipped cream, oat crumble"
+      }
+    ]
+  },
+  "request": {
+    "text": "Order 80 kg of butter.",
+    "delivery_date": "2026-11-19",
+    "lines": [
+      {
+        "product_id": "463437",
+        "name": "Butter, lactose free, salted",
+        "amount": 80.0,
+        "unit": "KG",
+        "dish": "shared"
+      }
+    ]
+  },
+  "quote": {
+    "id": "chk_4eceeacb",
+    "merchant": {
+      "id": "valio-aimo",
+      "name": "Valio Aimo",
+      "website": null
+    },
+    "line_items": [
+      {
+        "id": "li-1",
+        "item": {
+          "id": "463437",
+          "title": "Valio Eila® butter 500 g salted lactose free",
+          "price": 331,
+          "image_url": null
+        },
+        "quantity": 160,
+        "totals": [
+          {
+            "type": "subtotal",
+            "display_text": null,
+            "amount": 52960
+          },
+          {
+            "type": "total",
+            "display_text": null,
+            "amount": 52960
+          }
+        ],
+        "parent_id": null
+      }
+    ],
+    "status": "ready_for_complete",
+    "currency": "EUR",
+    "totals": [
+      {
+        "type": "subtotal",
+        "display_text": null,
+        "amount": 52960
+      },
+      {
+        "type": "total",
+        "display_text": null,
+        "amount": 52960
+      }
+    ],
+    "links": [
+      {
+        "type": "terms_of_service",
+        "url": "https://example.com/tos",
+        "title": null
+      }
+    ],
+    "buyer": null,
+    "messages": null,
+    "expires_at": "2026-11-15T17:00:00+02:00",
+    "continue_url": null,
+    "aimo": {
+      "customer": "demo-restaurant-helsinki",
+      "issued_at": "2026-11-14T19:40:59.113961+02:00",
+      "totals_exclude_tax": true,
+      "requested": [
+        {
+          "product_id": "463437",
+          "amount": 80.0,
+          "unit": "KG",
+          "substitute_with": null
+        }
+      ],
+      "requested_delivery_date": "2026-11-19",
+      "delivery_date": "2026-11-16",
+      "closing_time": "2026-11-15T17:00:00+02:00",
+      "lines": {
+        "li-1": {
+          "product_id": "463437",
+          "category": "10500",
+          "sales_unit": "ST",
+          "base_quantity": 80.0,
+          "base_unit": "KG",
+          "comparison_price_minor": 662,
+          "comparison_unit": "KG",
+          "substitute_for": null,
+          "logistic_model": "Stock",
+          "available_date": "2026-11-16",
+          "closing_time": "2026-11-15T17:00:00+02:00",
+          "stock": {
+            "value": "not_given",
+            "unit": "ST",
+            "source": "aimo_stock_count",
+            "as_of": "2026-11-14T17:40:59.113968Z",
+            "certainty": "declared"
+          },
+          "price": {
+            "value": 331,
+            "unit": "eur_minor_per_sales_unit",
+            "source": "aimo_price_api",
+            "as_of": "2026-11-14T17:40:59.113968Z",
+            "certainty": "measured"
+          },
+          "origin": {
+            "value": "FI",
+            "unit": "country",
+            "source": "gs1_synkka",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "declared"
+          },
+          "allergens": {
+            "contains": [
+              "AM"
+            ],
+            "free_from": [],
+            "data": "complete"
+          },
+          "delivery_reliability": {
+            "value": 0.999,
+            "unit": "share_delivered",
+            "source": "aimo_delivery_history",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "measured"
+          },
+          "carbon_footprint": {
+            "value": 6.635,
+            "unit": "kg_co2e_per_kg",
+            "source": "product_group_average",
+            "as_of": "2026-11-14T12:52:20+02:00",
+            "certainty": "estimated"
+          },
+          "labels": [
+            "GOODS_FROM_FINLAND_BLUE_SWAN"
+          ]
+        }
+      },
+      "shortfalls": [],
+      "alternatives": []
+    }
+  },
+  "verdict": null,
+  "authorization": null,
+  "approval": null,
+  "order": null,
+  "attacks": [
+    {
+      "key": "above-cap",
+      "title": "The agent signs EUR 529.60 itself, above its EUR 500.00 cap",
+      "status": "refused",
+      "problems": [
+        "Amount 52960 exceeds maximum 50000"
+      ]
+    },
+    {
+      "key": "changed-quote",
+      "title": "The agent lowers the price in the quote and signs that",
+      "status": "refused",
+      "problems": [
+        "Checkout checkout_hash mismatch: expected sCG_PhBEpYE92u8T9gAwmTkyMV-WIWmcxMAcpEApr5Q, got tsUZE3J1YenOEyqO73j6wtv362IoPHksP5WopNo5C-0",
+        "Amount 52960 exceeds maximum 50000",
+        "payment mandate is for another quote"
+      ]
+    },
+    {
+      "key": "replayed-mandate",
+      "title": "The agent sends again the mandate of an earlier order",
+      "status": "refused",
+      "problems": [
+        "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_4eceeacb', got 'chk_518f2397'"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "key": "open_mandate",
+      "title": "Open mandate",
+      "signer": "manager",
+      "status": "done",
+      "detail": "Signed in advance by the chef: the agent may order from Valio Aimo, up to EUR 500.00 an order, until Sat 21/11 23:59.",
+      "proof": "gJSK_dTIOX3AF0yj943KG0tBSggKUleEumJ3hA6ZB4Q",
+      "at": null
+    },
+    {
+      "key": "signed_quote",
+      "title": "Signed quote",
+      "signer": "merchant",
+      "status": "done",
+      "detail": "1 line, EUR 529.60 before tax, signed by Valio Aimo, valid until Sun 15/11 17:00.",
+      "proof": "sCG_PhBEpYE92u8T9gAwmTkyMV-WIWmcxMAcpEApr5Q",
+      "at": "2026-11-14T19:40:59.113961+02:00"
+    },
+    {
+      "key": "verdict",
+      "title": "Verdict",
+      "signer": "none",
+      "status": "skipped",
+      "detail": "The agent did not ask the harness: no verdict, so nobody was allowed to sign.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "closed_mandates",
+      "title": "Closed mandates",
+      "signer": "agent",
+      "status": "done",
+      "detail": "3 mandates built with the agent's key, outside the harness.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "merchant_verifies",
+      "title": "Valio verifies",
+      "signer": "merchant",
+      "status": "refused",
+      "detail": "3 of 3 refused by Valio. No valid signature, no order.",
+      "proof": null,
+      "at": "2026-11-14T19:40:59.408759+02:00"
+    },
+    {
+      "key": "sandbox_payment",
+      "title": "Sandbox payment",
+      "signer": "merchant",
+      "status": "skipped",
+      "detail": "Nothing is booked.",
+      "proof": null,
+      "at": null
+    },
+    {
+      "key": "signed_receipt",
+      "title": "Signed receipt",
+      "signer": "merchant",
+      "status": "skipped",
+      "detail": "No order, no receipt.",
+      "proof": null,
+      "at": null
+    }
+  ],
+  "audit": {
+    "buyer": [],
+    "merchant": [
+      {
+        "seq": 4,
+        "at": "2026-11-14T19:40:59.395350+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "quote_issued",
+        "checkout_id": "chk_4eceeacb",
+        "checkout_hash": "sCG_PhBEpYE92u8T9gAwmTkyMV-WIWmcxMAcpEApr5Q",
+        "what": "Quote for 160 ST of 463437, 529.60 EUR excl. tax.",
+        "why": "Asked by demo-restaurant-helsinki for delivery on 2026-11-19, valid until 2026-11-15 17:00.",
+        "rule": null,
+        "prev_hash": "9a0281e23cc7a5f7532af75b78ab145f20ef42d63b9394ed3c49a1394703a8b1",
+        "hash": "f65fb36b4993ef7c156c089a236dd9aa16e24aba485c13425bbd32d8cd405c7c"
+      },
+      {
+        "seq": 5,
+        "at": "2026-11-14T19:40:59.402163+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "order_refused",
+        "checkout_id": "chk_4eceeacb",
+        "checkout_hash": "sCG_PhBEpYE92u8T9gAwmTkyMV-WIWmcxMAcpEApr5Q",
+        "what": "Order refused for quote chk_4eceeacb.",
+        "why": "Amount 52960 exceeds maximum 50000",
+        "rule": null,
+        "prev_hash": "f65fb36b4993ef7c156c089a236dd9aa16e24aba485c13425bbd32d8cd405c7c",
+        "hash": "8b982edd37c8fc21ba4843b2171d672c025a22b71657b636fcfc4a336b4794ce"
+      },
+      {
+        "seq": 6,
+        "at": "2026-11-14T19:40:59.405810+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "order_refused",
+        "checkout_id": "chk_4eceeacb",
+        "checkout_hash": "sCG_PhBEpYE92u8T9gAwmTkyMV-WIWmcxMAcpEApr5Q",
+        "what": "Order refused for quote chk_4eceeacb.",
+        "why": "Checkout checkout_hash mismatch: expected sCG_PhBEpYE92u8T9gAwmTkyMV-WIWmcxMAcpEApr5Q, got tsUZE3J1YenOEyqO73j6wtv362IoPHksP5WopNo5C-0; Amount 52960 exceeds maximum 50000; payment mandate is for another quote",
+        "rule": null,
+        "prev_hash": "8b982edd37c8fc21ba4843b2171d672c025a22b71657b636fcfc4a336b4794ce",
+        "hash": "dc3259b20a709458ff2a26a3cdd6a08b1ab345a2c180e424573cff14fda28142"
+      },
+      {
+        "seq": 7,
+        "at": "2026-11-14T19:40:59.408759+02:00",
+        "side": "merchant",
+        "actor": "merchant",
+        "action": "order_refused",
+        "checkout_id": "chk_4eceeacb",
+        "checkout_hash": "sCG_PhBEpYE92u8T9gAwmTkyMV-WIWmcxMAcpEApr5Q",
+        "what": "Order refused for quote chk_4eceeacb.",
+        "why": "mandate rejected: ValueError: KB-SD-JWT nonce mismatch: expected 'chk_4eceeacb', got 'chk_518f2397'",
+        "rule": null,
+        "prev_hash": "dc3259b20a709458ff2a26a3cdd6a08b1ab345a2c180e424573cff14fda28142",
+        "hash": "133701ff3e6a480b7d56d2878429d4ae207b8c75cc859d9e712f5dfc7ab369ef"
+      }
+    ]
+  }
+}

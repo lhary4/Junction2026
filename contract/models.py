@@ -6,7 +6,7 @@ Every field that can be null defaults to None, so a payload dumped with exclude_
 """
 
 from datetime import date
-from typing import Any, Literal
+from typing import Any, Literal, get_args
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, model_validator
 
@@ -471,3 +471,133 @@ class AuditEvent(ContractModel):
     rule: str | None = None
     prev_hash: str | None = None
     hash: str
+
+
+# ---------- Demo state: GET /state on the demo driver (scenarios/run.py, port 8003) ----------
+
+ScenarioStatus = Literal["idle", "running", "waiting_for_human", "done", "refused"]
+StepKey = Literal[
+    "open_mandate",
+    "signed_quote",
+    "verdict",
+    "closed_mandates",
+    "merchant_verifies",
+    "sandbox_payment",
+    "signed_receipt",
+]
+StepSigner = Literal["manager", "agent", "merchant", "none"]
+StepStatus = Literal["pending", "done", "waiting", "refused", "skipped"]
+AttackStatus = Literal["pending", "refused", "accepted"]
+
+
+class DemoScenario(ContractModel):
+    """One button of the page."""
+
+    id: str
+    title: str
+    hint: str
+
+
+class DemoScenarioRun(ContractModel):
+    """The scenario on screen. After a reset nothing has run: `id` and `title` are null and `status` is idle."""
+
+    id: str | None = None
+    title: str | None = None
+    status: ScenarioStatus
+
+    @model_validator(mode="after")
+    def idle_means_no_scenario(self):
+        if (self.status == "idle") != (self.id is None):
+            raise ValueError("id must be null exactly when status is 'idle'")
+        return self
+
+
+class MenuCourse(ContractModel):
+    course: str
+    dish: str
+
+
+class DemoKitchen(ContractModel):
+    """The restaurant whose portal the page shows."""
+
+    customer: str
+    name: str
+    covers_per_service: int = Field(gt=0)
+    services: list[str]
+    menu: list[MenuCourse]
+
+
+class DemoRequestLine(ContractModel):
+    """One ingredient the kitchen needs, in the kitchen's unit. The quote says how many sales units that makes."""
+
+    product_id: str
+    name: str
+    amount: float = Field(gt=0)
+    unit: BuyerUnit
+    dish: str
+
+
+class DemoRequest(ContractModel):
+    """What the buying agent was asked: the sentence the harness receives, and the needs sent to the gateway."""
+
+    text: str
+    delivery_date: date
+    lines: list[DemoRequestLine] = Field(min_length=1)
+
+
+class DemoAttack(ContractModel):
+    """One bad mandate sent straight to the gateway. `accepted` must never happen: it would mean Valio let it through."""
+
+    key: str
+    title: str
+    status: AttackStatus
+    problems: list[str] = []
+
+
+class DemoStep(ContractModel):
+    """One step of the AP2 trail: who signed it, and a hash or an identifier that proves it."""
+
+    key: StepKey
+    title: str
+    signer: StepSigner
+    status: StepStatus
+    detail: str | None = None
+    proof: str | None = None
+    at: AwareDatetime | None = None
+
+
+class DemoAudit(ContractModel):
+    """The lines both sides wrote about the quote on screen: the harness's log and the gateway's log."""
+
+    buyer: list[AuditEvent] = []
+    merchant: list[AuditEvent] = []
+
+
+class DemoState(ContractModel):
+    """Everything the page shows, in one object. The page never rebuilds a fact: it renders what is here."""
+
+    scenarios: list[DemoScenario]
+    scenario: DemoScenarioRun
+    kitchen: DemoKitchen
+    request: DemoRequest | None = None
+    quote: AimoCheckout | None = None
+    verdict: Verdict | None = None
+    authorization: AuthorizationStatus | None = None
+    approval: ApprovalRequest | None = None
+    order: Order | None = None
+    attacks: list[DemoAttack] = []
+    steps: list[DemoStep]
+    audit: DemoAudit
+
+    @model_validator(mode="after")
+    def trail_has_its_seven_steps(self):
+        expected = list(get_args(StepKey))
+        if [step.key for step in self.steps] != expected:
+            raise ValueError(f"steps must be the seven steps of the AP2 trail, in this order: {', '.join(expected)}")
+        return self
+
+    @model_validator(mode="after")
+    def scenario_is_one_of_the_buttons(self):
+        if self.scenario.id is not None and self.scenario.id not in [s.id for s in self.scenarios]:
+            raise ValueError(f"scenario {self.scenario.id!r} is not in scenarios")
+        return self
