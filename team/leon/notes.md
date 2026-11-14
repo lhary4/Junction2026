@@ -2,6 +2,23 @@
 
 Results, numbers and open questions for the others. Newest first.
 
+## L7: 1:55 demo script, 5-slide pitch deck & exported PDF (`docs/demo-script.md`, `docs/pitch-deck.md`, `docs/pitch-deck.pdf`)
+
+- Wrote the second-by-second **1:55** video script (`docs/demo-script.md`) across all 6 `PLAN.md` beats with exact on-screen clicks, spoken lines (~135 wpm using `"mandate"` and `"sandbox payment"`), and instant fallbacks per beat (`VALIO_MODE=replay uv run python scripts/dev.py --fresh`, `?mock=1`, lingonberry jam fallback).
+- Wrote the 5-slide executive pitch deck (`docs/pitch-deck.md`) and exported the 16:9 widescreen PDF (`docs/pitch-deck.pdf`) with the synthetic-data compliance banner on all 5 slides.
+
+## L6: Telegram notification on pending approval (`harness/notify.py`) + L8 readiness check
+
+- **`harness/notify.py`**:
+  - Sends one concise plain-text Telegram message (`POST https://api.telegram.org/bot{token}/sendMessage`) when a new pending `ApprovalRequest` is created: 1-sentence reason, EUR total, Helsinki deadline (`%Y-%m-%d %H:%M` or `none`), and the direct link to the approval page (`{HARNESS_URL}/#/approvals/{approval_id}`).
+  - Approval stays strictly on the web surface—never in Telegram chat—so the signing boundary over `checkout_hash` (and future passkey check) is never weakened.
+  - Reads optional `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` from `os.environ` / `.env` (added without values to `.env.example`). Missing or empty values return `NotifyResult(status="skipped")` with zero HTTP calls.
+  - Strict `2.0s` timeout; any timeout, connection failure, non-200 response, invalid JSON, or `{"ok": false}` reply is caught, logged at `WARNING` with `TELEGRAM_BOT_TOKEN` redacted (both raw and URL-encoded), and swallowed so notification errors never alter, fail, or delay a verdict.
+- **`harness/app.py`**:
+  - Wired `notify_fn` into `create_app(..., notify_fn=...)` (defaulting to `notify_approval`), triggered only when a **new** pending approval is created in `POST /authorize` (idempotent repeat calls on an already-pending `checkout_id` return early without sending a second alert).
+- **L8 proactive check (`Order.payment`)**:
+  - Verified `_submit_mandate_and_verify_receipt` in `harness/app.py` parses gateway responses via `Order.model_validate(...)` and only reads `order_id`, `mandate_reference`, and `receipt_jwt`. Once Adrien adds `payment` (with `= None` default per `contract/models.py` convention) to `Order`, `harness/` and `tests/test_harness_*.py` require zero changes.
+
 ## L5: Restaurant policy & live Gemini Decision scores on the menu substitution candidates
 
 Updated `scenarios/policy.demo.json` for the 50-cover Helsinki restaurant (`policy_id: "pol_demo_restaurant_1"`, `customer: "demo-restaurant-helsinki"`, `approver: "chef@demo-restaurant.example"`), keeping `autonomous_limit_minor = 150000` (EUR 1,500), `blocked_allergens = ["AP", "AN"]`, `pre_accepted = "same_category_and_same_allergens"`, `judge_auto_threshold = 0.85`, and `judge_floor = 0.15`. Rewrote only the first line of `preferences_text` (`"This order: a 50-cover Nordic set menu, every dairy product is lactose free, no peanuts and no tree nuts."`) while keeping the intro sentence and all three rule lists (`NEVER ACCEPT`, `A HUMAN DECIDES`, `ACCEPT WITHOUT ASKING`) word-for-word intact.

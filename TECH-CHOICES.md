@@ -266,11 +266,19 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: Claude Desktop on screen (too slow, and a chat is what the brief says this is not); an automation tool showing its steps (n8n: one more tool, and the trail already shows the real steps); the four milk acts of the first plan.
 - Decided in: PR #23, 14/11/2026.
 
+## Chef notification: one Telegram alert when an approval is waiting, never an approval in chat
+- Status: decided
+- What it is: when the harness decides that a human must review an order, it sends one short message to the chef on Telegram with the reason in one sentence, the total in euros, the Helsinki deadline, and a link to the approval page.
+- Why: a chef in service is not watching a browser tab, so the phone needs to buzz right away. Telegram's bot service is free, arrives right away on a phone, and needs only a bot key and a chat number, unlike paid text message services or slow email setup.
+- What it changes for us: the two Telegram settings in the local environment file are optional; when either one is empty, the harness makes no network call at all. When set, the alert has a strict two-second time limit, and any failure is written to the warning log without revealing the bot key, so a broken notification never changes, blocks, or delays a verdict. Asking to authorize the same pending quote a second time does not send a second message. Above all, the chef never approves inside Telegram: the link opens the web page, which is the only place that shows and signs the exact quote.
+- If we change it: only harness/notify.py changes. Nothing in the rules, the signatures, or Valio's gateway depends on it.
+- Alternatives we looked at: approving directly inside Telegram chat (dropped because chat has no browser passkey or quote-fingerprint signing boundary); email or SMS text messages (slower on stage or require paid sender setup).
+- Decided in: Branch feat/harness-notify, 14/11/2026.
+
 ## Open choices (to decide, then move up)
 - **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
 - **Sandbox payment** (planned for Saturday evening): the gateway books each order on a simulated invoice account, so the video can show a charge. It will replace "Payments: none" below when its PR is merged.
 - **Customer token on the gateway** (planned, after the demo flow): today anyone who can reach the gateway can ask a quote for any customer. Valio told us prices are per customer, so a token must say who is asking.
-- **A message to the chef** (planned for Saturday evening): a Telegram message when an order waits for a human. The approval itself stays on the page.
 
 ## Choices we dropped
 - **Our own agent loop**: an outside assistant through MCP does the job and is closer to the brief's "external agent".
