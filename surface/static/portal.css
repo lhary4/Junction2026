@@ -27,10 +27,16 @@
 :root {
   --petrol: #005670;
   --petrol-deep: #003747;
-  --lime-band: #ecf6bc;
+  --aimo-brand-light: #d1dde3;
+  --aimo-light-gray: #f9f9f9;
+  --aimo-content-gray: #f5f5f5;
+  --aimo-light-blue: #f2f7f8;
+  --aimo-blueberry: #c7b2de;
+  --aimo-light-blueberry: #eee8f5;
+  --lime-band: #ecf5c5;
   --lime: #c0e021;
-  --mist: #f2f6f8;
-  --line: #dee4e6;
+  --mist: #f2f7f8;
+  --line: #d1dde3;
   --ink: #14293a;
   --grey: #5d6670;
 
@@ -64,7 +70,7 @@ body {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   grid-template-rows: auto 1fr auto;
-  background: #fff;
+  background: var(--aimo-light-gray);
   color: var(--ink);
   font-family: var(--font-text);
   line-height: 1.35;
@@ -166,7 +172,9 @@ input {
 
 /* Says on every screen, and in every recording, that this is a mock-up on synthetic data */
 .site__notice {
-  margin-right: auto;
+  /* The row stretches its children to its full height (the tabs need it): the notice sits in the middle, off the tabs. */
+  align-self: center;
+  margin: 0 auto 0 16px;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -215,7 +223,7 @@ input {
   min-width: 260px;
   padding: 8px;
   border-radius: 16px;
-  background: #fff;
+  background: var(--aimo-light-gray);
   color: var(--ink);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1), 0 0 0 1px var(--line);
 }
@@ -773,7 +781,7 @@ input {
   flex-wrap: wrap;
   gap: 8px 16px;
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background: var(--aimo-light-gray);
 }
 
 .flow__steps {
@@ -1278,7 +1286,9 @@ input {
 
 .panel {
   border: 1px solid var(--line);
-  border-radius: 6px;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 2px 10px rgba(0, 86, 112, 0.05);
   overflow: hidden;
 }
 
@@ -1286,6 +1296,8 @@ input {
   padding: 12px 14px;
   font-size: 1.05rem;
   color: var(--petrol);
+  background: var(--aimo-light-blue);
+  border-bottom: 1px solid var(--line);
 }
 
 .tbl--tight td {
@@ -1576,6 +1588,101 @@ input {
   overflow-wrap: anywhere;
 }
 
+/* What was recorded: both audit logs under the order, the kitchen's and Valio Aimo's, side by side */
+.record {
+  margin-top: 16px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.record__note {
+  margin-top: 4px;
+  max-width: 90ch;
+  font-size: 0.82rem;
+  color: var(--grey);
+}
+
+.record__logs {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.record__log {
+  padding: 12px 14px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.record__lines {
+  margin-top: 4px;
+}
+
+.record__line {
+  display: grid;
+  grid-template-columns: 62px 96px minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+
+.record__line:first-child {
+  border-top: 0;
+}
+
+.record__time {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--grey);
+}
+
+.record__who {
+  font-weight: 700;
+  color: var(--petrol);
+}
+
+.record__what {
+  overflow-wrap: anywhere;
+}
+
+.record__why {
+  display: block;
+  color: var(--grey);
+}
+
+.record__hash {
+  font-size: 0.7rem;
+  color: var(--grey);
+}
+
+.record__line--refused .record__what {
+  font-weight: 700;
+  color: var(--refused);
+}
+
+.record__line--refused .record__why {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.record__empty {
+  margin-top: 6px;
+  padding-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--grey);
+}
+
+@media (max-width: 1180px) {
+  .record__logs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* The safety checks: one plain line for each rule of the harness */
 .checks {
   margin-top: 8px;
@@ -1702,6 +1809,49 @@ input {
 }
 
 .key--human .icon {
+  color: var(--waiting);
+}
+
+/* What changes with a substitute, one line a side: cost, the dish, the kitchen's work, storage and delivery */
+.tradeoffs {
+  margin-top: 2px;
+}
+
+.tradeoff {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem;
+}
+
+.tradeoff:first-child {
+  border-top: 0;
+}
+
+.tradeoff__side {
+  position: relative;
+  padding-left: 22px;
+  font-weight: 700;
+}
+
+.tradeoff__side .icon {
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 16px;
+  height: 16px;
+  vertical-align: 0;
+  color: var(--done);
+}
+
+.tradeoff--note .icon {
+  color: var(--petrol);
+}
+
+.tradeoff--ask .tradeoff__side,
+.tradeoff--ask .icon {
   color: var(--waiting);
 }
 
@@ -2004,7 +2154,7 @@ input {
   padding: 0;
   border: 0;
   border-radius: 12px;
-  background: #fff;
+  background: var(--aimo-light-gray);
   color: var(--ink);
   box-shadow: 0 24px 60px rgba(0, 30, 40, 0.35);
 }
@@ -2592,4 +2742,460 @@ input {
   color: var(--ink-muted, #5c636a);
   opacity: 0.6;
   white-space: nowrap;
+}
+
+/* Etusivu Valio Aimo box backgrounds & surfaces */
+.split > .tbl,
+.work > .tbl,
+.order > .tbl,
+.sheet > .tbl {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 86, 112, 0.05);
+  overflow: hidden;
+}
+
+.tbl thead th {
+  background: var(--aimo-light-blue);
+}
+
+.card {
+  box-shadow: 0 2px 10px rgba(0, 86, 112, 0.05);
+  border-radius: 8px;
+}
+
+.spotlight-bubble {
+  background: var(--aimo-light-blueberry);
+  border-color: var(--aimo-blueberry);
+}
+
+.spotlight-bubble:hover,
+.spotlight-bubble.is-open {
+  background: #fff;
+  border-color: var(--petrol);
+}
+
+.trend-card__head {
+  background: var(--aimo-light-blueberry);
+}
+
+.trend-card__head .panel__title {
+  background: transparent;
+  border-bottom: 0;
+  padding: 4px 0 0;
+}
+
+.trend-recipe__actions {
+  background: var(--aimo-light-gray);
+}
+
+/* ---------- Classic Valio Aimo (image.png): flat rectangles, zero shadows, folder tabs ---------- */
+:root {
+  --aimo-navy: #16465f;
+  --aimo-ice: #eef3f6;
+}
+
+body {
+  background: #f5f7f8;
+}
+
+/* Top bar with classic folder tabs */
+.site__top {
+  background: var(--aimo-navy);
+}
+
+.site__top .wrap {
+  height: 44px;
+  justify-content: space-between;
+  align-items: stretch;
+}
+
+.site__tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  overflow-x: auto;
+  flex: none; /* the tabs keep their width: on a narrow window the notice beside them is the one that is cut */
+}
+
+.site__tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 16px;
+  font-size: 0.84rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.88);
+  white-space: nowrap;
+}
+
+.site__tab.is-active {
+  background: #fff;
+  color: var(--aimo-navy);
+  font-weight: 700;
+}
+
+/* Clean white logo band */
+.site__band {
+  background: #fff;
+  border-bottom: 1px solid var(--line);
+}
+
+.site__band .wrap {
+  height: 64px;
+}
+
+.planning {
+  display: none;
+}
+
+/* Sharp rectangles & zero shadows everywhere */
+.panel,
+.card,
+.split > .tbl,
+.work > .tbl,
+.order > .tbl,
+.sheet > .tbl,
+.account__menu,
+.account__btn,
+.account__item,
+.btn,
+.spotlight-bubble,
+.chip,
+.tag,
+.field__input,
+.ask__text,
+.ask__send,
+.dialog,
+.toast,
+.trail,
+.side,
+.flow {
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+.account__menu {
+  border: 1px solid var(--line);
+  background: #fff;
+}
+
+/* Classic two-tone rectangles (white primary + #eef3f6 secondary) */
+.trail,
+.side {
+  background: var(--aimo-ice);
+  border: 1px solid var(--line);
+  padding: 16px;
+}
+
+.flow {
+  background: #fff;
+  border: 1px solid var(--line);
+  padding: 10px 14px;
+}
+
+.panel__title,
+.trend-card__head {
+  background: var(--aimo-ice);
+  border-bottom: 1px solid var(--line);
+}
+
+.order__side .card {
+  background: var(--aimo-ice);
+}
+
+/* Buttons matching image.png (lime fill + petrol outline) */
+.btn--primary {
+  background: var(--lime) !important;
+  color: var(--ink) !important;
+  border: 0 !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.82rem;
+}
+
+.btn--primary:hover:not(:disabled) {
+  background: #b0cf18 !important;
+}
+
+.btn--ghost,
+.spotlight-bubble {
+  background: #fff !important;
+  color: var(--petrol) !important;
+  border: 1.5px solid var(--petrol) !important;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  font-size: 0.78rem;
+}
+
+.btn--ghost:hover:not(:disabled),
+.spotlight-bubble:hover,
+.spotlight-bubble.is-open {
+  background: var(--aimo-ice) !important;
+}
+
+.spotlight-bubble__dot {
+  border-radius: 0;
+}
+
+/* Downsize demo footer noise */
+.demo {
+  border-top: 1px solid var(--line);
+  background: var(--aimo-navy);
+}
+
+/* Hide non-essential inline subtext (details remain available on hover tooltips) */
+.ask__note {
+  display: none;
+}
+
+/* Workflow steps inside the white logo/title row: clean segmented progression */
+.site__band .wrap {
+  gap: 20px;
+  flex-wrap: wrap;
+  min-height: 60px;
+  height: auto;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.flow__nav {
+  margin-left: 8px;
+}
+
+.flow__steps {
+  display: inline-flex;
+  align-items: stretch;
+  border: 1px solid var(--line);
+  background: var(--aimo-ice);
+}
+
+.flow__steps li {
+  display: flex;
+  align-items: stretch;
+}
+
+.flow__steps li + li::before {
+  content: none;
+}
+
+.flow__steps li + li {
+  border-left: 1px solid var(--line);
+}
+
+.flow__step {
+  min-height: 36px;
+  padding: 0 14px;
+  gap: 8px;
+  border: 0;
+  border-radius: 0 !important;
+  background: transparent;
+  color: var(--grey);
+  white-space: nowrap;
+}
+
+.flow__n {
+  width: 20px;
+  height: 20px;
+  border-radius: 0 !important;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--grey);
+  font-family: var(--font-text);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.flow__n .icon {
+  width: 13px;
+  height: 13px;
+  vertical-align: 0;
+}
+
+.flow__text b {
+  font-family: var(--font-text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--grey);
+}
+
+.flow__text span {
+  display: none;
+}
+
+.flow__step:not(:disabled):hover {
+  background: #fff;
+}
+
+.flow__step[aria-current="step"] {
+  background: #fff;
+  box-shadow: inset 0 -3px 0 var(--petrol) !important;
+}
+
+.flow__step[aria-current="step"] .flow__n {
+  border-color: var(--petrol);
+  background: var(--petrol);
+  color: #fff;
+}
+
+.flow__step[aria-current="step"] .flow__text b {
+  color: var(--petrol);
+  font-weight: 700;
+}
+
+.flow__step.is-done .flow__n {
+  border-color: var(--done);
+  background: var(--done-soft);
+  color: var(--done);
+}
+
+.flow__step.is-done .flow__text b {
+  color: var(--ink);
+}
+
+.flow__cta {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flow__cta .btn {
+  min-height: 36px;
+  padding: 0 16px;
+  background: var(--lime);
+  color: var(--ink);
+  border: 0;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.flow__cta .btn:hover:not(:disabled) {
+  background: #b0cf18;
+}
+
+.flow__cta .btn--reject {
+  background: var(--refused-soft);
+  color: var(--refused);
+  border: 1px solid var(--refused);
+}
+
+/* Floating bottom-right Aimo Personal Assistant bubble & window */
+@media (min-width: 960px) {
+  .shell {
+    grid-template-columns: 260px minmax(0, 1fr);
+  }
+}
+
+.side {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: 24px;
+  bottom: 24px;
+  z-index: 40;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.chat-launcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 0 !important;
+  background: var(--aimo-navy);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.chat-launcher:hover {
+  background: var(--petrol);
+}
+
+.chat-launcher__dot {
+  width: 8px;
+  height: 8px;
+  background: var(--lime);
+  flex: none;
+}
+
+.chat-window {
+  display: none;
+  width: min(390px, calc(100vw - 32px));
+  background: #fff;
+  border: 1.5px solid var(--petrol);
+}
+
+.side.is-open .chat-launcher {
+  display: none;
+}
+
+.side.is-open .chat-window {
+  display: block;
+}
+
+.chat-window .agent {
+  padding: 0;
+}
+
+.chat-window__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--aimo-ice);
+  border-bottom: 1px solid var(--line);
+}
+
+.chat-window__head .side__title {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.chat-window__close {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--petrol);
+  font-size: 1.1rem;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+}
+
+.chat-window__close:hover {
+  background: var(--aimo-navy);
+  color: #fff;
+  border-color: var(--aimo-navy);
+}
+
+.chat-window .talk {
+  max-height: 300px;
+  overflow-y: auto;
+  padding: 12px 14px;
+}
+
+.chat-window .ask {
+  padding: 10px 14px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--aimo-light-gray);
+}
+
+.chat-window .menu {
+  display: none !important;
 }

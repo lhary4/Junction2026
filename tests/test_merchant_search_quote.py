@@ -175,6 +175,30 @@ def test_terminal_product_with_a_past_cut_off_is_a_late_delivery():
     assert checkout.aimo.lines["li-1"].substitute_for.product_id == "465039"
 
 
+def test_a_substitute_line_carries_the_price_of_the_product_it_replaces():
+    """The squeaky cheese 474880 missed its cut-off but still has a price: EUR 12.86 a kilo, next to the substitute's."""
+    need = {"product_id": "474880", "amount": 10.5, "unit": "KG"}
+    checkout = build_quote(QuoteRequest(customer="demo", delivery_date="2026-11-19", needs=[need]))
+    line = checkout.aimo.lines["li-1"]
+    assert (line.product_id, line.comparison_price_minor, line.comparison_unit) == ("475072", 1094, "KG")
+    assert (line.substitute_for.comparison_price_minor, line.substitute_for.comparison_unit) == (1286, "KG")
+
+
+def test_a_replaced_product_without_a_price_has_no_comparison_price(monkeypatch):
+    """No price from Valio for the replaced product: the quote says nothing, it never borrows another product's."""
+    recorded = valio_client.fetch
+
+    def without_the_price_asked(product_ids, requested_date):
+        answers = recorded(product_ids, requested_date)
+        prices = {pid: price for pid, price in answers.prices.items() if pid != "465039"}
+        return valio_client.Answers(answers.availability, prices, answers.as_of)
+
+    monkeypatch.setattr(valio_client, "fetch", without_the_price_asked)
+    replaced = quote("465039", 100).aimo.lines["li-1"].substitute_for
+    assert replaced.product_id == "465039"
+    assert (replaced.comparison_price_minor, replaced.comparison_unit) == (None, None)
+
+
 def test_delivery_is_on_the_day_asked_when_the_product_is_ready_before():
     """Valio's availableDate is the earliest day: ready on the 16th, asked for the 19th, it comes on the 19th."""
     checkout = build_quote(

@@ -200,10 +200,10 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Status: decided (the ranking inside a tier is open: Colette may change what counts first)
 - What it is: when stock is short, Valio's gateway takes what there is and proposes up to three replacements: `best` (same kind of product, same allergens), `better` (same kind, other allergens), `good` (a related kind, plant-based drinks for milk). Inside a tier, the substitutes Valio itself lists come first, then the product whose name is closest to the original's, then the cheapest per litre or kilo. The best one goes into the quote automatically. The agent may ask for another one from the list, never one the gateway did not offer.
 - Why: the agent never decides a fact, so it cannot invent a substitute. A lactose-free kitchen must never receive normal milk because it was cheaper, even if the allergen codes look the same: the data often lists milk but forgets lactose. The name counts before the price because Valio's categories are wide: on the restaurant menu, the cheapest product of the category was a cheddar cream for a squeaky cheese and an apple filling for a lingonberry jam. The judge sent both to a human, but the quote should not propose them in the first place.
-- What it changes for us: a substitute must arrive on time, cover the whole missing quantity, have complete allergen data, and keep every "free from" of the original. The harness still checks allergens and asks the judge, this is a first filter on Valio's side. Most stock counts from the mock are "plenty" (9,999,999,999): the quote says "available, count not given" instead of showing that number. Inside one quote the same stock is never promised twice: a second line for the same product, or a second shortfall covered by the same substitute, only gets what the first one left.
+- What it changes for us: a substitute must arrive on time, cover the whole missing quantity, have complete allergen data, and keep every "free from" of the original. The harness still checks allergens and asks the judge, this is a first filter on Valio's side. Most stock counts from the mock are "plenty" (9,999,999,999): the quote says "available, count not given" instead of showing that number. Inside one quote the same stock is never promised twice: a second line for the same product, or a second shortfall covered by the same substitute, only gets what the first one left. A substitute line also carries Valio's price per litre or kilo of the product it replaces, when Valio has one (a product whose order cut-off has passed still has a price): the buyer reads the two prices side by side in the signed quote, and nobody works one out. Without a price from Valio, the quote says nothing.
 - If we change it: `merchant/quotes.py` only. The related kinds of product are one line in it.
 - Alternatives we looked at: listing every candidate and letting the agent choose (the agent would pick facts); only Valio's listed substitutes (469363, the act 3 product, lists none); the cheapest of the tier first (what we had until the live run on the restaurant menu); a frozen version as a related kind (the frozen squeaky cheese sits in a category with ice cubes and coffee, so the category says nothing).
-- Decided in: PR #11, 14/11/2026. Name before price: PR #27, 14/11/2026.
+- Decided in: PR #11, 14/11/2026. Name before price: PR #27, 14/11/2026. Price of the replaced product in the quote: PR #52, 15/11/2026.
 
 ## Delivery date: the day the buyer asked, unless a product cannot come before
 - Status: decided
@@ -232,6 +232,24 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon); a separate clean-up script (the harness keeps its approvals in memory, so run under a live harness it would empty the files and the harness would write the old approvals back).
 - Decided in: PR #13, 14/11/2026. `--fresh`: PR #18, 14/11/2026.
 
+## Hosting the demo: one small server, one public address
+- Status: decided
+- What it is: for the jury, the whole demo runs on a small rented server (Adrien's, in Helsinki) at https://valio.adriencaillo.com. The four services and the MCP server run there the way `scripts/dev.py` runs them on a laptop, and they only listen to the server itself. A reverse proxy (Caddy: the program that receives all the web traffic of that server and does the HTTPS) is the only door. It serves the page at the root, each service the page calls under its name (`/driver`, `/harness`, `/assistant`), and the MCP server under a secret address. `README.md`, "Hosted demo", has the map and the commands.
+- Why: the jury opens a link and adds one connector in claude.ai, with nothing to install. A tunnel from a laptop stops when the laptop sleeps. One address for everything means the browser treats the page and the services as one site, so there is no cross-site permission (CORS) to open in four services, and one HTTPS certificate covers it all.
+- What it changes for us:
+  - The page works out where the services are: their own ports on localhost, the three names on its own address anywhere else. Nothing changes on a laptop.
+  - The approval link the chef receives starts with `PUBLIC_ORIGIN` (the public address) when that variable is set. Hosted, the harness's own address is a local one that only the server can open.
+  - The page is public, with no login: anyone with the link can press the buttons, sign an order and use the chat on our Gemini key. Orders are sandbox orders and the keys are demo keys, so nothing real is at risk, but it is switched off after judging.
+  - The proxy answers "not found" to what no page calls: the agent's own routes on the driver (`/driver/agent/...`), the harness route that judges and signs (`/harness/authorize`) and the API pages the services generate. The MCP server and the driver reach those on the server itself. So a visitor cannot ask for a quote or an authorization from outside, only press the page's buttons. The buttons still place sandbox orders, and the sandbox invoice account holds EUR 20,000: empty the state before the jury.
+  - The MCP address ends with a random token that is shared out of the repo. It is the only protection of the MCP server: whoever has the address can place sandbox orders.
+  - The gateway is never reachable from outside. The harness, the driver and the MCP server call it on the server.
+  - The server is shared with other things and has 4 GB of memory. In live mode every service that reads the catalog holds the 86 MB product file in memory, about 500 MB each (the gateway, and the page's service once Spotlight is used: 1.2 GB measured with both). The demo has a memory ceiling, and it is the first thing stopped and restarted if the server runs out. The file is read once per service: a request that arrives during that first read waits for it. Before, each one read the file again, which filled the ceiling on the morning of the demo and made the page slow. After a restart the catalog is read in both services by hand, one after the other (README, "Hosted demo").
+  - Live mode follows the real clock: once Valio's order cut-off for the scenarios' delivery day has passed (Sun 15 Nov, 17:00), the three buttons answer "late delivery". Replay mode does not have this limit.
+  - The server has no access to GitHub. A new version is pushed to it from a laptop.
+- If we change it: `deploy/` (the unit files and the proxy block), the lines at the top of `portal.js` that pick the addresses, and `PUBLIC_ORIGIN` in the harness. Another domain is three places: the proxy block, the MCP unit and `PUBLIC_ORIGIN`.
+- Alternatives we looked at: a tunnel from a laptop (what we used to record the video: it dies with the laptop); a hosting platform such as Render or Fly (four services that share files on disk, a new account and its settings a few hours before the deadline); one subdomain per service (four certificates, and CORS to open in four services); Docker for our services (one more thing to build the last night); opening the services' ports directly (no HTTPS, and the server has no firewall).
+- Decided in: PR #47, 15/11/2026. Routes closed at the proxy: PR #59, 15/11/2026.
+
 ## Buyer harness: rules in plain code, one-use approvals with a cut-off, and receipt verification
 - Status: decided
 - What it is: the buyer's web service (port 8002) takes a quote id from the agent, fetches the signed quote directly from Valio, checks Valio's signature first, runs every guardrail rule, and either signs as the agent, opens a one-use approval card for a human, or refuses. After sending a signed permission to Valio, it checks Valio's signed receipt before calling the order confirmed.
@@ -240,6 +258,21 @@ None of us is a seasoned developer. This file explains every technical choice in
 - If we change it: `harness/` only. Valio's gateway still checks every signature and spend cap on its own side.
 - Alternatives we looked at: stopping at the first failed rule (hides other warnings from the approver); letting the agent pass the quote data to the harness (the agent could alter numbers); trusting HTTP 200 without checking the receipt signature; setting the approval deadline to the order cut-off alone (a quote expires in at most 24 hours, which can fall before a later cut-off).
 - Decided in: PR #17, 14/11/2026. Hardened for multi-line quotes, shortfalls, quote-expiry deadlines and network retries: PR #21, 14/11/2026.
+
+## Chef's rules: changed from the settings page, kept and enforced by the harness
+- Status: decided
+- What it is: the chef can change the buyer's rules from the settings page: the amount the agent may sign alone, the blocked allergens, what happens when allergen data is missing, when a substitute changes the allergens or when a delivery is late (a human signs, or it is refused), and the substitution rules (allowed or not, the preferences text, the judge's two thresholds). The page sends the change to the harness. The harness keeps it and applies it from the next order on.
+- Why: a rule must live where it is enforced. A limit kept by the page would only be a number on a screen, and the harness would go on signing under the old one. The spending limit is also written inside the open mandate the manager signs in advance for the agent, and Valio checks that mandate on its own side: the rule and the mandate have to move together.
+- What it changes for us:
+  - The change is saved in the harness's local state (`state/buyer/policy.json`), never in the demo policy file of the repo. Starting the services with `--fresh` removes it, so a rehearsal starts from the demo policy. A reset route does the same without a restart.
+  - After a change, the harness signs the open mandate again with the new cap. Valio then accepts what the agent signs under the new limit, and still refuses what is above it.
+  - Each change is one line in the buyer audit log: what changed, from what to what, and who decided it. Sending the values already in force changes nothing and writes nothing.
+  - An approval that is already waiting keeps its verdict. Raising the limit does not order it behind the chef's back: the chef still answers the card.
+  - A change that makes no sense is refused and nothing moves: a limit of zero, a field the page may not change (who the policy is for, who approves, the allowed merchants, the currency, the end date), a judge floor above its threshold.
+  - Nobody has to prove they are the chef: the route believes the name it is given, like the Approve button of the demo. Anything that can reach the harness can change the rules, an agent included, so in real life this change would be signed with the chef's passkey, like an approval. It matters as soon as the harness can be reached from outside the laptop, for example on a hosted demo.
+- If we change it: `harness/policy.py` and three routes in `harness/app.py`. While a change is saved, an edit of the demo policy file is not seen until a reset or a fresh start.
+- Alternatives we looked at: keeping the limit in the page (shown, not enforced); writing the change into the demo policy file (a rehearsal would leave the repo changed); keeping it only in memory (lost when the harness restarts, while the approvals survive a restart).
+- Decided in: PR #50, 15/11/2026.
 
 ## Audit log: one chained file on each side
 - Status: decided
@@ -345,7 +378,6 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Decided in: PR #44, 15/11/2026.
 
 ## Open choices (to decide, then move up)
-- **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
 - **Customer token on the gateway** (planned, after the demo flow): today anyone who can reach the gateway can ask a quote for any customer. Valio told us prices are per customer, so a token must say who is asking.
 
 ## Choices we dropped

@@ -39,7 +39,7 @@ Always on screen:
 - The services with their covers, booked and projected. The week's menu shows with the recipes only.
 - The strip at the bottom is for the team only: scenario buttons, Reset and the lights of the services.
 
-When the chef must sign: **Reject** stays at the top of the work area, **Approve and sign** is at the bottom of the card, after everything there is to read. Both open a window that asks once more, and the signing window shows exactly what is signed (lines, total, delivery date, start of the quote's hash). The comparison of a substitute shows three things first (same allergens or not, price, how sure the assistant is); a switch shows all details of both products.
+When the chef must sign: **Reject** stays at the top of the work area, **Approve and sign** is at the bottom of the card, after everything there is to read. Both open a window that asks once more, and the signing window shows exactly what is signed (lines, total, delivery date, start of the quote's hash). The comparison of a substitute shows first whether the allergens are the same, then **what changes if you take it**, one line a side: the cost (Valio's price per kilo or litre of both products, when the quote carries both), the dish (the assistant's two answers and the line under which it asks), the work in the kitchen (how the product comes), storage and delivery (storage class, Valio's stock, the delivery day, the share of past orders Valio delivered). Every figure is read from the signed quote or from the assistant's answers: the page says which of two prices is lower and works out nothing. What the data does not hold is said (no price for the product asked for, no preparation time, no delivery history). The note above names the tier Valio ranked the substitute in (good, better, best) and why. A switch shows all details of both products. The chat is given the same four lines, so it can explain the trade-off without adding a fact.
 
 ### Words
 
@@ -58,6 +58,7 @@ The buyer is a chef, not an engineer. The buying agent and the judge are both sh
 - **Other addresses**: `?driver=http://host:port&harness=http://host:port&assistant=http://host:port`.
 - The page never works out a fact of Valio's. Prices, Valio's stock, totals, verdicts and signatures come from the demo state. The only arithmetic on the page is the kitchen's own: to order = need - in stock.
 - The kitchen files are written so that what is missing is exactly what each recorded scenario asks Valio for. They are synthetic and say so.
+- **Both audit logs**: under the order, the switch "What was recorded" opens the kitchen's log and Valio Aimo's log side by side, for the order on screen: the time, who acted, what and why, and the start of each line's hash (the full hash and the one before it show on hover). The lines are those of `audit` in the demo state, written by the harness and the gateway. The page rewords "the agent" as on the rest of the page and checks no chain itself. After the attack the kitchen's log is empty and says why: the order never reached the safety checks. `?record=1` opens the logs from the start, for a recording.
 - Fonts and their licences: `surface/static/fonts/README.md`.
 
 ### The chat (`surface/assistant.py`)

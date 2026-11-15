@@ -20,9 +20,16 @@
  */
 
 const query = new URLSearchParams(window.location.search);
-const DRIVER_URL = (query.get("driver") || "http://localhost:8003").replace(/\/$/, "");
-const HARNESS_URL = (query.get("harness") || "http://localhost:8002").replace(/\/$/, "");
-const ASSISTANT_URL = (query.get("assistant") || "http://localhost:8004").replace(/\/$/, "");
+/*
+ * Where the three services are. On a laptop each one has its own port. Hosted (README, "Hosted demo"), one address
+ * serves everything: the page at the root and each service under its name, a prefix the reverse proxy cuts off
+ * (deploy/Caddyfile.snippet). ?driver=, ?harness= and ?assistant= still win over both.
+ */
+const ON_LAPTOP = ["localhost", "127.0.0.1", ""].includes(window.location.hostname); // "" is a page opened as a file
+const serviceUrl = (name, port) => (query.get(name) || (ON_LAPTOP ? `http://localhost:${port}` : `/${name}`)).replace(/\/$/, "");
+const DRIVER_URL = serviceUrl("driver", 8003);
+const HARNESS_URL = serviceUrl("harness", 8002);
+const ASSISTANT_URL = serviceUrl("assistant", 8004);
 const REVEAL_MS = 420; // time between two steps lighting up: eight steps take under four seconds
 const POLL_MS = 1000;
 const SERVICES_MS = 5000; // how often the page looks whether the services are there
@@ -131,6 +138,7 @@ const app = {
   correcting: false, // the chef is correcting the quantities of a refused order
   mismatch: false, // the quote is not for the quantities the chef asked
   detailsOpen: false, // the full comparison of a substitute
+  recordOpen: query.has("record"), // both audit logs under the order; ?record=1 opens them from the start
   policy: null,
   busy: false,
   chatBusy: false,
@@ -144,6 +152,7 @@ const app = {
   recPortions: 50,
   recAdded: false,
   spotlightOpen: false,
+  chatOpen: false,
 };
 
 /* ---------- Small helpers ---------- */
@@ -561,6 +570,10 @@ function footprintLine() {
     if (app.eco.loading) return '<p class="eco-total">Estimating the carbon footprint…</p>';
     return orderLines().length ? '<p class="eco-total eco-total--off">Carbon footprint: no estimate for these quantities without Valio\'s gateway.</p>' : "";
   }
+  // No line has a footprint: say so. A total of "0 kg CO2e" would read as no emissions, and unknown is never zero.
+  if (data.lines.length && data.unknown.length === data.lines.length) {
+    return `<p class="eco-total eco-total--off">Carbon footprint: no estimate, Valio has no footprint data for ${data.lines.length === 1 ? "this product" : "these products"}.</p>`;
+  }
   const swaps = swappedLines();
   const saved = swaps.reduce((sum, line) => sum + line.swapped_from.offer.saving_kg_co2e, 0);
   const unknown = data.unknown.length ? `, ${data.unknown.length} ${data.unknown.length === 1 ? "line" : "lines"} without data left out` : "";
@@ -568,6 +581,13 @@ function footprintLine() {
       ${saved ? `<span class="eco-total__saved">${esc(kgCo2(saved))} less with your greener ${swaps.length === 1 ? "swap" : "swaps"}</span>` : ""}
       <span class="muted">Product-group averages, an estimate${esc(unknown)}. Not part of the signed quote.</span></p>`;
 }
+
+/*
+ * Under a quote, the estimate only shows when the quote was asked for the very lines it was estimated for.
+ * The attack's quote carries its own quantities, twelve weeks at once: the estimate of the chef's table under it
+ * would be a figure for another order, so nothing shows.
+ */
+const quoteFootprintLine = (quote) => (linesKey(quote.aimo.requested) === ecoKey() ? footprintLine() : "");
 
 function offerFacts(offer) {
   return `<dl class="facts">
@@ -698,7 +718,7 @@ function drawFlow() {
       .map(
         (item) => `<li>
           <button class="flow__step${item.done ? " is-done" : ""}" type="button" data-step="${item.n}"
-            ${app.step === item.n ? 'aria-current="step"' : ""} ${item.open ? "" : "disabled"}>
+            title="${esc(item.sub)}" ${app.step === item.n ? 'aria-current="step"' : ""} ${item.open ? "" : "disabled"}>
             <span class="flow__n">${item.done ? icon("check") : item.n}</span>
             <span class="flow__text"><b>${item.title}</b><span>${esc(item.sub)}</span></span>
           </button>
@@ -793,8 +813,8 @@ function recipesView() {
     .map(
       (recipe) => `<tr class="pick${recipe === chosen ? " is-chosen" : ""}">
           <td><span class="tag">${esc(recipe.course)}</span></td>
-          <td><button class="pick__btn" type="button" data-recipe="${esc(recipe.id)}" aria-pressed="${recipe === chosen}">
-              <b>${esc(recipe.name)}</b><span>${esc(recipe.with)}</span>
+          <td><button class="pick__btn" type="button" data-recipe="${esc(recipe.id)}" aria-pressed="${recipe === chosen}" title="${esc(recipe.with)}">
+              <b>${esc(recipe.name)}</b>
             </button></td>
           <td class="num">${recipe.ingredients.length}</td>
         </tr>`
@@ -814,8 +834,7 @@ function recipesView() {
     : "";
   return `<div class="head head--with-spotlight">
       <div>
-        <h2 class="display">Recipes on the menu</h2>
-        <p class="head__meta">Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.</p>
+        <h2 class="display" title="Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.">Recipes on the menu</h2>
       </div>
       ${bubble}
     </div>
@@ -860,8 +879,8 @@ function trendRecommendationView() {
         const meta = [ing.origin ? `Origin ${ing.origin}` : null, ing.carbon_kg_per_kg != null ? `${num(ing.carbon_kg_per_kg)} kg CO2e/kg, group average` : null]
           .filter(Boolean)
           .join(" · ");
-        return `<tr>
-          <td><b>${esc(ing.name)}</b>${meta ? `<div class="trend-ing-meta">${esc(meta)}</div>` : ""}</td>
+        return `<tr title="${esc(meta)}">
+          <td><b>${esc(ing.name)}</b></td>
           <td class="num">${esc(qty(ing.amount_per_portion, ing.unit))}</td>
           <td class="num"><b>${esc(qty(total, ing.unit))}</b></td>
           <td class="muted num">#${esc(ing.product_id)}</td>
@@ -874,12 +893,10 @@ function trendRecommendationView() {
         <div class="trend-recipe__head">
           <div>
             <span class="tag">${esc(r.course)}</span>
-            <h4 class="trend-recipe__title">${esc(r.name)}</h4>
-            <p class="trend-recipe__with">${esc(r.with_text)}</p>
+            <h4 class="trend-recipe__title" title="${esc(r.with_text)} — ${esc(r.trend_reason)}">${esc(r.name)}</h4>
           </div>
           <span class="trend-source-tiny">${sourceBadge}</span>
         </div>
-        <p class="trend-recipe__why">${esc(r.trend_reason)}</p>
         <table class="tbl tbl--tight">
           <thead><tr><th>Valio Ingredient</th><th class="num">Per portion</th><th class="num">For ${portions} portions</th><th class="num">Product</th></tr></thead>
           <tbody>${rows}</tbody>
@@ -903,8 +920,7 @@ function trendRecommendationView() {
     <div class="trend-card__head">
       <div>
         <span class="tag">Valio Aimo Spotlight · sample trend</span>
-        <h3 class="panel__title">${esc(activeTrend?.title ?? "Seasonal Food Trend")}</h3>
-        <p class="trend-card__headline">${esc(activeTrend?.headline ?? "")} <span class="muted">(${esc(activeTrend?.source ?? "Sample trend, synthetic")})</span></p>
+        <h3 class="panel__title" title="${esc(activeTrend?.headline ?? "")} (${esc(activeTrend?.source ?? "Sample trend, synthetic")})">${esc(activeTrend?.title ?? "Seasonal Food Trend")}</h3>
       </div>
     </div>
     ${trends.length > 1 ? `<div class="trend-card__pills">${trendPills}</div>` : ""}
@@ -945,8 +961,8 @@ function stockView() {
     `<button class="chip" type="button" data-filter="${id}" aria-pressed="${app.stockFilter === id}">${label} <span>${count}</span></button>`;
   const changed = changedLines().length;
 
-  // Where things stand, in the line under the title. Without anything to say, it tells where the count comes from.
-  let note = `<p class="head__meta">Counted ${esc(dayLong(stock.counted_at))}, ${esc(stock.counted_by)}. Need is for the ${esc(stock.for_services)} services. You can change any number.</p>`;
+  const stockHint = `Counted ${dayLong(stock.counted_at)}, ${stock.counted_by}. Need is for the ${stock.for_services} services. You can change any number.`;
+  let note = "";
   if (!canEdit()) {
     note = `<p class="note">${icon("lock")}An order is open with these quantities. They are locked until it is signed or rejected.</p>`;
   } else if (app.correcting && !dirty()) {
@@ -956,7 +972,7 @@ function stockView() {
     note = '<p class="note">The quantities changed since the last order. Confirm the stock to prepare a new order.</p>';
   }
   return `<div class="head">
-      <h2 class="display">Stock check</h2>
+      <h2 class="display" title="${esc(stockHint)}">Stock check</h2>
       ${note}
       <div class="chips">
         ${changed && canEdit() ? `<button class="link" type="button" data-action="undo">Undo ${changed} ${changed === 1 ? "change" : "changes"}</button>` : ""}
@@ -980,8 +996,7 @@ function requestTable() {
     .join("");
   const empty = lines.length ? "" : '<p class="note">Everything is covered by the stock: there is nothing to order.</p>';
   return `<div class="head">
-      <h2 class="display">Ready to order</h2>
-      <p class="head__meta">What your assistant will ask Valio Aimo for. Prices and Valio's stock come with the signed quote.</p>
+      <h2 class="display" title="What your assistant will ask Valio Aimo for. Prices and Valio's stock come with the signed quote.">Ready to order</h2>
     </div>
     ${empty}
     <table class="tbl">
@@ -1031,7 +1046,7 @@ function quoteTable(state) {
       <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Total</th><th>Valio's stock</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr><td colspan="3">Total before tax</td><td class="num"><b>${esc(money(total.amount, quote.currency))}</b></td><td></td></tr></tfoot>
-    </table>${stockNote(quote)}${footprintLine()}`;
+    </table>${stockNote(quote)}${quoteFootprintLine(quote)}`;
 }
 
 /* A card moves in once, when the step it belongs to lights up. */
@@ -1088,6 +1103,7 @@ function productFacts(title, name, facts, extra = "") {
       <dl class="facts">
         <dt>Brand</dt><dd>${esc(facts.brand ?? "unknown")}</dd>
         <dt>Pack</dt><dd>${esc(size)}</dd>
+        <dt>Storage</dt><dd>${esc(storageText(facts.temperature_condition))}</dd>
         <dt>Contains</dt><dd>${esc(allergenText(facts.allergens))}</dd>
         <dt>Claims</dt><dd>${esc(claims)}</dd>
         <dt>Labels</dt><dd>${esc(labels)}</dd>
@@ -1115,6 +1131,92 @@ function confidenceBars(approval) {
     .join("");
 }
 
+/* ---------- The trade-offs of a substitute ---------- */
+
+// The storage classes of Valio's product file that we can name. Another class shows by its number, never guessed.
+const STORAGE_WORDS = { 3: "chilled", 7: "frozen", 8: "ambient" };
+const storageKnown = (code) => code !== null && code !== undefined;
+const storageText = (code) => (storageKnown(code) ? (STORAGE_WORDS[code] ?? `storage class ${code}`) : "unknown");
+
+/*
+ * What changes for the kitchen with the substitute, on four sides: cost, the dish, the work in the kitchen,
+ * storage and delivery. Every figure is read from the quote Valio signed or from the assistant's answers.
+ * The page puts two signed prices side by side and says which is lower: it never works out a price, a saving
+ * or a time. What the data does not say is said, not guessed.
+ * tone: "good" nothing to weigh, "note" something changes, "ask" a reason the chef is asked.
+ */
+function tradeOffs(state) {
+  const { quote, approval } = state;
+  const item = quote.line_items.find((entry) => quote.aimo.lines[entry.id]?.substitute_for);
+  if (!item) return [];
+  const facts = quote.aimo.lines[item.id];
+  const asked = facts.substitute_for;
+  const perUnit = (minor, unit) => `${money(minor, quote.currency)} a ${String(unit).toLowerCase()}`;
+
+  // Cost: Valio's price a kilo or a litre for both products, when the quote carries both.
+  const ours = facts.comparison_price_minor;
+  const theirs = asked.comparison_price_minor;
+  const total = `${money(approval.total_minor, approval.currency)} for the order.`;
+  let cost = { tone: "note", text: `${perUnit(ours, facts.comparison_unit)}, ${total} Valio's quote has no price for the one you asked for.` };
+  if (Number.isFinite(theirs) && asked.comparison_unit === facts.comparison_unit) {
+    const word = ours < theirs ? "Cheaper" : ours > theirs ? "More expensive" : "Same price";
+    cost = { tone: ours > theirs ? "ask" : "good", text: `${word}: ${perUnit(ours, facts.comparison_unit)}, against ${perUnit(theirs, asked.comparison_unit)} for the one you asked for. ${total}` };
+  }
+
+  // The dish: the assistant's two answers, with the line under which it asks the chef.
+  const answer = (key) => (approval.judge ?? []).find((entry) => entry.question_key === key && Number.isFinite(entry.probability));
+  const percent = (entry) => `${Math.round(entry.probability * 100)}%`;
+  const same = answer("same_use");
+  const fits = answer("within_preferences");
+  const sure = [same && `${percent(same)} sure it works the same way in the dish`, fits && `${percent(fits)} sure it fits your kitchen's preferences`].filter(Boolean);
+  const unsure = [same, fits].filter((entry) => entry && entry.routed !== "auto");
+  const dish = sure.length
+    ? { tone: unsure.length ? "ask" : "good", text: `${ASSISTANT} is ${sure.join(", and ")}.${unsure.length ? ` Below ${Math.round(unsure[0].auto_threshold * 100)}%, it asks you.` : ""}` }
+    : { tone: "ask", text: `${ASSISTANT} could not tell whether it works the same way in the dish, so it asks you.` };
+
+  // The work in the kitchen: how the product comes. Valio's data has no preparation time, and the page says so.
+  const size = facts.size_per_sales_unit;
+  const askedSize = asked.size_per_sales_unit;
+  const packs = size?.value ? `${qty(item.quantity, facts.sales_unit)} of ${qty(size.value, size.unit)} each` : qty(item.quantity, facts.sales_unit);
+  const samePack = Boolean(size?.value && askedSize?.value && size.value === askedSize.value && size.unit === askedSize.unit && facts.sales_unit === asked.sales_unit);
+  let before = "The pack size of the one you asked for is unknown.";
+  if (samePack) before = "Same pack size as the one you asked for.";
+  else if (askedSize?.value && asked.sales_unit === askedSize.unit) before = `The one you asked for is sold by the ${unitWord(askedSize.unit, 1)}.`;
+  else if (askedSize?.value) before = `The one you asked for comes in packs of ${qty(askedSize.value, askedSize.unit)}.`;
+  const work = { tone: samePack ? "good" : "note", text: `${packs}. ${before} Valio's data gives no preparation time.` };
+
+  // Storage and delivery: the storage class of both, Valio's stock, the delivery day, and how reliably Valio delivered it.
+  const here = facts.temperature_condition;
+  const there = asked.temperature_condition;
+  let storage = { tone: "note", text: `Storage: ${storageText(here)}, and ${storageText(there)} for the one you asked for.` };
+  if (storageKnown(here) && here === there) storage = { tone: "good", text: `${titleCase(storageText(here))}, like the one you asked for.` };
+  else if (storageKnown(here) && storageKnown(there)) storage = { tone: "ask", text: `Storage changes: ${storageText(here)}, where the one you asked for is ${storageText(there)}.` };
+  const reliability = facts.delivery_reliability;
+  const delivered =
+    reliability && reliability.certainty !== "unknown" && Number.isFinite(reliability.value)
+      ? `In the past Valio delivered ${Math.round(reliability.value * 100)}% of what was ordered of it.`
+      : "Valio has no delivery history for it.";
+  const logistics = { tone: storage.tone, text: `${storage.text} Valio's stock: ${stockText(facts.stock)}. Delivery ${dayLong(quote.aimo.delivery_date)}. ${delivered}` };
+
+  return [
+    { key: "cost", label: "Cost", ...cost },
+    { key: "dish", label: "In the dish", ...dish },
+    { key: "work", label: "In the kitchen", ...work },
+    { key: "logistics", label: "Storage, delivery", ...logistics },
+  ];
+}
+
+const TRADE_OFF_ICON = { good: "check", note: "arrow", ask: "pen" };
+const tradeOffRows = (state) =>
+  tradeOffs(state)
+    .map(
+      (row) => `<li class="tradeoff tradeoff--${esc(row.tone)}">
+          <span class="tradeoff__side">${icon(TRADE_OFF_ICON[row.tone])}${esc(row.label)}</span>
+          <span class="tradeoff__text">${esc(row.text)}</span>
+        </li>`
+    )
+    .join("");
+
 function approvalCard(state) {
   const approval = state.approval;
   const quote = state.quote;
@@ -1134,16 +1236,18 @@ function approvalCard(state) {
     const shortfall = (quote.aimo.shortfalls ?? []).find((entry) => entry.product_id === facts.substitute_for.product_id);
     const why = shortfall ? `Valio cannot deliver what you asked for: ${SHORTFALL_WORDS[shortfall.reason] ?? words(shortfall.reason)}.` : "Valio proposes another product than the one you asked for.";
     const candidates = (quote.aimo.alternatives ?? []).length;
-    // What a chef looks at first: the same allergens or not (a check of the harness), and how sure the assistant is.
+    // Valio's gateway ranks substitutes in three tiers (good, better, best) and says why: the page repeats both.
+    const chosen = (quote.aimo.alternatives ?? []).find((entry) => entry.chosen && entry.product_id === facts.product_id);
+    const found = candidates === 1 ? " Valio found one substitute and proposes it" : candidates ? ` Valio ranked ${candidates} substitutes and proposes this one` : "";
+    const ranked = found ? `${found}${chosen ? `, in its "${chosen.tier}" tier (${chosen.why})` : ""}.` : "";
+    // What a chef looks at first: the same allergens or not (a check of the harness), then what changes on four sides.
     const allergens = state.verdict?.rules.find((rule) => rule.rule_id === "allergen-unchanged-on-substitution");
     const allergenFact = allergens ? checkLine(allergens) : null;
-    const fits = (approval.judge ?? []).find((answer) => answer.question_key === "within_preferences");
-    const sure = fits && Number.isFinite(fits.probability)
-      ? `${ASSISTANT} is ${Math.round(fits.probability * 100)}% sure it fits your kitchen's preferences. Below ${Math.round(fits.auto_threshold * 100)}%, it asks you.`
-      : `${ASSISTANT} could not tell whether it fits your kitchen's preferences, so it asks you.`;
     const extra = `<dt>Price</dt><dd>${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}</dd>
       <dt>Valio's stock</dt><dd>${esc(stockText(facts.stock))}</dd>`;
-    body = `<p class="card__note">${esc(why)}${candidates === 1 ? " Valio found one substitute and proposes it." : candidates ? ` Valio ranked ${candidates} substitutes and proposes this one.` : ""}</p>
+    const askedMinor = facts.substitute_for.comparison_price_minor;
+    const askedPrice = Number.isFinite(askedMinor) ? `${money(askedMinor, quote.currency)} a ${String(facts.substitute_for.comparison_unit).toLowerCase()}` : "not in the quote";
+    body = `<p class="card__note">${esc(why)}${esc(ranked)}</p>
       <div class="swap">
         <p class="swap__from"><span class="card__label">You asked for</span>${esc(facts.substitute_for.name)}</p>
         <span class="swap__arrow" aria-hidden="true">${icon("arrow")}</span>
@@ -1151,16 +1255,16 @@ function approvalCard(state) {
       </div>
       <ul class="keys">
         ${allergenFact ? `<li class="key key--${esc(allergenFact.outcome)}">${allergenFact.outcome === "pass" ? icon("check") : icon("pen")}${esc(allergenFact.label)}${allergenFact.value ? `: ${esc(allergenFact.value)}` : ""}</li>` : `<li class="key">Contains: ${esc(allergenText(facts.allergens))}</li>`}
-        <li class="key">${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}, ${esc(money(approval.total_minor, approval.currency))} for the order</li>
-        <li class="key key--human">${icon("spark")}${esc(sure)}</li>
       </ul>
+      <p class="card__label card__label--gap">What changes if you take it</p>
+      <ul class="tradeoffs">${tradeOffRows(state)}</ul>
       <button class="toggle" type="button" data-action="details" role="switch" aria-checked="${app.detailsOpen}">
         <span class="toggle__track" aria-hidden="true"><span class="toggle__knob"></span></span>All details of both products
       </button>
       ${
         app.detailsOpen
           ? `<div class="versus">
-              ${productFacts("You asked for", facts.substitute_for.name, facts.substitute_for)}
+              ${productFacts("You asked for", facts.substitute_for.name, facts.substitute_for, `<dt>Price</dt><dd>${esc(askedPrice)}</dd>`)}
               ${productFacts("Valio proposes", item.item.title, facts, extra)}
             </div>
             <p class="card__label card__label--gap">How sure ${ASSISTANT} is</p>
@@ -1218,6 +1322,58 @@ function attacksCard(state) {
     </section>`;
 }
 
+/* ---------- Drawing: what was recorded (both audit logs) ---------- */
+
+const RECORD_WHO = { agent: "Your assistant", harness: "Safety checks", human: "You", merchant: "Valio Aimo" };
+const timeOfDay = (isoTime) =>
+  new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Helsinki" }).format(new Date(isoTime));
+
+/* One log as its owner wrote it: when, who, what and why, and the start of the line's hash. */
+function recordLog(title, events, empty) {
+  const lines = events
+    .map((event) => {
+      const why = event.why ? `<span class="record__why">${esc(lexicon(event.why))}</span>` : "";
+      const chain = `Line ${event.seq}. Hash of this line: ${event.hash}. Hash of the line before: ${event.prev_hash ?? "none, it is the first line"}.`;
+      const hash = event.hash ? `<span class="record__hash mono" title="${esc(chain)}">${esc(shortProof(event.hash))}</span>` : "";
+      return `<li class="record__line${event.action === "order_refused" ? " record__line--refused" : ""}">
+          <span class="record__time">${esc(timeOfDay(event.at))}</span>
+          <span class="record__who">${esc(RECORD_WHO[event.actor] ?? words(event.actor))}</span>
+          <span class="record__what">${esc(lexicon(event.what))}${why}</span>
+          ${hash}
+        </li>`;
+    })
+    .join("");
+  return `<div class="record__log">
+      <p class="card__label">${esc(title)} · ${events.length} ${events.length === 1 ? "line" : "lines"}</p>
+      ${events.length ? `<ol class="record__lines">${lines}</ol>` : `<p class="record__empty">${esc(empty)}</p>`}
+    </div>`;
+}
+
+/*
+ * Both audit logs for the order on screen, side by side: the kitchen's own (kept by the safety checks) and Valio Aimo's.
+ * The page shows the lines the demo state carries, as they were written. It does not check the chains itself.
+ */
+function recordPanel(state) {
+  const buyer = state.audit?.buyer ?? [];
+  const merchant = state.audit?.merchant ?? [];
+  if (!buyer.length && !merchant.length) return "";
+  // An order sent straight to Valio never reached the safety checks, so the kitchen's log has no line of it.
+  const noBuyerLine = state.scenario?.id === "attack" ? "No line. This order was sent straight to Valio Aimo and never reached your safety checks." : "No line for this order.";
+  const logs = app.recordOpen
+    ? `<p class="record__note">Each side keeps its own log. Every line carries the hash of the line before it: change or remove a line and the hashes after it no longer match.</p>
+      <div class="record__logs">
+        ${recordLog("Your kitchen's log", buyer, noBuyerLine)}
+        ${recordLog("Valio Aimo's log", merchant, "No line for this order.")}
+      </div>`
+    : "";
+  return `<section class="record" aria-label="What was recorded">
+      <button class="toggle" type="button" data-action="record" role="switch" aria-checked="${app.recordOpen}">
+        <span class="toggle__track" aria-hidden="true"><span class="toggle__knob"></span></span>What was recorded: your log and Valio Aimo's log
+      </button>
+      ${logs}
+    </section>`;
+}
+
 function orderView() {
   const state = app.state;
   if (!orderOnScreen() || app.shown < 2 || !state.quote) {
@@ -1232,7 +1388,9 @@ function orderView() {
     state.attacks?.length && app.shown >= 5 ? attacksCard(state) : "",
     state.approval && !pending && app.shown >= 4 ? approvalCard(state) : "",
   ].join("");
-  return `<div class="order"><div class="order__main">${quoteTable(state)}</div><div class="order__side">${side}</div></div>`;
+  // The logs come once every step that happened is lit, so they never tell the end before the trail does.
+  const record = app.shown >= reachable() ? recordPanel(state) : "";
+  return `<div class="order"><div class="order__main">${quoteTable(state)}</div><div class="order__side">${side}</div></div>${record}`;
 }
 
 function drawMain() {
@@ -1665,7 +1823,12 @@ function pageFacts() {
         const check = checkLine(rule);
         return `${OUTCOME_WORDS[check.outcome] ?? check.outcome}: ${check.label}${check.value ? ` (${check.value})` : ""}`;
       }),
-      signature: state.approval && { status: state.approval.status, sign_before: clock(state.approval.deadline) },
+      signature: state.approval && {
+        status: state.approval.status,
+        sign_before: clock(state.approval.deadline),
+        // What the card shows about the substitute, so the chat can explain the trade-off in the page's own words.
+        what_changes_with_the_substitute: state.approval.status === "pending" ? tradeOffs(state).map((row) => `${row.label}: ${row.text}`) : [],
+      },
       receipt: state.order && { order_id: state.order.order_id, total: money(state.order.total_minor, state.order.currency), delivery: dayLong(state.order.delivery_date), signed_by: state.order.signed_by },
       refused_attempts: (state.attacks ?? []).map((attack) => `${lexicon(attack.title)}: ${attack.status}`),
     };
@@ -1853,6 +2016,9 @@ document.addEventListener("click", (event) => {
   } else if (action === "details") {
     app.detailsOpen = !app.detailsOpen;
     drawMain();
+  } else if (action === "record") {
+    app.recordOpen = !app.recordOpen;
+    drawMain();
   } else if (action === "correct") {
     correctQuantities();
   } else if (action === "use-need") {
@@ -1867,6 +2033,11 @@ document.addEventListener("click", (event) => {
     if (app.spotlightOpen && !app.recommendation && !app.recBusy) {
       fetchRecommendation();
     }
+  } else if (action === "toggle-chat") {
+    app.chatOpen = !app.chatOpen;
+    el("side")?.classList.toggle("is-open", app.chatOpen);
+    el("chat-launcher")?.setAttribute("aria-expanded", String(app.chatOpen));
+    if (app.chatOpen) setTimeout(() => el("ask-text")?.focus(), 0);
   } else if (action === "select-trend") {
     const tid = event.target.closest("[data-trend-id]")?.dataset.trendId;
     if (tid && tid !== app.trendId) {

@@ -265,6 +265,10 @@ class SubstituteFor(ContractModel):
     nutritional_claims: list[str] = []
     labels: list[str] = []
     origin: Claim | None = None
+    # Valio's price per litre or kilo for the replaced product, to read the substitute's price against. None when
+    # Valio's price API gave no price for it.
+    comparison_price_minor: int | None = None
+    comparison_unit: str | None = None
 
 
 class LineClaims(ContractModel):

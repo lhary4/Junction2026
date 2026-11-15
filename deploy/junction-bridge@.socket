@@ -1,0 +1,16 @@
+# Why this exists: on the server, Caddy (the reverse proxy) runs inside Docker, and from inside Docker 127.0.0.1 is
+# the container itself, not the server. Our services only listen on the server's 127.0.0.1.
+# This socket listens on the address the server has on Caddy's Docker network (172.18.0.1, a private address that
+# cannot be reached from the internet) and junction-bridge@.service hands each connection to the same port on
+# 127.0.0.1. One instance per port: junction-bridge@8003.socket is the relay of the driver.
+[Unit]
+Description=Junction 2026 demo: relay from Caddy's Docker network to 127.0.0.1:%i
+PartOf=junction-demo.service
+
+[Socket]
+ListenStream=172.18.0.1:%i
+# Lets the socket open at boot even if Docker has not created its network yet.
+FreeBind=true
+# Only Caddy's Docker network may connect.
+IPAddressDeny=any
+IPAddressAllow=172.18.0.0/16
