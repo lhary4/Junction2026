@@ -369,9 +369,11 @@ function devStrip() {
     .map(([key, name]) => `<button class="dev__btn${app.variant === key ? " is-on" : ""}" type="button" data-variant="${key}">${key.toUpperCase()} ${name}</button>`)
     .join("");
   const light = (name, on) => `<span class="dev__light${on ? " is-on" : ""}">${name}</span>`;
+  // The console is the main version. The two others only show here once someone asked for a version (?v= or the v key).
+  const compare = app.comparing ? `<span class="dev__sep"></span><span class="dev__label">Version</span>${versions}` : "";
   return `<span class="dev__label">Demo</span>${scenarios}
     <button class="dev__btn" type="button" data-reset ${app.busy ? "disabled" : ""}>Reset</button>
-    <span class="dev__sep"></span><span class="dev__label">Version</span>${versions}
+    ${compare}
     <span class="dev__sep"></span>${light(`driver ${app.mode}`, app.up.driver)}${light("harness", app.up.harness)}${light("gateway", app.up.merchant)}${light("chat", app.up.assistant)}
     <span class="dev__hint">keys: 1 2 3 scenario · r reset · v version · h hide</span>`;
 }
@@ -829,6 +831,7 @@ function readRoute() {
 
 function setVariant(variant) {
   app.variant = variant;
+  app.comparing = true;
   const url = new URL(window.location.href);
   url.searchParams.set("v", variant);
   window.history.replaceState(null, "", url);
@@ -839,7 +842,9 @@ function setVariant(variant) {
 /* ---------- Events ---------- */
 
 document.addEventListener("click", (event) => {
-  const target = event.target.closest("[data-action],[data-proof],[data-scenario],[data-variant],[data-reset],[data-step],[data-eco-swap],[data-eco-dismiss],[data-unswap],[data-ledger],[data-ledger-filter],[data-rule-set],[data-rule-toggle],[data-allergen-remove]");
+  // button[data-variant], not [data-variant]: the body carries data-variant too (for the stylesheet), and a click
+  // on plain text must not be read as "switch to the version on screen".
+  const target = event.target.closest("[data-action],[data-proof],[data-scenario],button[data-variant],[data-reset],[data-step],[data-eco-swap],[data-eco-dismiss],[data-unswap],[data-ledger],[data-ledger-filter],[data-rule-set],[data-rule-toggle],[data-allergen-remove]");
   if (!target) return;
   const data = target.dataset;
   if (data.scenario) return void chooseScenario(data.scenario);

@@ -49,6 +49,8 @@ import {
   runSeconds,
   seals,
   checkLine,
+  tradeOffs,
+  storageText,
 } from "./state.js";
 
 /* ---------- Small pieces ---------- */
@@ -425,6 +427,7 @@ function productFacts(title, name, facts, extra = "") {
       <dl class="facts">
         <dt>Brand</dt><dd>${esc(facts.brand ?? "unknown")}</dd>
         <dt>Pack</dt><dd>${esc(size)}</dd>
+        <dt>Storage</dt><dd>${esc(storageText(facts.temperature_condition))}</dd>
         <dt>Contains</dt><dd>${esc(allergenText(facts.allergens))}</dd>
         <dt>Claims</dt><dd>${esc(claims)}</dd>
         <dt>Labels</dt><dd>${esc(labels)}</dd>
@@ -480,35 +483,46 @@ export function approvalReason(state) {
   const facts = quote.aimo.lines[item.id];
   const shortfall = (quote.aimo.shortfalls ?? []).find((entry) => entry.product_id === facts.substitute_for.product_id);
   const why = shortfall ? `Valio cannot deliver what you asked for: ${SHORTFALL_WORDS[shortfall.reason] ?? words(shortfall.reason)}.` : "Valio proposes another product than the one you asked for.";
-  const fits = (approval.judge ?? []).find((answer) => answer.question_key === "within_preferences");
-  const sure =
-    fits && Number.isFinite(fits.probability)
-      ? `${ASSISTANT} is ${Math.round(fits.probability * 100)}% sure it fits your kitchen. Below ${Math.round(fits.auto_threshold * 100)}%, it asks you.`
-      : `${ASSISTANT} could not tell whether it fits your kitchen, so it asks you.`;
+  // Valio's gateway ranks substitutes in three tiers (good, better, best) and says why: the page repeats both.
+  const candidates = (quote.aimo.alternatives ?? []).length;
+  const chosen = (quote.aimo.alternatives ?? []).find((entry) => entry.chosen && entry.product_id === facts.product_id);
+  const found = candidates === 1 ? " Valio found one substitute and proposes it" : candidates ? ` Valio ranked ${candidates} substitutes and proposes this one` : "";
+  const ranked = found ? `${found}${chosen ? `, in its "${chosen.tier}" tier (${chosen.why})` : ""}.` : "";
   const allergens = checks.find((check) => check.id === "allergen-unchanged-on-substitution");
-  const extra = `<dt>Price</dt><dd>${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}</dd>
+  const perUnit = (minor, unit) => `${money(minor, quote.currency)} a ${String(unit).toLowerCase()}`;
+  const askedMinor = facts.substitute_for.comparison_price_minor;
+  const askedPrice = `<dt>Price</dt><dd>${esc(Number.isFinite(askedMinor) ? perUnit(askedMinor, facts.substitute_for.comparison_unit) : "not in the quote")}</dd>`;
+  const extra = `<dt>Price</dt><dd>${esc(perUnit(facts.comparison_price_minor, facts.comparison_unit))}</dd>
     <dt>Valio's stock</dt><dd>${esc(stockText(facts.stock))}</dd>`;
+  // What changes on four sides. The mark says how much there is to weigh: nothing, something, or a reason you are asked.
+  const mark = { good: "check", note: "arrow", ask: "pen" };
+  const changes = tradeOffs(state)
+    .map(
+      (row) => `<li class="tradeoff tradeoff--${esc(row.tone)}">
+          <span class="tradeoff__side">${icon(mark[row.tone], 16)}${esc(row.label)}</span>
+          <span class="tradeoff__text">${esc(row.text)}</span>
+        </li>`
+    )
+    .join("");
   return `<section class="card">
       <h3 class="eyebrow">Why you are asked</h3>
-      <p class="card__lead">${esc(why)}</p>
+      <p class="card__lead">${esc(why)}${esc(ranked)}</p>
       <div class="swap">
         <div class="swap__side"><p class="eyebrow">You asked for</p><p class="swap__name">${esc(facts.substitute_for.name)}</p></div>
         <span class="swap__arrow" aria-hidden="true">${icon("arrow", 20)}</span>
         <div class="swap__side swap__side--to"><p class="eyebrow">Valio proposes</p><p class="swap__name">${esc(item.item.title)}</p></div>
       </div>
-      <ul class="keys">
-        ${allergens ? `<li class="key key--${esc(allergens.outcome)}">${allergens.outcome === "pass" ? icon("check", 16) : icon("pen", 16)}${esc(allergens.label)}${allergens.value ? `: ${esc(allergens.value)}` : ""}</li>` : ""}
-        <li class="key">${icon("dot", 16)}${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}, ${esc(money(approval.total_minor, approval.currency))} for ${esc(qty(item.quantity, facts.sales_unit))}</li>
-        <li class="key key--human">${icon("spark", 16)}${esc(sure)}</li>
-      </ul>
-      <ul class="judges">${judgeBars(approval)}</ul>
-      <p class="card__note">${ASSISTANT}'s opinion is advice. The prices, the allergens and the stock above are Valio's signed facts.</p>
+      ${allergens ? `<ul class="keys"><li class="key key--${esc(allergens.outcome)}">${allergens.outcome === "pass" ? icon("check", 16) : icon("pen", 16)}${esc(allergens.label)}${allergens.value ? `: ${esc(allergens.value)}` : ""}</li></ul>` : ""}
+      <h4 class="eyebrow tradeoffs__title">What changes if you take it</h4>
+      <ul class="tradeoffs">${changes}</ul>
+      <p class="card__note">${ASSISTANT}'s opinion is advice. The prices, the allergens, the storage and the stock are Valio's signed facts.</p>
       <details class="fold" ${app.detailsOpen ? "open" : ""} data-fold="details">
         <summary>All details of both products</summary>
         <div class="versus">
-          ${productFacts("You asked for", facts.substitute_for.name, facts.substitute_for)}
+          ${productFacts("You asked for", facts.substitute_for.name, facts.substitute_for, askedPrice)}
           ${productFacts("Valio proposes", item.item.title, facts, extra)}
         </div>
+        <ul class="judges">${judgeBars(approval)}</ul>
       </details>
     </section>${checksHtml}`;
 }

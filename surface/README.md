@@ -4,11 +4,11 @@ The trusted surface. The agent searches and asks; a person approves **here**, on
 
 Three files in `surface/static/`, no framework, no build step, no internet needed: `index.html`, `app.js`, `style.css`.
 
-## The clean portal (three versions to choose from)
+## The clean portal (the page the address opens)
 
-`surface/static/aimo/` is a second take on the kitchen page, built on 15/11 to show less: no conversation, no signing panel stuck on the left. It reads the same services and the same recorded runs as `portal.html`, and changes nothing in it. Open <http://localhost:8004/surface/static/aimo/> once the services run (same commands as below).
+`surface/static/aimo/` is a second take on the kitchen page, built on 15/11 to show less: no conversation, no signing panel stuck on the left. It reads the same services and the same recorded runs as `portal.html`, and changes nothing in it. <http://localhost:8004/> opens it once the services run (same commands as below). The first page is still at <http://localhost:8004/surface/static/portal.html>; `HOME_PAGE` in `surface/assistant.py` says which of the two the address alone opens.
 
-Three versions of the same product, switched in the strip at the bottom or with `?v=a`, `?v=b`, `?v=c`:
+Three versions of the same product. **B Console is the main one** and opens when nothing is asked. `?v=a` and `?v=c` open the two others, and the strip at the bottom then offers all three:
 
 | Version | Where the chef lands | Where the assistant shows |
 |---|---|---|
@@ -28,7 +28,7 @@ Screens shared by the three versions:
 | Screen | What it shows | From |
 |---|---|---|
 | **Orders** | The next delivery (only the steps that happened are ticked), then every order with who signed it and its proof | The demo state, `GET /authorizations` on the harness, `GET /orders/{id}` on the gateway, and `history.sample.json` |
-| **Approvals** | The order that waits: why, the substitute compared, the checks, then Approve and sign, Reject, Reject and edit the order. Past decisions below | The demo state, `GET /approvals`, `POST /approvals/{id}/decision` |
+| **Approvals** | The order that waits: why, the tier Valio ranked the substitute in, what changes if you take it on four sides (cost, the dish, the kitchen, storage and delivery, the same four lines as the first page), the checks, then Approve and sign, Reject, Reject and edit the order. Past decisions below | The demo state, `GET /approvals`, `POST /approvals/{id}/decision` |
 | **Rules** | The chef's gauges: spending limit, banned allergens, what to do when allergen data is missing or a substitute changes it, substitutes (allowed, accepted without asking, the two scores of the judge, the preferences text), late delivery | `GET /policy`, `PUT /policy`, `POST /policy/reset` |
 | **Audit** | Both logs as one stream, the proof of each line, and a button that recomputes every fingerprint in the browser. The attack scenario shows here | `GET /audit` on the harness and on the gateway |
 
@@ -55,7 +55,7 @@ VALIO_MODE=live uv run python scripts/dev.py --fresh    # the gateway (8001), th
 uv run uvicorn surface.assistant:app --port 8004        # the page and its chat
 ```
 
-Then open <http://localhost:8004/>. The last command alone is enough to see the page: without the other services it replays recorded runs. The strip at the bottom shows a green light for each service that answers, and the page looks again every five seconds, so a service started later shows up without a reload.
+Then open <http://localhost:8004/surface/static/portal.html> (the address alone opens the clean portal above). The last command alone is enough to see the page: without the other services it replays recorded runs. The strip at the bottom shows a green light for each service that answers, and the page looks again every five seconds, so a service started later shows up without a reload.
 
 The demo driver needs the gateway in live mode: in replay mode (`VALIO_MODE=replay`, the value in `.env.example`) the gateway has no recorded answers for the menu's products. The page then shows the recorded run instead, with a line that says why.
 
