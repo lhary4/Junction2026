@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Valio Aimo: kitchen portal (concept mock-up)</title>
+    <link rel="preload" href="../fonts/figtree.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="../fonts/sofia-sans-extra-condensed.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="app.css" />
+  </head>
+  <body>
+    <!-- The mock-up says what it is, on every screen. -->
+    <p class="mock">Concept mock-up, Junction 2026, synthetic data. Not a Valio Aimo service.</p>
+
+    <!-- The portal: its frame and the screen in it are drawn by main.js. Three versions: ?v=a, ?v=b, ?v=c. -->
+    <div id="app"></div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+    <!-- For the team only: scenarios, versions, and the lights of the services. Press h to hide it. -->
+    <footer class="dev" id="dev" aria-label="Demo controls"></footer>
+
+    <script type="module" src="main.js"></script>
+  </body>
+</html>

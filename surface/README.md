@@ -4,6 +4,43 @@ The trusted surface. The agent searches and asks; a person approves **here**, on
 
 Three files in `surface/static/`, no framework, no build step, no internet needed: `index.html`, `app.js`, `style.css`.
 
+## The clean portal (three versions to choose from)
+
+`surface/static/aimo/` is a second take on the kitchen page, built on 15/11 to show less: no conversation, no signing panel stuck on the left. It reads the same services and the same recorded runs as `portal.html`, and changes nothing in it. Open <http://localhost:8004/surface/static/aimo/> once the services run (same commands as below).
+
+Three versions of the same product, switched in the strip at the bottom or with `?v=a`, `?v=b`, `?v=c`:
+
+| Version | Where the chef lands | Where the assistant shows |
+|---|---|---|
+| **A Brief** | One column and one sentence ("Thursday's order is ready."), one button | Its card is the page: what it prepared, then each step as it happens |
+| **B Console** | A sidebar and a dashboard: what is short, what needs a signature, the stock table | A chip in the sidebar, and a card beside the order on its own screen |
+| **C Guided** | Menu, stock, order, one step at a time (the flow of the first page) | One sentence under the steps, and the card beside the order |
+
+What replaces the conversation and the signing panel, in all three:
+
+- **The assistant's card.** A list of what it did, one line per real step, each with who did it (Aimo, You, Valio, Checks). Before an order it holds what it prepared from the menu and the stock count. The steps of the order arrive one after the other, like the trail of the first page. In version A each line also carries the AP2 term and the start of its proof.
+- **Three seals: You, Aimo, Valio.** A seal turns lime when its signature exists. It is the only lime on the page. They answer "who signed?" at a glance: Aimo inside the limit, you on the approval screen, or nobody.
+- **One field to ask.** The chat of `surface/assistant.py`, with the last answer only and what it really changed. Nothing scrolls.
+- **Your rules for this order.** Four cards read from the harness's policy before the order, and filled with what each check found once the verdict is in.
+
+Screens shared by the three versions:
+
+| Screen | What it shows | From |
+|---|---|---|
+| **Orders** | The next delivery (only the steps that happened are ticked), then every order with who signed it and its proof | The demo state, `GET /authorizations` on the harness, `GET /orders/{id}` on the gateway, and `history.sample.json` |
+| **Approvals** | The order that waits: why, the substitute compared, the checks, then Approve and sign, Reject, Reject and edit the order. Past decisions below | The demo state, `GET /approvals`, `POST /approvals/{id}/decision` |
+| **Rules** | The chef's gauges: spending limit, banned allergens, what to do when allergen data is missing or a substitute changes it, substitutes (allowed, accepted without asking, the two scores of the judge, the preferences text), late delivery | `GET /policy`, `PUT /policy`, `POST /policy/reset` |
+| **Audit** | Both logs as one stream, the proof of each line, and a button that recomputes every fingerprint in the browser. The attack scenario shows here | `GET /audit` on the harness and on the gateway |
+
+Things to know:
+
+- **Rules are saved by the harness, never by the page.** Saving needs the routes of PR #50 (`PUT /policy`). Without them the screen still shows the rules and says that nothing was saved. With the harness stopped, it shows the demo policy file, read only.
+- **`history.sample.json` is made up** and says so: rows carry a "sample" tag on the page. Products and unit prices are those of the quote recorded on 14/11, everything else is invented. `tests/test_surface_aimo.py` checks that its totals add up.
+- **The delivery steps after "Accepted by Valio" are what comes next**, not tracking: the page has no data on trucks.
+- **Scenarios for the team:** the strip at the bottom, or the keys `1`, `2`, `3` (scenario), `r` (reset), `v` (next version), `h` (hide the strip, for a recording). `?strip=0` starts with the strip hidden.
+- **Hosted**, the page finds the services under `/driver`, `/harness` and `/assistant` like the first page. The gateway is not published, so the audit screen then shows Valio's lines for the order on screen only.
+- Not carried over from the first page: editing the stock table by hand (the chat still changes it) and the Spotlight recipe.
+
 ## The kitchen order page (working demo)
 
 `surface/static/portal.html` is the stage of the demo: the chef's order page inside a Valio Aimo customer portal, for the restaurant of `scenarios/restaurant-case/`.

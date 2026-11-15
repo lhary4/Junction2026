@@ -1,0 +1,444 @@
+{
+  "_sample": "Sample history for the mock-up: orders the kitchen could have placed before the demo. Products and unit prices are those of the quote recorded on 14/11/2026; quantities, dates, identifiers and hashes are made up. Not Valio data.",
+  "orders": [
+    {
+      "order_id": "ord_5e0c91ab",
+      "ordered_at": "2026-11-12T06:41:08+02:00",
+      "delivery_date": "2026-11-13",
+      "status": "delivered",
+      "decision": "auto",
+      "signed_by": "agent",
+      "total_minor": 11592,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "463437",
+          "title": "Valio Eila butter 500 g salted lactose free",
+          "quantity": 12,
+          "unit_price_minor": 331,
+          "total_minor": 3972
+        },
+        {
+          "product_id": "464194",
+          "title": "Valio whipping cream 1 l UHT lactose free",
+          "quantity": 4,
+          "unit_price_minor": 391,
+          "total_minor": 1564
+        },
+        {
+          "product_id": "476890",
+          "title": "Valio smetana 2 kg lactose free",
+          "quantity": 3,
+          "unit_price_minor": 1306,
+          "total_minor": 3918
+        },
+        {
+          "product_id": "464306",
+          "title": "Valio Eila semi skimmed milk drink 1 l lactose free",
+          "quantity": 8,
+          "unit_price_minor": 101,
+          "total_minor": 808
+        },
+        {
+          "product_id": "467958",
+          "title": "VAASAN Original Thin Rye Crispbread 300g",
+          "quantity": 6,
+          "unit_price_minor": 170,
+          "total_minor": 1020
+        },
+        {
+          "product_id": "460325",
+          "title": "Dansukker Caster Sugar 1kg",
+          "quantity": 2,
+          "unit_price_minor": 155,
+          "total_minor": 310
+        }
+      ],
+      "note": null,
+      "rule": null,
+      "checkout_id": "chk_30d06f5c",
+      "checkout_hash": "R93wwE8IoSucaTiLGcDU6UY5mbUa2m2sfRdRMkdwcGg",
+      "mandate_reference": "HbHlTGgeuiu3xiPLrmHw8_mE0c-1hmC6XEViTEw4pj0",
+      "receipt_hash": "LqCBipZTj-e9AI0HeiVzvXV3ts0a1Y2dnFFVmOHGLSY",
+      "payment_id": "pay_c426e35f",
+      "sample": true
+    },
+    {
+      "order_id": "ord_b7d3f204",
+      "ordered_at": "2026-11-10T14:05:37+02:00",
+      "delivery_date": "2026-11-12",
+      "status": "delivered",
+      "decision": "human",
+      "signed_by": "human",
+      "total_minor": 10940,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "475072",
+          "title": "Haapalan lactose-free bread cheese 500g",
+          "quantity": 20,
+          "unit_price_minor": 547,
+          "total_minor": 10940
+        }
+      ],
+      "note": "Substitute for the squeaky cheese. Aimo was 71% sure it fits your kitchen; it asks you below 85%.",
+      "rule": "substitution-within-preferences",
+      "checkout_id": "chk_11546c75",
+      "checkout_hash": "W5Raj4NjKAqQk4I-dE7aqmGElzoLInFbZnBe0mZKPec",
+      "mandate_reference": "00ypTynnTDjlIG-z-6d8CJwWD5uaXHIZds1kH8nKIZI",
+      "receipt_hash": "gJ7qXlaMDhGkiMITUFuM_7TbWiyHjJ68FSISE-RpO4g",
+      "payment_id": "pay_2cdb5823",
+      "sample": true
+    },
+    {
+      "order_id": "ord_19aa6c3e",
+      "ordered_at": "2026-11-09T06:38:51+02:00",
+      "delivery_date": "2026-11-10",
+      "status": "delivered",
+      "decision": "auto",
+      "signed_by": "agent",
+      "total_minor": 7688,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "463437",
+          "title": "Valio Eila butter 500 g salted lactose free",
+          "quantity": 10,
+          "unit_price_minor": 331,
+          "total_minor": 3310
+        },
+        {
+          "product_id": "464194",
+          "title": "Valio whipping cream 1 l UHT lactose free",
+          "quantity": 6,
+          "unit_price_minor": 391,
+          "total_minor": 2346
+        },
+        {
+          "product_id": "464306",
+          "title": "Valio Eila semi skimmed milk drink 1 l lactose free",
+          "quantity": 12,
+          "unit_price_minor": 101,
+          "total_minor": 1212
+        },
+        {
+          "product_id": "460200",
+          "title": "Elovena 1kg wholegrain oat flakes",
+          "quantity": 2,
+          "unit_price_minor": 276,
+          "total_minor": 552
+        },
+        {
+          "product_id": "468172",
+          "title": "Meira Sea salt fine 800g",
+          "quantity": 2,
+          "unit_price_minor": 134,
+          "total_minor": 268
+        }
+      ],
+      "note": null,
+      "rule": null,
+      "checkout_id": "chk_caaf2766",
+      "checkout_hash": "UMxQrOQlQNLNfbylk65jQfNCCneIMFWg5QnVf1CljMw",
+      "mandate_reference": "jLUmiA4glvBogiWR51j5Yz5gELLGg86Jfh2S5SFPH_o",
+      "receipt_hash": "DcAaidCkozAli9593yGvOMRKXSb2Al1k51FF2C9Dlgc",
+      "payment_id": "pay_c3bd4c4f",
+      "sample": true
+    },
+    {
+      "order_id": "ord_c41e7d90",
+      "ordered_at": "2026-11-07T16:22:40+02:00",
+      "delivery_date": "2026-11-09",
+      "status": "delivered",
+      "decision": "human",
+      "signed_by": "human",
+      "total_minor": 173752,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "463437",
+          "title": "Valio Eila butter 500 g salted lactose free",
+          "quantity": 180,
+          "unit_price_minor": 331,
+          "total_minor": 59580
+        },
+        {
+          "product_id": "464194",
+          "title": "Valio whipping cream 1 l UHT lactose free",
+          "quantity": 120,
+          "unit_price_minor": 391,
+          "total_minor": 46920
+        },
+        {
+          "product_id": "476890",
+          "title": "Valio smetana 2 kg lactose free",
+          "quantity": 40,
+          "unit_price_minor": 1306,
+          "total_minor": 52240
+        },
+        {
+          "product_id": "466608",
+          "title": "Apetit Rapeseed oil 10L",
+          "quantity": 6,
+          "unit_price_minor": 2502,
+          "total_minor": 15012
+        }
+      ],
+      "note": "Private event of 220 covers: the total was above your EUR 1,500.00 limit.",
+      "rule": "spend-limit",
+      "checkout_id": "chk_3e92a000",
+      "checkout_hash": "_Rv0hgHwYVeliP4ptF-sVQ5fKeqS-mTNwHwcsxbUUBo",
+      "mandate_reference": "vyWqk96I3DBxnzNFjUP4FIlDqmTCDFKPj8k-DNxLNFU",
+      "receipt_hash": "_Np9H2PGywe78P73E7UFEXPZx5KB0BEYYSUYDj_WO-E",
+      "payment_id": "pay_9416bc17",
+      "sample": true
+    },
+    {
+      "order_id": "ord_83f20b17",
+      "ordered_at": "2026-11-05T06:40:12+02:00",
+      "delivery_date": "2026-11-06",
+      "status": "delivered",
+      "decision": "auto",
+      "signed_by": "agent",
+      "total_minor": 15609,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "463437",
+          "title": "Valio Eila butter 500 g salted lactose free",
+          "quantity": 13,
+          "unit_price_minor": 331,
+          "total_minor": 4303
+        },
+        {
+          "product_id": "464194",
+          "title": "Valio whipping cream 1 l UHT lactose free",
+          "quantity": 4,
+          "unit_price_minor": 391,
+          "total_minor": 1564
+        },
+        {
+          "product_id": "476890",
+          "title": "Valio smetana 2 kg lactose free",
+          "quantity": 3,
+          "unit_price_minor": 1306,
+          "total_minor": 3918
+        },
+        {
+          "product_id": "464306",
+          "title": "Valio Eila semi skimmed milk drink 1 l lactose free",
+          "quantity": 8,
+          "unit_price_minor": 101,
+          "total_minor": 808
+        },
+        {
+          "product_id": "460200",
+          "title": "Elovena 1kg wholegrain oat flakes",
+          "quantity": 2,
+          "unit_price_minor": 276,
+          "total_minor": 552
+        },
+        {
+          "product_id": "467958",
+          "title": "VAASAN Original Thin Rye Crispbread 300g",
+          "quantity": 6,
+          "unit_price_minor": 170,
+          "total_minor": 1020
+        },
+        {
+          "product_id": "468513",
+          "title": "Myrttisen Pickled cucumber 4500g",
+          "quantity": 2,
+          "unit_price_minor": 1722,
+          "total_minor": 3444
+        }
+      ],
+      "note": null,
+      "rule": null,
+      "checkout_id": "chk_4c83e577",
+      "checkout_hash": "8fGWFp565tk616VePE2ipinE29moJf_ditnna_R3FH8",
+      "mandate_reference": "0-oMMFFz0WrR0fhHX9FI_ZtJDeok5-62KTUKgf2dTcs",
+      "receipt_hash": "zLGfpEYREyuF59OsZWN1-9QOAmbCThlngkXWR9mI-CE",
+      "payment_id": "pay_9b8b203c",
+      "sample": true
+    },
+    {
+      "order_id": null,
+      "ordered_at": "2026-11-04T11:17:03+02:00",
+      "delivery_date": null,
+      "status": "rejected",
+      "decision": "human",
+      "signed_by": "none",
+      "total_minor": 7658,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "475072",
+          "title": "Haapalan lactose-free bread cheese 500g",
+          "quantity": 14,
+          "unit_price_minor": 547,
+          "total_minor": 7658
+        }
+      ],
+      "note": "Substitute for the squeaky cheese. You rejected it: nobody signed, nothing was ordered.",
+      "rule": "substitution-within-preferences",
+      "checkout_id": "chk_5ccb6703",
+      "checkout_hash": "0PkNvufrWBNB-iYxTsiUgb2EgRaLIzuecPvP-jXoKAA",
+      "mandate_reference": null,
+      "receipt_hash": null,
+      "payment_id": null,
+      "sample": true
+    },
+    {
+      "order_id": "ord_e6a1c0d8",
+      "ordered_at": "2026-11-02T06:39:27+02:00",
+      "delivery_date": "2026-11-03",
+      "status": "delivered",
+      "decision": "auto",
+      "signed_by": "agent",
+      "total_minor": 9552,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "463437",
+          "title": "Valio Eila butter 500 g salted lactose free",
+          "quantity": 11,
+          "unit_price_minor": 331,
+          "total_minor": 3641
+        },
+        {
+          "product_id": "464194",
+          "title": "Valio whipping cream 1 l UHT lactose free",
+          "quantity": 5,
+          "unit_price_minor": 391,
+          "total_minor": 1955
+        },
+        {
+          "product_id": "464306",
+          "title": "Valio Eila semi skimmed milk drink 1 l lactose free",
+          "quantity": 10,
+          "unit_price_minor": 101,
+          "total_minor": 1010
+        },
+        {
+          "product_id": "460325",
+          "title": "Dansukker Caster Sugar 1kg",
+          "quantity": 2,
+          "unit_price_minor": 155,
+          "total_minor": 310
+        },
+        {
+          "product_id": "468172",
+          "title": "Meira Sea salt fine 800g",
+          "quantity": 1,
+          "unit_price_minor": 134,
+          "total_minor": 134
+        },
+        {
+          "product_id": "466608",
+          "title": "Apetit Rapeseed oil 10L",
+          "quantity": 1,
+          "unit_price_minor": 2502,
+          "total_minor": 2502
+        }
+      ],
+      "note": null,
+      "rule": null,
+      "checkout_id": "chk_b5232de5",
+      "checkout_hash": "wULgWgj61PnlcUokjd5JjZcmLueA7kJFI6b7vzfPdCA",
+      "mandate_reference": "RwBLIkea23X2FOkKOVPugokCyut8JOP2X7GrdEemP0E",
+      "receipt_hash": "wG6XoXUejSj629IXJ3MAysVOfT1sriv-Xmgtrsr2j5Y",
+      "payment_id": "pay_712dacc0",
+      "sample": true
+    },
+    {
+      "order_id": null,
+      "ordered_at": "2026-10-30T09:03:44+02:00",
+      "delivery_date": null,
+      "status": "blocked",
+      "decision": "deny",
+      "signed_by": "none",
+      "total_minor": 2804,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "460200",
+          "title": "Elovena 1kg wholegrain oat flakes",
+          "quantity": 4,
+          "unit_price_minor": 276,
+          "total_minor": 1104
+        },
+        {
+          "product_id": "467958",
+          "title": "VAASAN Original Thin Rye Crispbread 300g",
+          "quantity": 10,
+          "unit_price_minor": 170,
+          "total_minor": 1700
+        }
+      ],
+      "note": "The quote listed a product with tree nuts, an allergen you ban. Nobody may sign: no order.",
+      "rule": "allergen-not-blocked",
+      "checkout_id": "chk_baa4b515",
+      "checkout_hash": "jyRqqaK127LUSx7GJP3Jwy4rvtLGsSvahsaM8Cun79Q",
+      "mandate_reference": null,
+      "receipt_hash": null,
+      "payment_id": null,
+      "sample": true
+    },
+    {
+      "order_id": "ord_4c7be913",
+      "ordered_at": "2026-10-29T06:42:19+02:00",
+      "delivery_date": "2026-10-30",
+      "status": "delivered",
+      "decision": "auto",
+      "signed_by": "agent",
+      "total_minor": 9976,
+      "currency": "EUR",
+      "lines": [
+        {
+          "product_id": "463437",
+          "title": "Valio Eila butter 500 g salted lactose free",
+          "quantity": 12,
+          "unit_price_minor": 331,
+          "total_minor": 3972
+        },
+        {
+          "product_id": "464194",
+          "title": "Valio whipping cream 1 l UHT lactose free",
+          "quantity": 4,
+          "unit_price_minor": 391,
+          "total_minor": 1564
+        },
+        {
+          "product_id": "476890",
+          "title": "Valio smetana 2 kg lactose free",
+          "quantity": 2,
+          "unit_price_minor": 1306,
+          "total_minor": 2612
+        },
+        {
+          "product_id": "464306",
+          "title": "Valio Eila semi skimmed milk drink 1 l lactose free",
+          "quantity": 8,
+          "unit_price_minor": 101,
+          "total_minor": 808
+        },
+        {
+          "product_id": "467958",
+          "title": "VAASAN Original Thin Rye Crispbread 300g",
+          "quantity": 6,
+          "unit_price_minor": 170,
+          "total_minor": 1020
+        }
+      ],
+      "note": null,
+      "rule": null,
+      "checkout_id": "chk_b08cf40e",
+      "checkout_hash": "f3DwPCVrIx2t49smsayk-S2vSweUAYVIh-i_OA9nH7o",
+      "mandate_reference": "j-cE_7PX7TkYqxZLYgVPaY4SJ1Fw1mITrb21A5nJTZg",
+      "receipt_hash": "lIcyNvcXYeaIpHZnbqrF-kxkgUAr8b6g1R8TKXJuVDA",
+      "payment_id": "pay_4a31815e",
+      "sample": true
+    }
+  ]
+}
