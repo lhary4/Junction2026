@@ -1241,6 +1241,30 @@
             }
           ],
           "default": null
+        },
+        "comparison_price_minor": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparison Price Minor"
+        },
+        "comparison_unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Comparison Unit"
         }
       },
       "required": [
