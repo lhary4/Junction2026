@@ -101,6 +101,18 @@ def test_the_page_needs_no_internet():
         assert "http://" not in (STATIC / name).read_text() and "https://" not in (STATIC / name).read_text(), name
 
 
+def test_no_page_file_carries_a_leftover_merge_marker():
+    """A `<<<<<<<` line left by a merge makes the browser drop the CSS rule under it, with no error anywhere."""
+    marked = []
+    for path in sorted(STATIC.rglob("*")):
+        if path.suffix not in {".html", ".css", ".js"}:
+            continue
+        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+            if line.startswith(("<<<<<<< ", ">>>>>>> ")) or line == "=======":
+                marked.append(f"{path.relative_to(ROOT)}:{number}")
+    assert not marked, f"merge markers left in: {marked}"
+
+
 @pytest.fixture(scope="module")
 def drawn():
     node = shutil.which("node")
