@@ -164,6 +164,18 @@ input {
   justify-content: flex-end;
 }
 
+/* Says on every screen, and in every recording, that this is a mock-up on synthetic data */
+.site__notice {
+  margin-right: auto;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--lime-band);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .account {
   position: relative;
 }

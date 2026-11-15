@@ -137,7 +137,7 @@ const app = {
   problem: null,
   // Valio's estimate of the order's carbon footprint, for the lines in `key`, and the offers the chef put off this week
   eco: { data: null, key: null, loading: false, dismissed: new Set() },
-  trends: [], // cached Google News foodservice trends
+  trends: [], // sample food trends written for the demo (kitchen/trends.json), synthetic
   trendId: null,
   recommendation: null, // { trend, recipe, source, model }
   recBusy: false,
@@ -857,7 +857,7 @@ function trendRecommendationView() {
     const rows = (r.ingredients ?? [])
       .map((ing) => {
         const total = round3(Number(ing.amount_per_portion) * portions);
-        const meta = [ing.origin ? `Origin ${ing.origin}` : null, ing.carbon_kg_per_kg != null ? `${ing.carbon_kg_per_kg} kg CO2e/kg` : null]
+        const meta = [ing.origin ? `Origin ${ing.origin}` : null, ing.carbon_kg_per_kg != null ? `${num(ing.carbon_kg_per_kg)} kg CO2e/kg, group average` : null]
           .filter(Boolean)
           .join(" · ");
         return `<tr>
@@ -895,15 +895,16 @@ function trendRecommendationView() {
         </div>
       </div>`;
   } else {
-    body = `<p class="trend-card__prompt">Click <b>Generate recipe</b> to match this Google News food trend against Valio Aimo's catalog.</p>`;
+    body = `<p class="trend-card__prompt">Click <b>Generate recipe</b> to match this food trend against Valio Aimo's catalog.</p>`;
   }
 
+  // The trends are sample lines written for the demo (kitchen/trends.json): the card says so, and names no news service.
   return `<div class="panel trend-card">
     <div class="trend-card__head">
       <div>
-        <span class="tag">Valio Aimo Spotlight · Google News Trend</span>
+        <span class="tag">Valio Aimo Spotlight · sample trend</span>
         <h3 class="panel__title">${esc(activeTrend?.title ?? "Seasonal Food Trend")}</h3>
-        <p class="trend-card__headline">${esc(activeTrend?.headline ?? "")} <span class="muted">(${esc(activeTrend?.source ?? "Google News")} · ${esc(activeTrend?.published_at ?? "")})</span></p>
+        <p class="trend-card__headline">${esc(activeTrend?.headline ?? "")} <span class="muted">(${esc(activeTrend?.source ?? "Sample trend, synthetic")})</span></p>
       </div>
     </div>
     ${trends.length > 1 ? `<div class="trend-card__pills">${trendPills}</div>` : ""}
