@@ -1,5 +1,7 @@
 """The gateway when things go wrong: a stale clock, Valio's API down, one stock shared by two lines, odd pack names."""
 
+import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 
 import pytest
@@ -216,3 +218,27 @@ def test_quote_builder_guards_closing_at_now_and_st_substitute_with():
     builder_st = quotes._Builder(req_st, cards, answers_at_cutoff, now)
     with pytest.raises(quotes.QuoteError, match="cannot replace"):
         builder_st._cover(req_st.needs[0], 2.0)
+
+
+# ---------- Two requests before the catalog is in memory ----------
+
+
+def test_two_requests_at_once_read_the_catalog_once(monkeypatch):
+    """Hosted, the live catalog is an 86 MB file that takes seconds to read and about 500 MB of memory. Two requests
+    that arrived during the first read each read it again: the server ran out of room and slowed everything down."""
+    read, reads = catalog._read, []
+
+    def slow_read(folders, live):
+        reads.append(folders)
+        time.sleep(0.2)  # long enough for the second request to arrive while the first one is still reading
+        return read(folders, live)
+
+    monkeypatch.setattr(catalog, "_read", slow_read)
+    catalog.load.cache_clear()
+    try:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            first, second = pool.map(lambda _: catalog.load(), range(2))
+    finally:
+        catalog.load.cache_clear()  # the next test reads the real catalog, not this one
+    assert len(reads) == 1
+    assert first is second

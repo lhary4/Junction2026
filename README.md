@@ -52,6 +52,15 @@ systemctl restart junction-demo                 # restart everything, keeping or
 systemctl disable --now junction-demo           # switch everything off (after judging)
 ```
 
+After every start or restart, read the catalog into memory, in the two services that use it, one after the other. Otherwise the first search and the first click on Spotlight each wait 5 to 10 seconds:
+
+```
+curl -s -o /dev/null 'http://127.0.0.1:8001/products/search?q=butter&limit=1'
+curl -s -o /dev/null -X POST -H 'Content-Type: application/json' -d '{}' http://127.0.0.1:8004/recommend
+```
+
+Memory: in live mode the catalog takes about 500 MB in the gateway and 500 MB more in the page service (Spotlight reads it too), so 1.25 GB in all on a server that has 3.8 GB. `junction-demo` is slowed down above 1.5 GB and stopped above 1.8 GB, so that it can never starve the other things the server runs. `systemctl status junction-demo` shows the figure.
+
 Start again from an empty state (what `scripts/dev.py --fresh` does), before a rehearsal or the jury:
 
 ```

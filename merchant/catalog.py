@@ -10,6 +10,7 @@ import io
 import json
 import os
 import re
+import threading
 import unicodedata
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -26,6 +27,7 @@ REPLAY_DIR = ROOT / "contract" / "fixtures" / "valio"
 HELSINKI = ZoneInfo("Europe/Helsinki")
 NAME_SIZES = {"L": {"ml": 0.001, "cl": 0.01, "dl": 0.1, "l": 1.0}, "KG": {"g": 0.001, "kg": 1.0}}  # "5 dl" in a name
 LACTOSE_FREE_CLAIM = "FREE_FROM_LACTOSE"
+_LOADING = threading.RLock()  # one read of the catalog at a time (load)
 
 
 def mode() -> Literal["live", "replay"]:
@@ -146,12 +148,23 @@ def recorded_for(folder: Path) -> str:
     return json.loads((folder / "request.json").read_text(encoding="utf-8"))["requestedDate"]
 
 
-@cache
 def load(which: Literal["live", "replay"] | None = None) -> Catalog:
     """The whole catalog: the full files in live mode, every recording put together in replay mode.
-    This is what a plain search reads, because a search has no delivery date."""
+    This is what a plain search reads, because a search has no delivery date.
+
+    Read once, then kept in memory. In live mode that first read takes seconds (an 86 MB file, about 500 MB once
+    read): a request that arrives during it waits for it, instead of reading the file a second time."""
+    with _LOADING:
+        return _load(which)
+
+
+@cache
+def _load(which: Literal["live", "replay"] | None) -> Catalog:
     which = which or mode()
     return _read([valio_api.data_dir()] if which == "live" else recordings(), live=which == "live")
+
+
+load.cache_clear = _load.cache_clear  # the tests empty the cache through load
 
 
 def for_delivery(delivery_date: date) -> Catalog:
