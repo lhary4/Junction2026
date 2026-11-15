@@ -118,7 +118,9 @@ def test_the_rules_the_model_is_given():
 def test_it_serves_the_page_and_what_the_page_reads():
     client = client_answering("Hello.")
 
-    assert client.get("/", follow_redirects=False).headers["location"] == "/surface/static/portal.html"
+    # The address alone opens the clean portal. The first page stays where it was.
+    assert client.get("/", follow_redirects=False).headers["location"] == "/surface/static/aimo/"
+    assert client.get("/surface/static/aimo/").status_code == 200
     assert client.get("/surface/static/portal.html").status_code == 200
     assert client.get("/contract/examples/demo-state.idle.json").status_code == 200
     assert client.get("/scenarios/policy.demo.json").status_code == 200

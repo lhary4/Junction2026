@@ -1,5 +1,6 @@
 """The clean portal (surface/static/aimo/): its files exist and point at files that exist, it needs no internet,
-every rule and every step has its words, and the sample history says it is a sample and adds up."""
+every rule and every step has its words, the sample history says it is a sample and adds up, the console is the
+version that opens, and the approval screen says what changes with a substitute."""
 
 import json
 import re
@@ -132,3 +133,77 @@ def test_the_modules_are_valid_javascript(module):
         pytest.skip("Node is not installed")
     result = subprocess.run([node, "--check", str(AIMO / module)], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+# state.js is loaded as it is in Node, with the little of the browser it reads when it starts (the address).
+LOADED = """
+import fs from "node:fs";
+globalThis.window = { location: { search: "%(search)s", hostname: "localhost", href: "http://localhost/" } };
+const state = await import("%(module)s");
+const recorded = () => JSON.parse(fs.readFileSync("%(recorded)s", "utf8"));
+const line = (run) => Object.values(run.quote.aimo.lines).find((entry) => entry.substitute_for);
+const rows = (change) => {
+  const run = recorded();
+  if (change) change(line(run));
+  return Object.fromEntries(state.tradeOffs(run).map((row) => [row.key, { tone: row.tone, text: row.text }]));
+};
+console.log(JSON.stringify({
+  main: state.MAIN_VARIANT,
+  variant: state.app.variant,
+  comparing: state.app.comparing,
+  recorded: rows(),
+  cheaper: rows((sub) => Object.assign(sub.substitute_for, { comparison_price_minor: 1286, comparison_unit: "KG" })),
+  frozen: rows((sub) => { sub.temperature_condition = 7; }),
+  idle: state.tradeOffs(null),
+}));
+"""
+
+
+def loaded(search: str = "") -> dict:
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node is not installed")
+    script = LOADED % {
+        "search": search,
+        "module": (AIMO / "state.js").as_uri(),
+        "recorded": (EXAMPLES / "demo-state.substitution.pending.json").as_posix(),
+    }
+    result = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def test_the_console_is_the_version_that_opens_and_the_others_must_be_asked_for():
+    alone, asked = loaded(), loaded("?v=c")
+
+    assert alone["main"] == "b" and alone["variant"] == "b"
+    assert alone["comparing"] is False, "the strip should not offer the other versions to someone who asked for none"
+    assert asked["variant"] == "c" and asked["comparing"] is True
+    # The body carries data-variant for the stylesheet: only a button may switch versions, or any click on plain
+    # text would be read as a switch.
+    assert ",[data-variant]," not in read("main.js") and "button[data-variant]" in read("main.js")
+
+
+def test_the_approval_screen_says_what_changes_with_a_substitute_on_four_sides():
+    """The same four lines as the first page (tests/test_surface_portal_tradeoffs.py), read from the signed quote."""
+    drawn = loaded()
+    recorded = drawn["recorded"]
+
+    assert list(recorded) == ["cost", "dish", "work", "logistics"]
+    # The recorded quote has no price for the product asked for: the page says so and compares nothing.
+    assert recorded["cost"]["tone"] == "note"
+    assert "Valio's quote has no price for the one you asked for." in recorded["cost"]["text"]
+    assert recorded["dish"]["text"] == (
+        "Aimo is 93% sure it works the same way in the dish, and 64% sure it fits your kitchen's preferences. "
+        "Below 85%, it asks you."
+    )
+    assert "Valio's data gives no preparation time." in recorded["work"]["text"]
+    assert recorded["logistics"]["text"].startswith("Chilled, like the one you asked for.")
+    # Two signed prices are read side by side, and no difference between them is worked out.
+    cheaper = drawn["cheaper"]["cost"]
+    assert cheaper["tone"] == "good"
+    assert cheaper["text"].startswith("Cheaper: EUR 10.94 a kg, against EUR 12.86 a kg for the one you asked for.")
+    assert "1.92" not in cheaper["text"] and "%" not in cheaper["text"]
+    # A change of storage is a reason to ask.
+    assert drawn["frozen"]["logistics"]["tone"] == "ask"
+    assert drawn["idle"] == []

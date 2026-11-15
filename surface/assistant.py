@@ -4,7 +4,8 @@ Run: uv run uvicorn surface.assistant:app --port 8004
 Then open http://localhost:8004/
 
 What it does:
-- GET  /         sends the browser to the kitchen order page (surface/static/portal.html)
+- GET  /         sends the browser to the kitchen page: the clean portal (surface/static/aimo/), console version.
+                 The first page is still served at /surface/static/portal.html
 - GET  /health   says whether the chat can answer (is there a Gemini key) and with which model
 - POST /chat     the chef's message, answered by Gemini, with the stock changes the chef asked for
 - it serves the files the page reads: /surface/static, /contract/examples and the demo policy.
@@ -41,6 +42,8 @@ ROOT = Path(__file__).resolve().parent.parent
 SURFACE_STATIC = ROOT / "surface" / "static"
 CONTRACT_EXAMPLES = ROOT / "contract" / "examples"
 DEMO_POLICY = ROOT / "scenarios" / "policy.demo.json"
+# Where "/" sends the browser. To go back to the first page, put "/surface/static/portal.html" here.
+HOME_PAGE = "/surface/static/aimo/"
 
 DEFAULT_MODEL = "gemini-3.5-flash-lite"  # about one second an answer, which a live demo needs
 TRENDS_FILE = SURFACE_STATIC / "kitchen" / "trends.json"
@@ -432,7 +435,7 @@ def create_app(*, ask: AskFn | None = None, recommend: RecommendFn | None = None
 
     @api.get("/")
     def home() -> RedirectResponse:
-        return RedirectResponse("/surface/static/portal.html")
+        return RedirectResponse(HOME_PAGE)
 
     @api.get("/health")
     def health() -> dict[str, Any]:

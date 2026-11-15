@@ -79,6 +79,18 @@ def test_the_proxy_leaves_open_every_address_the_page_calls():
         assert not is_closed(path), f"the page calls {path} and the proxy closes it"
 
 
+def test_the_proxy_leaves_open_every_address_the_clean_portal_calls():
+    """The address alone opens the clean portal (surface/static/aimo/): what it calls must get through too.
+    The gateway is not published: the portal's calls to it fail hosted, and the page says so."""
+    script = (ROOT / "surface" / "static" / "aimo" / "core.js").read_text(encoding="utf-8")
+    paths = []
+    for name, path in re.findall(r"\$\{URLS\.(driver|harness|assistant)\}(/[^`\"]*)", script):
+        paths.append(f"/{name}" + re.sub(r"\$\{[^}]*\}", "x", path))
+    assert "/driver/state" in paths and "/harness/policy" in paths, "the clean portal's calls were not found"
+    for path in paths:
+        assert not is_closed(path), f"the clean portal calls {path} and the proxy closes it"
+
+
 def test_every_port_the_proxy_calls_has_its_relay():
     wanted = read("junction-demo.service")
     for port in set(re.findall(r"reverse_proxy 172\.18\.0\.1:(\d+)", read("Caddyfile.snippet"))):

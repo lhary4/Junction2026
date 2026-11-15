@@ -1448,6 +1448,44 @@ body[data-variant="b"] .split__side {
 .key--human .icon {
   color: var(--warn);
 }
+/* What changes with the substitute, one line a side. The mark's colour says how much there is to weigh. */
+.tradeoffs__title {
+  margin-top: 20px;
+}
+.tradeoffs {
+  margin-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.tradeoff {
+  display: grid;
+  grid-template-columns: 168px minmax(0, 1fr);
+  gap: 14px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--line);
+}
+.tradeoff__side {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-weight: 650;
+}
+.tradeoff__side .icon {
+  flex: none;
+  margin-top: 3px;
+  color: var(--slate);
+}
+.tradeoff--good .tradeoff__side .icon {
+  color: var(--ok);
+}
+.tradeoff--ask .tradeoff__side {
+  color: var(--warn);
+}
+.tradeoff--ask .tradeoff__side .icon {
+  color: var(--warn);
+}
+.tradeoff__text {
+  color: var(--slate);
+}
 .judges {
   display: grid;
   gap: 8px;
@@ -2531,6 +2569,20 @@ body.has-strip .dev {
   .page__actions {
     flex-wrap: wrap;
   }
+  /* A notice with a deadline on its right: the deadline goes under the sentence instead of pushing the page wide. */
+  .notice {
+    flex-wrap: wrap;
+  }
+  .notice__text {
+    flex-basis: calc(100% - 40px);
+  }
+  .notice__side {
+    flex-basis: 100%;
+    white-space: normal;
+  }
+  .judge {
+    grid-template-columns: minmax(0, 1fr) 72px 44px;
+  }
   .brief__title {
     font-size: 3.2rem;
   }
@@ -2543,8 +2595,12 @@ body.has-strip .dev {
   .page--brief .guards__grid,
   .guards__grid,
   .versus,
+  .tradeoff,
   .swap {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .tradeoff {
+    gap: 4px;
   }
   .bar {
     gap: 12px;

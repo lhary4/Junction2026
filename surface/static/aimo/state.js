@@ -10,6 +10,8 @@ import {
   round3,
   money,
   qty,
+  unitWord,
+  titleCase,
   dayShort,
   dayLong,
   clock,
@@ -22,10 +24,14 @@ import {
 } from "./core.js";
 
 const VARIANTS = ["a", "b", "c"];
+// The main version, picked on 15/11: the console, with its sidebar. The two others open with ?v=a and ?v=c.
+export const MAIN_VARIANT = "b";
 export const ROUTES = ["today", "order", "orders", "approvals", "rules", "audit"];
 
 export const app = {
-  variant: VARIANTS.includes(QUERY.get("v")) ? QUERY.get("v") : "a",
+  variant: VARIANTS.includes(QUERY.get("v")) ? QUERY.get("v") : MAIN_VARIANT,
+  comparing: QUERY.has("v"), // the strip only offers the other versions to someone who asked for one
+
   route: "today",
   mode: "replay", // "live" when the demo driver answers
   up: { driver: false, harness: false, assistant: false, merchant: false },
@@ -317,6 +323,82 @@ export function checkLine(rule) {
   return { id: rule.rule_id, name: wordsFor?.name ?? rule.rule_id, label, value, outcome: rule.outcome, title: lexicon(rule.message) };
 }
 
+/* ---------- The trade-offs of a substitute ---------- */
+
+// The storage classes of Valio's product file that we can name. Another class shows by its number, never guessed.
+const STORAGE_WORDS = { 3: "chilled", 7: "frozen", 8: "ambient" };
+const storageKnown = (code) => code !== null && code !== undefined;
+export const storageText = (code) => (storageKnown(code) ? (STORAGE_WORDS[code] ?? `storage class ${code}`) : "unknown");
+
+/*
+ * What changes for the kitchen with the substitute, on four sides: cost, the dish, the work in the kitchen,
+ * storage and delivery. The same four lines as the first page (portal.js), so both pages say the same thing.
+ * Every figure is read from the quote Valio signed or from the assistant's answers. The page puts two signed
+ * prices side by side and says which is lower: it never works out a price, a saving or a time. What the data
+ * does not say is said, not guessed.
+ * tone: "good" nothing to weigh, "note" something changes, "ask" a reason the chef is asked.
+ */
+export function tradeOffs(state) {
+  const { quote, approval } = state ?? {};
+  const item = quote?.line_items.find((entry) => quote.aimo.lines[entry.id]?.substitute_for);
+  if (!item || !approval) return [];
+  const facts = quote.aimo.lines[item.id];
+  const asked = facts.substitute_for;
+  const perUnit = (minor, unit) => `${money(minor, quote.currency)} a ${String(unit).toLowerCase()}`;
+
+  // Cost: Valio's price a kilo or a litre for both products, when the quote carries both.
+  const ours = facts.comparison_price_minor;
+  const theirs = asked.comparison_price_minor;
+  const total = `${money(approval.total_minor, approval.currency)} for the order.`;
+  let cost = { tone: "note", text: `${perUnit(ours, facts.comparison_unit)}, ${total} Valio's quote has no price for the one you asked for.` };
+  if (Number.isFinite(theirs) && asked.comparison_unit === facts.comparison_unit) {
+    const word = ours < theirs ? "Cheaper" : ours > theirs ? "More expensive" : "Same price";
+    cost = { tone: ours > theirs ? "ask" : "good", text: `${word}: ${perUnit(ours, facts.comparison_unit)}, against ${perUnit(theirs, asked.comparison_unit)} for the one you asked for. ${total}` };
+  }
+
+  // The dish: the assistant's two answers, with the line under which it asks the chef.
+  const answer = (key) => (approval.judge ?? []).find((entry) => entry.question_key === key && Number.isFinite(entry.probability));
+  const percent = (entry) => `${Math.round(entry.probability * 100)}%`;
+  const same = answer("same_use");
+  const fits = answer("within_preferences");
+  const sure = [same && `${percent(same)} sure it works the same way in the dish`, fits && `${percent(fits)} sure it fits your kitchen's preferences`].filter(Boolean);
+  const unsure = [same, fits].filter((entry) => entry && entry.routed !== "auto");
+  const dish = sure.length
+    ? { tone: unsure.length ? "ask" : "good", text: `${ASSISTANT} is ${sure.join(", and ")}.${unsure.length ? ` Below ${Math.round(unsure[0].auto_threshold * 100)}%, it asks you.` : ""}` }
+    : { tone: "ask", text: `${ASSISTANT} could not tell whether it works the same way in the dish, so it asks you.` };
+
+  // The work in the kitchen: how the product comes. Valio's data has no preparation time, and the page says so.
+  const size = facts.size_per_sales_unit;
+  const askedSize = asked.size_per_sales_unit;
+  const packs = size?.value ? `${qty(item.quantity, facts.sales_unit)} of ${qty(size.value, size.unit)} each` : qty(item.quantity, facts.sales_unit);
+  const samePack = Boolean(size?.value && askedSize?.value && size.value === askedSize.value && size.unit === askedSize.unit && facts.sales_unit === asked.sales_unit);
+  let before = "The pack size of the one you asked for is unknown.";
+  if (samePack) before = "Same pack size as the one you asked for.";
+  else if (askedSize?.value && asked.sales_unit === askedSize.unit) before = `The one you asked for is sold by the ${unitWord(askedSize.unit, 1)}.`;
+  else if (askedSize?.value) before = `The one you asked for comes in packs of ${qty(askedSize.value, askedSize.unit)}.`;
+  const work = { tone: samePack ? "good" : "note", text: `${packs}. ${before} Valio's data gives no preparation time.` };
+
+  // Storage and delivery: the storage class of both, Valio's stock, the delivery day, and how reliably Valio delivered it.
+  const here = facts.temperature_condition;
+  const there = asked.temperature_condition;
+  let storage = { tone: "note", text: `Storage: ${storageText(here)}, and ${storageText(there)} for the one you asked for.` };
+  if (storageKnown(here) && here === there) storage = { tone: "good", text: `${titleCase(storageText(here))}, like the one you asked for.` };
+  else if (storageKnown(here) && storageKnown(there)) storage = { tone: "ask", text: `Storage changes: ${storageText(here)}, where the one you asked for is ${storageText(there)}.` };
+  const reliability = facts.delivery_reliability;
+  const delivered =
+    reliability && reliability.certainty !== "unknown" && Number.isFinite(reliability.value)
+      ? `In the past Valio delivered ${Math.round(reliability.value * 100)}% of what was ordered of it.`
+      : "Valio has no delivery history for it.";
+  const logistics = { tone: storage.tone, text: `${storage.text} Valio's stock: ${stockText(facts.stock)}. Delivery ${dayLong(quote.aimo.delivery_date)}. ${delivered}` };
+
+  return [
+    { key: "cost", label: "Cost", ...cost },
+    { key: "dish", label: "In the dish", ...dish },
+    { key: "work", label: "In the kitchen", ...work },
+    { key: "logistics", label: "Storage, delivery", ...logistics },
+  ];
+}
+
 /* ---------- What the assistant's chat may read: only what the page shows ---------- */
 
 function ecoFacts() {
@@ -388,7 +470,12 @@ export function pageFacts() {
         const check = checkLine(rule);
         return `${check.outcome}: ${check.label}${check.value ? ` (${check.value})` : ""}`;
       }),
-      signature: state.approval && { status: state.approval.status, sign_before: clock(state.approval.deadline) },
+      signature: state.approval && {
+        status: state.approval.status,
+        sign_before: clock(state.approval.deadline),
+        // What the approval screen shows about the substitute, so the chat can explain the trade-off in the page's own words.
+        what_changes_with_the_substitute: state.approval.status === "pending" ? tradeOffs(state).map((row) => `${row.label}: ${row.text}`) : [],
+      },
       receipt: state.order && { order_id: state.order.order_id, total: money(state.order.total_minor, state.order.currency), delivery: dayLong(state.order.delivery_date), signed_by: state.order.signed_by },
     };
   }
