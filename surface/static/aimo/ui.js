@@ -681,7 +681,7 @@ export const defaultProspectQty = (item) =>
 /* Customer-specific MHD / overstock clearance offers from Valio Aimo Gateway. */
 export function prospectCard() {
   const { open, busy, data, qty: qtyMap, added } = app.prospect;
-  const customer = kitchenName();
+  const customer = app.state?.kitchen?.name ?? "Your kitchen";
   const toggleBtn = `<button class="btn btn--quiet" type="button" data-action="toggle-prospect" aria-expanded="${open}">
     ${open ? "Hide clearance deals" : "Clearance & MHD deals"}
   </button>`;
