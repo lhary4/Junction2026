@@ -5,6 +5,7 @@ Run: uv run uvicorn merchant.app:app --port 8001   (or both services at once: uv
 VALIO_MODE=replay (default) serves the answers recorded on 14/11, VALIO_MODE=live calls the Valio APIs.
 """
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -20,12 +21,14 @@ from contract.models import (
     OffersRequest,
     OffersResponse,
     Order,
+    ProspectResponse,
     QuoteRequest,
     SearchResponse,
 )
 from merchant import audit, catalog, orders, store
 from merchant.footprint import FootprintError, footprint
 from merchant.offers import OffersError, find_offers
+from merchant.prospect import build_prospect
 from merchant.quotes import QuoteError, build_quote, summary
 from trust.checkout import checkout_hash, sign_checkout
 from trust.keys import private_key, public_jwks
@@ -52,6 +55,15 @@ def lookup_offers(request: Annotated[OffersRequest, Query()]) -> OffersResponse:
         return find_offers(request)
     except OffersError as e:
         raise HTTPException(status_code=e.status_code, detail=str(e)) from e  # 422, or 503 when Valio is down
+
+
+@app.get("/prospect")
+def get_prospect(
+    customer: str = Query("ravintola-demo", min_length=1),
+    delivery_date: date = Query(date(2026, 11, 19)),
+) -> ProspectResponse:
+    """Customer-specific discounted MHD and overstock lots matched to the kitchen's profile."""
+    return build_prospect(customer=customer, delivery_date=delivery_date)
 
 
 @app.post("/footprint")

@@ -43,6 +43,7 @@ RuleId = Literal[
     "delivery-on-time",
     "spend-limit",
     "substitution-within-preferences",
+    "shelf-life-window",
 ]
 Escalation = Literal["human", "deny"]
 
@@ -193,6 +194,8 @@ class Need(ContractModel):
     unit: BuyerUnit
     # To cover a shortfall with one of the alternatives the gateway offered in an earlier quote, instead of its own pick.
     substitute_with: str | None = None
+    # Claim a customer-specific overstock / short-shelf-life prospect discount on this line.
+    claim_promo: bool = False
 
 
 class QuoteRequest(ContractModel):
@@ -247,6 +250,42 @@ class FootprintResponse(ContractModel):
     alternatives: list[EcoAlternative] = []
 
 
+# ---------- Customer-specific Food-Waste & Overstock Prospect: GET /prospect ----------
+
+
+class ProspectItem(ContractModel):
+    """One discounted overstock / short-shelf-life lot matched and priced for a specific customer."""
+
+    lot_id: str
+    product: ProductCard
+    reason: Literal["short_shelf_life", "overstock"]
+    shelf_life_days: int
+    available_sales_units: int
+    available_base_quantity: float
+    base_unit: BuyerUnit
+    contract_price_minor: int  # customer's normal contract price per sales unit
+    promo_price_minor: int  # discounted prospect price per sales unit (matched in POST /checkouts)
+    discount_pct: int
+    savings_per_unit_minor: int
+    comparison_promo_minor: int | None = None
+    comparison_unit: str | None = None
+    estimated_portions: int
+    portion_hint: str
+    relevance_score: float
+    match_reasons: list[str] = []
+
+
+class ProspectResponse(ContractModel):
+    customer: str
+    customer_name: str
+    customer_tier: str
+    contract_discount_pct: int
+    delivery_date: date
+    as_of: AwareDatetime
+    binding: Literal[False] = False
+    items: list[ProspectItem]
+
+
 # ---------- The signed quote: AimoCheckout ----------
 
 
@@ -292,6 +331,9 @@ class LineClaims(ContractModel):
     carbon_footprint: Claim
     nutritional_claims: list[str] = []
     labels: list[str] = []
+    shelf_life_days: int | None = None
+    promo_discount_pct: int | None = None
+    base_unit_price_minor: int | None = None
 
 
 class Shortfall(ContractModel):
