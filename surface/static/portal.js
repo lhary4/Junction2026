@@ -161,10 +161,11 @@ const app = {
   chatOpen: false,
   prospectOpen: false,
   prospectBusy: false,
-  prospectCustomer: "ravintola-demo",
   prospect: null,
   prospectAdded: new Set(),
 };
+
+const activeCustomer = () => app.state?.kitchen?.customer || "ravintola-demo";
 
 /* ---------- Small helpers ---------- */
 
@@ -882,53 +883,42 @@ function recipesView() {
 
 function prospectView() {
   const data = app.prospect;
-  const customers = [
-    { id: "ravintola-demo", label: "Ravintola Demo (Standard)" },
-    { id: "hotel-nordic-chain", label: "Nordic Hotel Group (-12% Contract)" },
-    { id: "trattoria-napoli", label: "Trattoria Napoli (-5% Pizzeria)" },
-  ];
-  const pills = customers
-    .map(
-      (c) =>
-        `<button class="chip${app.prospectCustomer === c.id ? " is-active" : ""}" type="button" data-action="prospect-customer" data-customer="${esc(c.id)}">${esc(c.label)}</button>`
-    )
-    .join("");
+  const items = (data?.items ?? []).slice(0, 4);
 
   let body = "";
   if (app.prospectBusy) {
-    body = `<p class="trend-card__loading">Loading personalized warehouse deals…</p>`;
-  } else if (!data?.items?.length) {
-    body = `<p class="trend-card__prompt">Start the Valio gateway (port 8001) to view today's short-shelf-life &amp; overstock deals.</p>`;
+    body = `<p class="trend-card__loading">Loading deals for your kitchen…</p>`;
+  } else if (!items.length) {
+    body = `<p class="trend-card__prompt">No deals available right now.</p>`;
   } else {
-    const rows = data.items
+    const rows = items
       .map((item) => {
         const added = app.prospectAdded.has(item.product.id);
         const urgent = item.shelf_life_days < 5;
-        const tip = [...(item.match_reasons ?? []), item.portion_hint].join(" · ");
+        const tip = [
+          `${qty(item.available_base_quantity, item.base_unit)} available`,
+          item.portion_hint,
+          ...(item.match_reasons ?? []),
+        ].join(" · ");
         return `<tr title="${esc(tip)}">
           <td><b>${esc(item.product.name)}</b></td>
-          <td><span class="tag${urgent ? " tag--warn" : ""}">${esc(item.shelf_life_days)}d MHD · ${esc(qty(item.available_base_quantity, item.base_unit))}</span></td>
-          <td class="muted">${esc(item.portion_hint)}</td>
+          <td><span class="tag${urgent ? " tag--warn" : ""}">${esc(item.shelf_life_days)}d</span></td>
           <td class="num"><span class="prospect-price-old">${esc(money(item.contract_price_minor))}</span> <b>${esc(money(item.promo_price_minor))}</b> <span class="tag tag--eco">-${item.discount_pct}%</span></td>
           <td class="num"><button class="btn btn--ghost" type="button" data-action="add-prospect" data-product-id="${esc(item.product.id)}" ${canEdit() && !added ? "" : "disabled"}>${added ? "Added" : "Add"}</button></td>
         </tr>`;
       })
       .join("");
     body = `<table class="tbl tbl--tight">
-      <thead><tr><th>Product</th><th>Warehouse lot</th><th>Kitchen yield</th><th class="num">Your price</th><th class="num"></th></tr></thead>
+      <thead><tr><th>Product</th><th>Shelf life</th><th class="num">Price</th><th class="num"></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   }
 
   return `<div class="panel trend-card prospect-card">
     <div class="trend-card__head">
-      <div>
-        <span class="tag">Valio Aimo Prospect</span>
-        <h3 class="panel__title" title="Matched to your customer tier and kitchen profile. Prices carry directly into your signed quote.">Today for your kitchen</h3>
-      </div>
-      ${data ? `<span class="trend-source-tiny">${esc(data.customer_tier)}</span>` : ""}
+      <h3 class="panel__title" title="Tailored to your kitchen profile and contract price. Hover a row for yield and match details.">Today for your kitchen</h3>
+      <span class="trend-source-tiny">${esc(data ? `${data.customer_name} · ${data.customer_tier}` : activeCustomer())}</span>
     </div>
-    <div class="trend-card__pills">${pills}</div>
     ${body}
   </div>`;
 }
@@ -1706,6 +1696,8 @@ function startOver() {
   app.detailsOpen = false;
   app.talk = [];
   app.eco.dismissed = new Set();
+  app.prospect = null;
+  app.prospectAdded = new Set();
   loadLines(app.kitchen.stock);
   say("agent", openingLine());
 }
@@ -2115,14 +2107,9 @@ document.addEventListener("click", (event) => {
   } else if (action === "toggle-prospect") {
     app.prospectOpen = !app.prospectOpen;
     drawMain();
-    if (app.prospectOpen && !app.prospect && !app.prospectBusy) {
-      fetchProspect(app.prospectCustomer);
-    }
-  } else if (action === "prospect-customer") {
-    const cid = event.target.closest("[data-customer]")?.dataset.customer;
-    if (cid) {
-      app.prospectCustomer = cid;
-      fetchProspect(cid);
+    const customer = activeCustomer();
+    if (app.prospectOpen && (!app.prospect || app.prospect.customer !== customer) && !app.prospectBusy) {
+      fetchProspect(customer);
     }
   } else if (action === "add-prospect") {
     const pid = event.target.closest("[data-product-id]")?.dataset.productId;
