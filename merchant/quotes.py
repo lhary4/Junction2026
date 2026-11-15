@@ -74,22 +74,26 @@ class Offer:
 
     @property
     def comparison_price_minor(self) -> int:
-        return self._comparison()[0]
+        return comparison_price(self.price, self.card)[0]
 
     @property
     def comparison_unit(self) -> str:
-        return self._comparison()[1]
+        return comparison_price(self.price, self.card)[1]
 
-    def _comparison(self) -> tuple[int, str]:
-        """The price per litre or kilo, and that unit. Valio leaves it out for some products (caster sugar 460325):
-        then it is the price divided by the size in the product file, or failing that the price of one sales unit."""
-        given = (self.price.get("comparisonPrice") or {}).get("value")
-        if given and self.price.get("comparisonUnit"):
-            return round(given * 100), self.price["comparisonUnit"]
-        size = self.card.size_per_sales_unit
-        if size.value and size.unit:
-            return round(self.unit_price_minor / size.value), size.unit
-        return self.unit_price_minor, self.card.sales_unit
+
+def comparison_price(price: dict, card: ProductCard) -> tuple[int, str]:
+    """The price per litre or kilo, and that unit, from one answer of Valio's price API that has a catalog price.
+
+    Valio leaves it out for some products (caster sugar 460325): then it is the price divided by the size in the
+    product file, or failing that the price of one sales unit."""
+    given = (price.get("comparisonPrice") or {}).get("value")
+    if given and price.get("comparisonUnit"):
+        return round(given * 100), price["comparisonUnit"]
+    unit_price_minor = round(price["catalogPrice"]["value"] * 100)
+    size = card.size_per_sales_unit
+    if size.value and size.unit:
+        return round(unit_price_minor / size.value), size.unit
+    return unit_price_minor, card.sales_unit
 
 
 def build_quote(request: QuoteRequest, catalog: Catalog | None = None) -> AimoCheckout:
@@ -211,6 +215,7 @@ class _Builder:
             )
         )
         card = offer.card
+        asked_price, asked_unit = self._price_asked(replaces) if replaces else (None, None)
         self.lines[line_id] = LineClaims(
             product_id=card.id,
             category=card.category,
@@ -235,6 +240,8 @@ class _Builder:
                 nutritional_claims=replaces.nutritional_claims,
                 labels=replaces.labels,
                 origin=replaces.origin,
+                comparison_price_minor=asked_price,
+                comparison_unit=asked_unit,
             )
             if replaces
             else None,
@@ -259,6 +266,16 @@ class _Builder:
         if offer.closing_time:
             self.closings.append(offer.closing_time)
         self.taken[card.id] = self.taken.get(card.id, 0) + quantity
+
+    def _price_asked(self, card: ProductCard) -> tuple[int | None, str | None]:
+        """Valio's price per litre or kilo for the product a substitute replaces, so the two can be read side by side.
+
+        A product whose order cut-off has passed still has a price. (None, None) when Valio gave none: the page then
+        says the price is unknown, it is never worked out from another product."""
+        price = self.answers.prices.get(card.id) or {}
+        if price.get("error") or (price.get("catalogPrice") or {}).get("value") is None:
+            return None, None
+        return comparison_price(price, card)
 
     def _left(self, offer: Offer) -> float | None:
         """Sales units still free once the lines already in this quote are served. None: Valio gives no count."""
