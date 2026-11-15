@@ -1574,6 +1574,101 @@ input {
   overflow-wrap: anywhere;
 }
 
+/* What was recorded: both audit logs under the order, the kitchen's and Valio Aimo's, side by side */
+.record {
+  margin-top: 16px;
+  padding-top: 6px;
+  border-top: 1px solid var(--line);
+}
+
+.record__note {
+  margin-top: 4px;
+  max-width: 90ch;
+  font-size: 0.82rem;
+  color: var(--grey);
+}
+
+.record__logs {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.record__log {
+  padding: 12px 14px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+}
+
+.record__lines {
+  margin-top: 4px;
+}
+
+.record__line {
+  display: grid;
+  grid-template-columns: 62px 96px minmax(0, 1fr) auto;
+  gap: 2px 10px;
+  align-items: baseline;
+  padding: 6px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.8rem;
+}
+
+.record__line:first-child {
+  border-top: 0;
+}
+
+.record__time {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--grey);
+}
+
+.record__who {
+  font-weight: 700;
+  color: var(--petrol);
+}
+
+.record__what {
+  overflow-wrap: anywhere;
+}
+
+.record__why {
+  display: block;
+  color: var(--grey);
+}
+
+.record__hash {
+  font-size: 0.7rem;
+  color: var(--grey);
+}
+
+.record__line--refused .record__what {
+  font-weight: 700;
+  color: var(--refused);
+}
+
+.record__line--refused .record__why {
+  font-weight: 400;
+  color: var(--ink);
+}
+
+.record__empty {
+  margin-top: 6px;
+  padding-bottom: 6px;
+  font-size: 0.85rem;
+  color: var(--grey);
+}
+
+@media (max-width: 1180px) {
+  .record__logs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* The safety checks: one plain line for each rule of the harness */
 .checks {
   margin-top: 8px;

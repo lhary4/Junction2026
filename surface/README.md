@@ -57,6 +57,7 @@ The buyer is a chef, not an engineer. The buying agent and the judge are both sh
 - **Other addresses**: `?driver=http://host:port&harness=http://host:port&assistant=http://host:port`.
 - The page never works out a fact of Valio's. Prices, Valio's stock, totals, verdicts and signatures come from the demo state. The only arithmetic on the page is the kitchen's own: to order = need - in stock.
 - The kitchen files are written so that what is missing is exactly what each recorded scenario asks Valio for. They are synthetic and say so.
+- **Both audit logs**: under the order, the switch "What was recorded" opens the kitchen's log and Valio Aimo's log side by side, for the order on screen: the time, who acted, what and why, and the start of each line's hash (the full hash and the one before it show on hover). The lines are those of `audit` in the demo state, written by the harness and the gateway. The page rewords "the agent" as on the rest of the page and checks no chain itself. After the attack the kitchen's log is empty and says why: the order never reached the safety checks. `?record=1` opens the logs from the start, for a recording.
 - Fonts and their licences: `surface/static/fonts/README.md`.
 
 ### The chat (`surface/assistant.py`)

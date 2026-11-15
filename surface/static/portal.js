@@ -131,6 +131,7 @@ const app = {
   correcting: false, // the chef is correcting the quantities of a refused order
   mismatch: false, // the quote is not for the quantities the chef asked
   detailsOpen: false, // the full comparison of a substitute
+  recordOpen: query.has("record"), // both audit logs under the order; ?record=1 opens them from the start
   policy: null,
   busy: false,
   chatBusy: false,
@@ -1313,6 +1314,58 @@ function attacksCard(state) {
     </section>`;
 }
 
+/* ---------- Drawing: what was recorded (both audit logs) ---------- */
+
+const RECORD_WHO = { agent: "Your assistant", harness: "Safety checks", human: "You", merchant: "Valio Aimo" };
+const timeOfDay = (isoTime) =>
+  new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit", timeZone: "Europe/Helsinki" }).format(new Date(isoTime));
+
+/* One log as its owner wrote it: when, who, what and why, and the start of the line's hash. */
+function recordLog(title, events, empty) {
+  const lines = events
+    .map((event) => {
+      const why = event.why ? `<span class="record__why">${esc(lexicon(event.why))}</span>` : "";
+      const chain = `Line ${event.seq}. Hash of this line: ${event.hash}. Hash of the line before: ${event.prev_hash ?? "none, it is the first line"}.`;
+      const hash = event.hash ? `<span class="record__hash mono" title="${esc(chain)}">${esc(shortProof(event.hash))}</span>` : "";
+      return `<li class="record__line${event.action === "order_refused" ? " record__line--refused" : ""}">
+          <span class="record__time">${esc(timeOfDay(event.at))}</span>
+          <span class="record__who">${esc(RECORD_WHO[event.actor] ?? words(event.actor))}</span>
+          <span class="record__what">${esc(lexicon(event.what))}${why}</span>
+          ${hash}
+        </li>`;
+    })
+    .join("");
+  return `<div class="record__log">
+      <p class="card__label">${esc(title)} · ${events.length} ${events.length === 1 ? "line" : "lines"}</p>
+      ${events.length ? `<ol class="record__lines">${lines}</ol>` : `<p class="record__empty">${esc(empty)}</p>`}
+    </div>`;
+}
+
+/*
+ * Both audit logs for the order on screen, side by side: the kitchen's own (kept by the safety checks) and Valio Aimo's.
+ * The page shows the lines the demo state carries, as they were written. It does not check the chains itself.
+ */
+function recordPanel(state) {
+  const buyer = state.audit?.buyer ?? [];
+  const merchant = state.audit?.merchant ?? [];
+  if (!buyer.length && !merchant.length) return "";
+  // An order sent straight to Valio never reached the safety checks, so the kitchen's log has no line of it.
+  const noBuyerLine = state.scenario?.id === "attack" ? "No line. This order was sent straight to Valio Aimo and never reached your safety checks." : "No line for this order.";
+  const logs = app.recordOpen
+    ? `<p class="record__note">Each side keeps its own log. Every line carries the hash of the line before it: change or remove a line and the hashes after it no longer match.</p>
+      <div class="record__logs">
+        ${recordLog("Your kitchen's log", buyer, noBuyerLine)}
+        ${recordLog("Valio Aimo's log", merchant, "No line for this order.")}
+      </div>`
+    : "";
+  return `<section class="record" aria-label="What was recorded">
+      <button class="toggle" type="button" data-action="record" role="switch" aria-checked="${app.recordOpen}">
+        <span class="toggle__track" aria-hidden="true"><span class="toggle__knob"></span></span>What was recorded: your log and Valio Aimo's log
+      </button>
+      ${logs}
+    </section>`;
+}
+
 function orderView() {
   const state = app.state;
   if (!orderOnScreen() || app.shown < 2 || !state.quote) {
@@ -1327,7 +1380,9 @@ function orderView() {
     state.attacks?.length && app.shown >= 5 ? attacksCard(state) : "",
     state.approval && !pending && app.shown >= 4 ? approvalCard(state) : "",
   ].join("");
-  return `<div class="order"><div class="order__main">${quoteTable(state)}</div><div class="order__side">${side}</div></div>`;
+  // The logs come once every step that happened is lit, so they never tell the end before the trail does.
+  const record = app.shown >= reachable() ? recordPanel(state) : "";
+  return `<div class="order"><div class="order__main">${quoteTable(state)}</div><div class="order__side">${side}</div></div>${record}`;
 }
 
 function drawMain() {
@@ -1952,6 +2007,9 @@ document.addEventListener("click", (event) => {
     askLimit();
   } else if (action === "details") {
     app.detailsOpen = !app.detailsOpen;
+    drawMain();
+  } else if (action === "record") {
+    app.recordOpen = !app.recordOpen;
     drawMain();
   } else if (action === "correct") {
     correctQuantities();
