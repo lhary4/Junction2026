@@ -19,7 +19,7 @@ import {
   lexicon,
   plural,
 } from "./core.js";
-import { app, isAttack, pendingApproval, orderRows, ledgerRows, ledgerKey, isRefusal } from "./state.js";
+import { app, hasRun, isAttack, pendingApproval, orderRows, ledgerRows, ledgerKey, isRefusal } from "./state.js";
 import { pill, whoChip, signedBy, approvalReason, signoff, attacksCard, agentCard } from "./ui.js";
 
 const pageHead = (title, lead, actions = "") => `<header class="page__head">
@@ -411,6 +411,7 @@ export function auditPage() {
   const rows = all.filter((event) => filter === "all" || (filter === "refused" ? isRefusal(event) : event.side === filter));
   const selected = all.find((event) => ledgerKey(event) === app.ledger.selected) ?? rows[0] ?? null;
   const check = app.ledger.check;
+  const signsTab = app.ledger.tab === "signs";
   const attack = isAttack() && app.state.attacks?.length;
   const counts = { all: all.length, buyer: all.filter((event) => event.side === "buyer").length, merchant: all.filter((event) => event.side === "merchant").length, refused: all.filter(isRefusal).length };
   const chips = [
@@ -464,13 +465,51 @@ export function auditPage() {
             </section>`
           : ""
       }
-      ${verdict}
+      <div class="tabs" role="tablist" aria-label="Audit views">
+        <button class="tabs__tab${signsTab ? "" : " is-on"}" type="button" role="tab" aria-selected="${!signsTab}" data-ledger-tab="log">${icon("list", 16)}Both logs</button>
+        <button class="tabs__tab${signsTab ? " is-on" : ""}" type="button" role="tab" aria-selected="${signsTab}" data-ledger-tab="signs">${icon("pen", 16)}Who signs</button>
+      </div>
+      ${
+        signsTab
+          ? whoSignsTab()
+          : `${verdict}
       <div class="split split--audit">
         <div class="split__main">
           <div class="chipbar">${chips}</div>
           <div class="card card--table">${table}</div>
         </div>
         <div class="split__side">${inspector(selected)}</div>
-      </div>
+      </div>`
+      }
+    </div>`;
+}
+
+/*
+ * Who signs, step by step: the seven steps of the order on screen, each with who acted, the protocol's own word
+ * (AP2, UCP) and the start of the signature. It is the trail the first page keeps on its left.
+ */
+function whoSignsTab() {
+  if (!hasRun()) {
+    return `<section class="card empty-card">
+        <span class="empty-card__icon">${icon("pen", 22)}</span>
+        <div>
+          <p class="empty-card__title">No order on screen yet.</p>
+          <p class="muted">Send an order: each step shows here with who signed it. No signature, no order.</p>
+        </div>
+        <a class="btn btn--quiet" href="#/order">Go to the order</a>
+      </section>`;
+  }
+  return `<div class="signs">
+      ${agentCard({ ask: false, title: "Who signs, step by step" })}
+      <aside class="card signs__key">
+        <h3 class="eyebrow">How to read it</h3>
+        <ul class="signs__list">
+          <li><b>You</b> open the permission once: what ${ASSISTANT} may sign alone, and up to how much.</li>
+          <li><b>Valio</b> signs the quote: prices, stock and allergens are its facts, not ${ASSISTANT}'s.</li>
+          <li><b>Checks</b> run in code on that quote. Their verdict decides who signs: ${ASSISTANT}, you, or nobody.</li>
+          <li><b>Valio</b> checks every signature before it accepts the order, and signs the receipt.</li>
+        </ul>
+        <p class="muted">On the right of each line: the protocol's own word for the step, and the start of its signature.</p>
+      </aside>
     </div>`;
 }

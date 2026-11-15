@@ -42,7 +42,14 @@ export const app = {
   kitchen: { recipes: null, bookings: null, stock: null },
   lines: [], // the stock table: the count, with the swaps and the changes the chef asked the assistant for
   sentKey: null,
-  step: 1, // guided variant only: 1 menu, 2 stock, 3 order
+  step: 1, // the order flow (console and guided versions): 1 recipes, 2 stock, 3 order
+  stockFilter: "all", // the stock step: every line, or only what is short
+  correcting: false, // the chef is correcting the quantities of an order that was rejected
+  trends: [], // sample food trends written for the demo (kitchen/trends.json), synthetic
+  trendId: null,
+  spotlight: { recipe: null, busy: false, portions: 50, added: false, source: null, model: null },
+  talk: [], // the conversation with the assistant, in the chat window
+  chatOpen: false,
   policy: null,
   rules: { draft: null, saving: false, note: null }, // the rules screen: the chef's unsaved changes
   eco: { data: null, key: null, loading: false, dismissed: new Set() },
@@ -50,7 +57,7 @@ export const app = {
   ask: { busy: false, question: null, answer: null, changes: [], failed: false }, // the last exchange with the assistant, nothing older
   history: [], // sample orders from before the demo
   session: { orders: [], approvals: [], loaded: false }, // what the harness and the gateway hold from this session
-  ledger: { buyer: [], merchant: [], filter: "all", selected: null, check: null }, // both audit logs
+  ledger: { buyer: [], merchant: [], filter: "all", selected: null, check: null, tab: "log" }, // both audit logs, and the "who signs" tab
   proof: null, // the order whose proof is open in the side panel
   linesOpen: false, // brief variant: the order lines are folded until asked
   detailsOpen: false, // the full comparison of a substitute
@@ -140,6 +147,51 @@ export function setStock(productId, field, amount, by) {
 
 export const changeText = (change) =>
   `${change.line.name}: ${change.field === "in_stock" ? "in stock" : "to order"} ${qty(change.before, change.line.unit)} → ${qty(change.after, change.line.unit)}`;
+
+/* The lines that no longer say what the count said: changed by hand, by the assistant, or swapped for a greener product. */
+export const changedLines = () => app.lines.filter((line) => line.by.in_stock || line.by.to_order || line.swapped_from || line.added);
+
+/* Back to what the recipes need with what is in stock, on every line. */
+export function useNeed() {
+  app.lines.forEach((line) => {
+    line.to_order = neededNow(line);
+    line.by.to_order = null;
+  });
+}
+
+/*
+ * A dish from Spotlight joins the menu: its ingredients are added to what the kitchen needs, for the portions asked.
+ * The kitchen's own arithmetic (amount a portion x portions), never a fact of Valio's.
+ */
+export function addDish(recipe, portions, trendId) {
+  if (!recipe || !canEdit()) return false;
+  const recipes = app.kitchen.recipes?.recipes;
+  if (!recipes) return false;
+  recipes.push({
+    id: `trend-${trendId ?? "spotlight"}-${recipes.length + 1}`,
+    course: recipe.course,
+    name: recipe.name,
+    with: recipe.with_text,
+    ingredients: (recipe.ingredients ?? []).map((item) => ({
+      product_id: item.product_id,
+      name: item.name,
+      per_service: `${qty(round3(Number(item.amount_per_portion) * portions), item.unit)} (${portions} portions)`,
+    })),
+  });
+  for (const item of recipe.ingredients ?? []) {
+    const more = round3(Number(item.amount_per_portion) * portions);
+    const line = app.lines.find((entry) => entry.product_id === item.product_id);
+    if (line) {
+      line.need = round3(line.need + more);
+      line.to_order = neededNow(line);
+      line.added = true;
+      if (!line.dishes.includes(recipe.course)) line.dishes.push(recipe.course);
+    } else {
+      app.lines.push({ product_id: item.product_id, name: item.name, dishes: [recipe.course], unit: item.unit, need: more, in_stock: 0, counted: 0, to_order: more, by: {}, added: true });
+    }
+  }
+  return true;
+}
 
 /* ---------- The carbon footprint and the weekly greener check ---------- */
 

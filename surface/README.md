@@ -13,14 +13,14 @@ Three versions of the same product. **B Console is the main one** and opens when
 | Version | Where the chef lands | Where the assistant shows |
 |---|---|---|
 | **A Brief** | One column and one sentence ("Thursday's order is ready."), one button | Its card is the page: what it prepared, then each step as it happens |
-| **B Console** | A sidebar and a dashboard: what is short, what needs a signature, the stock table | A chip in the sidebar, and a card beside the order on its own screen |
+| **B Console** | A sidebar and a dashboard: what is short, what needs a signature, the stock table. The order button opens the flow of the first page, three steps at the top: Recipes (with Spotlight), Stock (every number can be changed by hand), Order | A chip in the sidebar, a card beside the order, and the conversation in a window at the bottom right |
 | **C Guided** | Menu, stock, order, one step at a time (the flow of the first page) | One sentence under the steps, and the card beside the order |
 
 What replaces the conversation and the signing panel, in all three:
 
 - **The assistant's card.** A list of what it did, one line per real step, each with who did it (Aimo, You, Valio, Checks). Before an order it holds what it prepared from the menu and the stock count. The steps of the order arrive one after the other, like the trail of the first page. In version A each line also carries the AP2 term and the start of its proof.
 - **Three seals: You, Aimo, Valio.** A seal turns lime when its signature exists. It is the only lime on the page. They answer "who signed?" at a glance: Aimo inside the limit, you on the approval screen, or nobody.
-- **One field to ask.** The chat of `surface/assistant.py`, with the last answer only and what it really changed. Nothing scrolls.
+- **One field to ask** (versions A and C). The chat of `surface/assistant.py`, with the last answer only and what it really changed. Nothing scrolls. In the console (B), the team chose on 15/11 to keep the whole conversation, in a window that opens at the bottom right: the assistant's work on an order still shows in its card, not in the conversation.
 - **Your rules for this order.** Four cards read from the harness's policy before the order, and filled with what each check found once the verdict is in.
 
 Screens shared by the three versions:
@@ -30,7 +30,7 @@ Screens shared by the three versions:
 | **Orders** | The next delivery (only the steps that happened are ticked), then every order with who signed it and its proof | The demo state, `GET /authorizations` on the harness, `GET /orders/{id}` on the gateway, and `history.sample.json` |
 | **Approvals** | The order that waits: why, the tier Valio ranked the substitute in, what changes if you take it on four sides (cost, the dish, the kitchen, storage and delivery, the same four lines as the first page), the checks, then Approve and sign, Reject, Reject and edit the order. Past decisions below | The demo state, `GET /approvals`, `POST /approvals/{id}/decision` |
 | **Rules** | The chef's gauges: spending limit, banned allergens, what to do when allergen data is missing or a substitute changes it, substitutes (allowed, accepted without asking, the two scores of the judge, the preferences text), late delivery | `GET /policy`, `PUT /policy`, `POST /policy/reset` |
-| **Audit** | Both logs as one stream, the proof of each line, and a button that recomputes every fingerprint in the browser. The attack scenario shows here | `GET /audit` on the harness and on the gateway |
+| **Audit** | Two tabs. "Both logs": one stream, the proof of each line, and a button that recomputes every fingerprint in the browser. "Who signs": the seven steps of the order on screen, each with who acted, the protocol's word and the start of the signature (the trail the first page keeps on its left). The attack scenario shows here | `GET /audit` on the harness and on the gateway, and the demo state |
 
 Things to know:
 
@@ -39,7 +39,8 @@ Things to know:
 - **The delivery steps after "Accepted by Valio" are what comes next**, not tracking: the page has no data on trucks.
 - **Scenarios for the team:** the strip at the bottom, or the keys `1`, `2`, `3` (scenario), `r` (reset), `v` (next version), `h` (hide the strip, for a recording). `?strip=0` starts with the strip hidden.
 - **Hosted**, the page finds the services under `/driver`, `/harness` and `/assistant` like the first page. The gateway is not published, so the audit screen then shows Valio's lines for the order on screen only.
-- Not carried over from the first page: editing the stock table by hand (the chat still changes it) and the Spotlight recipe.
+- **Carried over from the first page on 15/11**, in the console's order flow: the three steps, the recipes, Spotlight (`POST /recommend` on the page's service, sample trends from `kitchen/trends.json`), the stock table changed by hand with "Undo" and "above need", and, after a rejection, "Correct quantities" and "Use what the recipes need".
+- Not carried over: the deals of the first page (products close to their date), the confirmation window before a signature, and the account menu.
 
 ## The kitchen order page (working demo)
 

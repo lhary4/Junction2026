@@ -336,6 +336,8 @@ export const merchant = {
 export const assistant = {
   health: () => call(`${URLS.assistant}/health`, {}, 1200),
   chat: (turns, state) => sendJson("POST", `${URLS.assistant}/chat`, { turns, state }, 30000),
+  // Spotlight: a dish for a food trend, made of products of Valio's catalog. Gemini writes it, or a kept answer.
+  recommend: (payload) => sendJson("POST", `${URLS.assistant}/recommend`, payload, 25000),
 };
 
 export const recorded = (name) => call(`${EXAMPLES}demo-state.${name}.json`);
@@ -347,6 +349,7 @@ export const kitchenApi = {
   bookings: () => call(`${KITCHEN}bookings.json`),
   stock: (scenarioId) => call(`${KITCHEN}stock.${STOCK_FILE[scenarioId] ?? "normal-order"}.json`),
   history: () => call("history.sample.json"),
+  trends: () => call(`${KITCHEN}trends.json`),
 };
 
 /* ---------- The audit chain, recomputed in the browser ---------- */
