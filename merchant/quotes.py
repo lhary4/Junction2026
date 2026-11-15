@@ -33,6 +33,7 @@ from contract.models import (
 from merchant import catalog as catalog_module
 from merchant import valio_api, valio_client
 from merchant.catalog import HELSINKI, Catalog, lactose_free
+from merchant.prospect import promo_for_checkout
 from merchant.units import UnitError, to_sales_units
 from trust.keys import MERCHANT_ID
 
@@ -137,8 +138,18 @@ class _Builder:
             raise QuoteError(f"{need.product_id}: {e}") from e
         left = self._left(offer)
         quantity = conversion.quantity if left is None else min(conversion.quantity, math.floor(left))
+        promo = (
+            promo_for_checkout(
+                self.request.customer,
+                offer.card.id,
+                offer.unit_price_minor,
+                offer.comparison_price_minor,
+            )
+            if need.claim_promo
+            else None
+        )
         if quantity > 0:
-            self._line(offer, quantity, round(quantity * conversion.size, 3), need.unit)
+            self._line(offer, quantity, round(quantity * conversion.size, 3), need.unit, promo=promo)
         covered = quantity * conversion.size
         if covered < need.amount - 1e-9:
             self._shortfall(need, covered, "partial_stock" if quantity else "out_of_stock")
@@ -203,13 +214,23 @@ class _Builder:
         )
         return offer, ""
 
-    def _line(self, offer: Offer, quantity: int, base_quantity: float, unit: str, replaces: ProductCard | None = None):
+    def _line(
+        self,
+        offer: Offer,
+        quantity: int,
+        base_quantity: float,
+        unit: str,
+        replaces: ProductCard | None = None,
+        promo: dict[str, int] | None = None,
+    ):
         line_id = f"li-{len(self.line_items) + 1}"
-        amount = quantity * offer.unit_price_minor
+        unit_price = promo["unit_price_minor"] if promo else offer.unit_price_minor
+        comp_price = promo["comparison_price_minor"] if promo else offer.comparison_price_minor
+        amount = quantity * unit_price
         self.line_items.append(
             LineItem(
                 id=line_id,
-                item=Item(id=offer.card.id, title=offer.card.name, price=offer.unit_price_minor),
+                item=Item(id=offer.card.id, title=offer.card.name, price=unit_price),
                 quantity=quantity,
                 totals=_totals(amount),
             )
@@ -225,7 +246,7 @@ class _Builder:
             base_unit=unit,
             size_per_sales_unit=card.size_per_sales_unit,
             temperature_condition=card.temperature_condition,
-            comparison_price_minor=offer.comparison_price_minor,
+            comparison_price_minor=comp_price,
             comparison_unit=offer.comparison_unit,
             substitute_for=SubstituteFor(
                 product_id=replaces.id,
@@ -250,7 +271,7 @@ class _Builder:
             closing_time=offer.closing_time,
             stock=self._stock_claim(offer),
             price=Claim(
-                value=offer.unit_price_minor,
+                value=unit_price,
                 unit="eur_minor_per_sales_unit",
                 source="aimo_price_api",
                 as_of=self.answers.as_of,
@@ -262,6 +283,9 @@ class _Builder:
             carbon_footprint=card.carbon_footprint,
             nutritional_claims=card.nutritional_claims,
             labels=card.labels,
+            shelf_life_days=promo["shelf_life_days"] if promo else None,
+            promo_discount_pct=promo["promo_discount_pct"] if promo else None,
+            base_unit_price_minor=promo["base_unit_price_minor"] if promo else None,
         )
         if offer.closing_time:
             self.closings.append(offer.closing_time)

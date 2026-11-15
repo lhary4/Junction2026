@@ -21,15 +21,16 @@
 
 const query = new URLSearchParams(window.location.search);
 /*
- * Where the three services are. On a laptop each one has its own port. Hosted (README, "Hosted demo"), one address
+ * Where the services are. On a laptop each one has its own port. Hosted (README, "Hosted demo"), one address
  * serves everything: the page at the root and each service under its name, a prefix the reverse proxy cuts off
- * (deploy/Caddyfile.snippet). ?driver=, ?harness= and ?assistant= still win over both.
+ * (deploy/Caddyfile.snippet). ?driver=, ?harness=, ?assistant= and ?gateway= still win over both.
  */
 const ON_LAPTOP = ["localhost", "127.0.0.1", ""].includes(window.location.hostname); // "" is a page opened as a file
 const serviceUrl = (name, port) => (query.get(name) || (ON_LAPTOP ? `http://localhost:${port}` : `/${name}`)).replace(/\/$/, "");
 const DRIVER_URL = serviceUrl("driver", 8003);
 const HARNESS_URL = serviceUrl("harness", 8002);
 const ASSISTANT_URL = serviceUrl("assistant", 8004);
+const GATEWAY_URL = serviceUrl("gateway", 8001);
 const REVEAL_MS = 420; // time between two steps lighting up: eight steps take under four seconds
 const POLL_MS = 1000;
 const SERVICES_MS = 5000; // how often the page looks whether the services are there
@@ -114,6 +115,11 @@ const CHECK_WORDS = {
     human: "Not sure enough that the substitute fits your kitchen",
     deny: "The substitute does not fit your kitchen's preferences",
   },
+  "shelf-life-window": {
+    pass: "Discounted lot shelf life fits your service window",
+    human: "Short shelf life on a discounted item — check if you can use it in time",
+    deny: "Shelf life is too short for delivery",
+  },
 };
 const OUTCOME_WORDS = { pass: "OK", human: "You decide", deny: "Blocked" };
 
@@ -153,6 +159,11 @@ const app = {
   recAdded: false,
   spotlightOpen: false,
   chatOpen: false,
+  prospectOpen: false,
+  prospectBusy: false,
+  prospectCustomer: "ravintola-demo",
+  prospect: null,
+  prospectAdded: new Set(),
 };
 
 /* ---------- Small helpers ---------- */
@@ -307,6 +318,10 @@ const assistant = {
   recommend: (payload) => postJson(`${ASSISTANT_URL}/recommend`, payload, 25000),
 };
 
+const gateway = {
+  prospect: (customer) => call(`${GATEWAY_URL}/prospect?customer=${encodeURIComponent(customer)}`, {}, 8000),
+};
+
 // The page sits in surface/static/. Served by the harness, the same path reaches /contract/examples/.
 const EXAMPLES_FOLDER = "../../contract/examples/";
 const recorded = (name) => call(`${EXAMPLES_FOLDER}demo-state.${name}.json`);
@@ -329,7 +344,14 @@ const changedLines = () => app.lines.filter((line) => line.by.in_stock || line.b
 
 /* The lines the assistant will ask Valio for: what is short in the stock table. */
 const orderLines = () =>
-  missingLines().map((line) => ({ product_id: line.product_id, name: line.name, amount: line.to_order, unit: line.unit, dish: line.dishes.join(", ") }));
+  missingLines().map((line) => ({
+    product_id: line.product_id,
+    name: line.name,
+    amount: line.to_order,
+    unit: line.unit,
+    dish: line.dishes.join(", "),
+    ...(line.claim_promo ? { claim_promo: true } : {}),
+  }));
 
 const linesKey = (lines) =>
   (lines ?? [])
@@ -826,18 +848,22 @@ function recipesView() {
     )
     .join("");
   const activeTrend = (app.trends ?? []).find((t) => t.id === app.trendId) ?? (app.trends ?? [])[0];
-  const bubble = activeTrend
+  const spotlightBtn = activeTrend
     ? `<button class="spotlight-bubble${app.spotlightOpen ? " is-open" : ""}" type="button" data-action="toggle-spotlight" aria-expanded="${app.spotlightOpen}">
         <span class="spotlight-bubble__dot"></span>
         <span>Spotlight: Seasonal Dessert</span>
       </button>`
     : "";
+  const prospectBtn = `<button class="spotlight-bubble${app.prospectOpen ? " is-open" : ""}" type="button" data-action="toggle-prospect" aria-expanded="${app.prospectOpen}">
+      <span>Deals for your kitchen</span>
+    </button>`;
   return `<div class="head head--with-spotlight">
       <div>
         <h2 class="display" title="Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.">Recipes on the menu</h2>
       </div>
-      ${bubble}
+      <div class="head__actions">${prospectBtn}${spotlightBtn}</div>
     </div>
+    ${app.prospectOpen ? prospectView() : ""}
     ${app.spotlightOpen ? trendRecommendationView() : ""}
     <div class="split">
       <table class="tbl">
@@ -852,6 +878,59 @@ function recipesView() {
         </table>
       </div>
     </div>`;
+}
+
+function prospectView() {
+  const data = app.prospect;
+  const customers = [
+    { id: "ravintola-demo", label: "Ravintola Demo (Standard)" },
+    { id: "hotel-nordic-chain", label: "Nordic Hotel Group (-12% Contract)" },
+    { id: "trattoria-napoli", label: "Trattoria Napoli (-5% Pizzeria)" },
+  ];
+  const pills = customers
+    .map(
+      (c) =>
+        `<button class="chip${app.prospectCustomer === c.id ? " is-active" : ""}" type="button" data-action="prospect-customer" data-customer="${esc(c.id)}">${esc(c.label)}</button>`
+    )
+    .join("");
+
+  let body = "";
+  if (app.prospectBusy) {
+    body = `<p class="trend-card__loading">Loading personalized warehouse deals…</p>`;
+  } else if (!data?.items?.length) {
+    body = `<p class="trend-card__prompt">Start the Valio gateway (port 8001) to view today's short-shelf-life &amp; overstock deals.</p>`;
+  } else {
+    const rows = data.items
+      .map((item) => {
+        const added = app.prospectAdded.has(item.product.id);
+        const urgent = item.shelf_life_days < 5;
+        const tip = [...(item.match_reasons ?? []), item.portion_hint].join(" · ");
+        return `<tr title="${esc(tip)}">
+          <td><b>${esc(item.product.name)}</b></td>
+          <td><span class="tag${urgent ? " tag--warn" : ""}">${esc(item.shelf_life_days)}d MHD · ${esc(qty(item.available_base_quantity, item.base_unit))}</span></td>
+          <td class="muted">${esc(item.portion_hint)}</td>
+          <td class="num"><span class="prospect-price-old">${esc(money(item.contract_price_minor))}</span> <b>${esc(money(item.promo_price_minor))}</b> <span class="tag tag--eco">-${item.discount_pct}%</span></td>
+          <td class="num"><button class="btn btn--ghost" type="button" data-action="add-prospect" data-product-id="${esc(item.product.id)}" ${canEdit() && !added ? "" : "disabled"}>${added ? "Added" : "Add"}</button></td>
+        </tr>`;
+      })
+      .join("");
+    body = `<table class="tbl tbl--tight">
+      <thead><tr><th>Product</th><th>Warehouse lot</th><th>Kitchen yield</th><th class="num">Your price</th><th class="num"></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  }
+
+  return `<div class="panel trend-card prospect-card">
+    <div class="trend-card__head">
+      <div>
+        <span class="tag">Valio Aimo Prospect</span>
+        <h3 class="panel__title" title="Matched to your customer tier and kitchen profile. Prices carry directly into your signed quote.">Today for your kitchen</h3>
+      </div>
+      ${data ? `<span class="trend-source-tiny">${esc(data.customer_tier)}</span>` : ""}
+    </div>
+    <div class="trend-card__pills">${pills}</div>
+    ${body}
+  </div>`;
 }
 
 function trendRecommendationView() {
@@ -2033,6 +2112,21 @@ document.addEventListener("click", (event) => {
     if (app.spotlightOpen && !app.recommendation && !app.recBusy) {
       fetchRecommendation();
     }
+  } else if (action === "toggle-prospect") {
+    app.prospectOpen = !app.prospectOpen;
+    drawMain();
+    if (app.prospectOpen && !app.prospect && !app.prospectBusy) {
+      fetchProspect(app.prospectCustomer);
+    }
+  } else if (action === "prospect-customer") {
+    const cid = event.target.closest("[data-customer]")?.dataset.customer;
+    if (cid) {
+      app.prospectCustomer = cid;
+      fetchProspect(cid);
+    }
+  } else if (action === "add-prospect") {
+    const pid = event.target.closest("[data-product-id]")?.dataset.productId;
+    if (pid) addProspectItem(pid);
   } else if (action === "toggle-chat") {
     app.chatOpen = !app.chatOpen;
     el("side")?.classList.toggle("is-open", app.chatOpen);
@@ -2052,6 +2146,54 @@ document.addEventListener("click", (event) => {
     chooseScenario(app.scenarioId === "attack" ? "normal-order" : app.scenarioId);
   }
 });
+
+async function fetchProspect(customer) {
+  if (app.prospectBusy) return;
+  app.prospectBusy = true;
+  drawMain();
+  try {
+    app.prospect = await gateway.prospect(customer);
+  } catch (error) {
+    app.prospect = null;
+    toast(`Could not load prospect: ${error.message}`, true);
+  } finally {
+    app.prospectBusy = false;
+    drawMain();
+  }
+}
+
+function addProspectItem(productId) {
+  const item = (app.prospect?.items ?? []).find((entry) => entry.product.id === productId);
+  if (!item || !canEdit() || app.prospectAdded.has(productId)) return;
+  const addQty = Math.min(item.available_base_quantity, item.base_unit === "KG" ? 5 : item.base_unit === "L" ? 4 : 2);
+  const existing = app.lines.find((line) => line.product_id === productId);
+  if (existing) {
+    existing.need = round3(existing.need + addQty);
+    existing.to_order = neededNow(existing);
+    existing.claim_promo = true;
+    existing.by.to_order = "you";
+    if (!existing.dishes.includes("Today's Deal")) existing.dishes.push("Today's Deal");
+  } else {
+    app.lines.push({
+      product_id: productId,
+      name: item.product.name,
+      dishes: ["Today's Deal"],
+      unit: item.base_unit,
+      need: addQty,
+      in_stock: 0,
+      counted: 0,
+      to_order: addQty,
+      claim_promo: true,
+      by: { to_order: "you" },
+    });
+  }
+  app.prospectAdded.add(productId);
+  if (app.confirmed.stock && !orderOnScreen()) app.confirmed.stock = null;
+  say("chef", `Add ${qty(addQty, item.base_unit)} of ${item.product.name} (-${item.discount_pct}% deal).`);
+  say("agent", `Added ${item.product.name} (${item.shelf_life_days}d shelf life) at ${money(item.promo_price_minor)} (${item.discount_pct}% off your contract price).`);
+  toast(`Added ${item.product.name} (-${item.discount_pct}%)`);
+  draw();
+}
 
 async function fetchRecommendation() {
   if (app.recBusy) return;

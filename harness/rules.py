@@ -756,6 +756,37 @@ def _check_substitution_within_preferences(
     )
 
 
+MIN_AUTO_SHELF_LIFE_DAYS = 5
+
+
+def _check_shelf_life_window(lines: list[tuple[str, LineClaims]]) -> RuleResult:
+    short = [
+        {"product_id": lc.product_id, "shelf_life_days": lc.shelf_life_days, "discount_pct": lc.promo_discount_pct}
+        for _, lc in lines
+        if lc.shelf_life_days is not None and lc.shelf_life_days < MIN_AUTO_SHELF_LIFE_DAYS
+    ]
+    all_lots = [
+        {"product_id": lc.product_id, "shelf_life_days": lc.shelf_life_days, "discount_pct": lc.promo_discount_pct}
+        for _, lc in lines
+        if lc.shelf_life_days is not None
+    ]
+    if short:
+        min_days = min(item["shelf_life_days"] for item in short if item["shelf_life_days"] is not None)
+        return RuleResult(
+            rule_id="shelf-life-window",
+            outcome="human",
+            message=f"Short-shelf-life lot ({min_days} days left) requires chef confirmation before ordering.",
+            evidence={"short_lots": short, "min_auto_days": MIN_AUTO_SHELF_LIFE_DAYS},
+        )
+    min_days = min(item["shelf_life_days"] for item in all_lots if item["shelf_life_days"] is not None)
+    return RuleResult(
+        rule_id="shelf-life-window",
+        outcome="pass",
+        message=f"Discounted lot shelf life ({min_days}+ days) fits the planned service window.",
+        evidence={"lots": all_lots, "min_auto_days": MIN_AUTO_SHELF_LIFE_DAYS},
+    )
+
+
 def evaluate(
     policy: BuyerPolicy,
     checkout: AimoCheckout,
@@ -812,6 +843,9 @@ def evaluate(
 
     if sub_lines:
         rules.append(_check_allergen_unchanged_on_substitution(policy, sub_lines))
+
+    if any(lc.shelf_life_days is not None for _, lc in lines):
+        rules.append(_check_shelf_life_window(lines))
 
     rules.append(_check_delivery_on_time(policy, checkout))
     rules.append(_check_spend_limit(policy, checkout, now))

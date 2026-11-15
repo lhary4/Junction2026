@@ -827,6 +827,7 @@ class PageLine(BaseModel):
     product_id: str
     amount: float
     unit: str
+    claim_promo: bool = False
 
 
 class RunRequest(BaseModel):
@@ -843,7 +844,10 @@ class FootprintAsk(BaseModel):
 
 def _needs(lines: list[PageLine]) -> list[Need]:
     try:
-        return [Need(product_id=line.product_id, amount=line.amount, unit=line.unit) for line in lines]
+        return [
+            Need(product_id=line.product_id, amount=line.amount, unit=line.unit, claim_promo=line.claim_promo)
+            for line in lines
+        ]
     except ValueError as e:
         raise DriverError(422, f"a line of the page is not a valid need: {e}") from e
 
