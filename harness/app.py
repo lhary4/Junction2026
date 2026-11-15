@@ -12,6 +12,9 @@ Routes (docs/contract.md):
 - GET  /approvals/{approval_id}
 - POST /approvals/{approval_id}/decision
 - GET  /policy
+- PUT  /policy
+- PUT  /policy/autonomous-limit
+- POST /policy/reset
 - GET  /mandates/open
 - GET  /audit
 - /    serves `surface/static` (and `/contract/examples` for rehearsal mock links)
@@ -61,7 +64,19 @@ from harness.approvals import (
 )
 from harness.judge import judge_substitution
 from harness.notify import NotifyFn, notify_approval
-from harness.policy import load_policy
+from harness.policy import (
+    LimitChange,
+    PolicyChange,
+    PolicyChangeError,
+    PolicyReset,
+    apply_change,
+    describe_changes,
+    forget_saved_policy,
+    load_policy,
+    policy_in_force,
+    save_policy,
+    saved_policy_path,
+)
 from harness.rules import JudgeFn, evaluate
 from harness.signer import HarnessSigner
 from trust import TrustError
@@ -242,11 +257,48 @@ def create_app(
     signer: HarnessSigner | None = None,
     store: ApprovalStore | None = None,
     notify_fn: NotifyFn | None = None,
+    saved_policy_file: Path | None = None,
 ) -> FastAPI:
     active_judge = judge_fn if judge_fn is not None else judge_substitution
     active_store = store if store is not None else ApprovalStore()
     active_signer = signer if signer is not None else HarnessSigner()
     active_notify = notify_fn if notify_fn is not None else notify_approval
+    policy_lock = threading.Lock()
+
+    def _saved_policy_file() -> Path:
+        # Looked up on every call, like the approvals, so `AIMO_STATE_DIR` set by a test is followed.
+        return saved_policy_file if saved_policy_file is not None else saved_policy_path()
+
+    def _policy_in_force() -> BuyerPolicy:
+        """The policy every route uses: the change saved from the settings page, else the policy file."""
+        return policy_in_force(policy_path, _saved_policy_file())
+
+    def _change_policy(change: PolicyChange) -> BuyerPolicy:
+        """Merge a change into the policy in force, save it in the state folder and write one audit line.
+
+        The next `POST /authorize` reads the saved policy, and the signer re-issues the open mandates
+        for it, so the rule and the cap Valio checks move together. Stored approvals are not touched:
+        an approval that is already pending keeps the verdict it had.
+        """
+        with policy_lock:
+            current = _policy_in_force()
+            try:
+                updated = apply_change(current, change)
+            except (PolicyChangeError, ValidationError) as err:
+                raise HTTPException(status_code=422, detail=str(err)) from err
+            if updated == current:
+                # Sending the values already in force is not an error: nothing to save, nothing to log.
+                return current
+            save_policy(updated, _saved_policy_file())
+            _audit().append(
+                "buyer",
+                "human",
+                "policy_changed",
+                f"Buyer rules changed: {'; '.join(describe_changes(current, updated))}.",
+                f"Decided by {change.decided_by}.",
+                now=clock.now().astimezone(HELSINKI),
+            )
+            return updated
 
     @contextmanager
     def _gateway_client():
@@ -389,7 +441,7 @@ def create_app(
         if existing is not None:
             return existing
 
-        policy = load_policy(policy_path)
+        policy = _policy_in_force()
         log = _audit()
 
         with _gateway_client() as client:
@@ -729,11 +781,42 @@ def create_app(
 
     @api.get("/policy")
     def get_policy() -> BuyerPolicy:
-        return load_policy(policy_path)
+        return _policy_in_force()
+
+    @api.put("/policy")
+    def change_policy(change: PolicyChange) -> BuyerPolicy:
+        """Change the rules the chef may edit on the settings page. Answers the policy in force."""
+        return _change_policy(change)
+
+    @api.put("/policy/autonomous-limit")
+    def change_autonomous_limit(change: LimitChange) -> BuyerPolicy:
+        """Change the spending limit alone: the same change as `PUT /policy` with one field."""
+        return _change_policy(
+            PolicyChange(decided_by=change.decided_by, autonomous_limit_minor=change.autonomous_limit_minor)
+        )
+
+    @api.post("/policy/reset")
+    def reset_policy(reset: PolicyReset | None = None) -> BuyerPolicy:
+        """Forget the saved change and go back to the policy file. Answers the policy in force."""
+        with policy_lock:
+            changed = _policy_in_force()
+            from_file = load_policy(policy_path)
+            if forget_saved_policy(_saved_policy_file()):
+                undone = "; ".join(describe_changes(changed, from_file)) or "the saved rules were the same"
+                decided_by = reset.decided_by if reset is not None else None
+                _audit().append(
+                    "buyer",
+                    "human",
+                    "policy_reset",
+                    f"Buyer rules reset to the policy file: {undone}.",
+                    f"Decided by {decided_by}." if decided_by else "The request did not say who decided it.",
+                    now=clock.now().astimezone(HELSINKI),
+                )
+            return from_file
 
     @api.get("/mandates/open")
     def get_open_mandate_proofs() -> dict[str, str]:
-        return active_signer.open_mandate_proofs(load_policy(policy_path))
+        return active_signer.open_mandate_proofs(_policy_in_force())
 
     @api.get("/audit")
     def get_audit() -> list[AuditEvent]:
