@@ -1,0 +1,15 @@
+# The other half of junction-bridge@.socket: passes each connection on to 127.0.0.1, same port.
+# systemd-socket-proxyd ships with systemd, there is nothing to install.
+[Unit]
+Description=Junction 2026 demo: relay to 127.0.0.1:%i
+Requires=junction-bridge@%i.socket
+After=junction-bridge@%i.socket
+PartOf=junction-demo.service
+
+[Service]
+ExecStart=/usr/lib/systemd/systemd-socket-proxyd 127.0.0.1:%i
+DynamicUser=true
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

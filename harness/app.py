@@ -95,6 +95,12 @@ def harness_url() -> str:
     return (os.environ.get("HARNESS_URL") or _from_env_file("HARNESS_URL") or "http://localhost:8002").rstrip("/")
 
 
+def approval_page_url() -> str:
+    """The address the approval link starts with. Hosted behind one public address (README, "Hosted demo"),
+    HARNESS_URL is a local address only the server can open: PUBLIC_ORIGIN is the one the chef's browser can."""
+    return (os.environ.get("PUBLIC_ORIGIN") or _from_env_file("PUBLIC_ORIGIN") or harness_url()).rstrip("/")
+
+
 def _jwt_kid(token: str) -> str | None:
     try:
         raw_header = token.split(".")[0]
@@ -480,7 +486,7 @@ def create_app(
                     verdict,
                     request.request_text,
                     checkout_jwt=checkout_jwt,
-                    approval_url_base=harness_url(),
+                    approval_url_base=approval_page_url(),
                     now=now,
                 )
                 log.append(

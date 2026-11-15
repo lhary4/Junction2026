@@ -1,0 +1,32 @@
+# The MCP server over HTTP, for chats that live in the cloud (claude.ai). It listens on 127.0.0.1:8005/mcp.
+# Started and stopped with junction-demo.service.
+[Unit]
+Description=Junction 2026 demo: MCP server over HTTP (agent_mcp/server.py)
+After=junction-demo.service
+PartOf=junction-demo.service
+
+[Service]
+User=junction
+Group=junction
+WorkingDirectory=/opt/junction-2026/repo
+# The host named here is the only public name the server answers to (its protection against DNS rebinding).
+ExecStart=/opt/junction-2026/repo/.venv/bin/python agent_mcp/server.py --http valio.adriencaillo.com
+Environment=PYTHONUNBUFFERED=1
+# The MCP server only calls the three local services. It gets their addresses and no API key.
+Environment=MERCHANT_URL=http://127.0.0.1:8001
+Environment=HARNESS_URL=http://127.0.0.1:8002
+Environment=DRIVER_URL=http://127.0.0.1:8003
+Restart=always
+RestartSec=3
+
+MemoryMax=400M
+OOMScoreAdjust=800
+
+# It writes nothing: the whole server is read-only for it.
+NoNewPrivileges=true
+ProtectSystem=strict
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
