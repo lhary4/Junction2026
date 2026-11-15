@@ -173,6 +173,48 @@ def loaded(search: str = "") -> dict:
     return json.loads(result.stdout)
 
 
+KITCHEN_ARITHMETIC = """
+globalThis.window = { location: { search: "", hostname: "localhost", href: "http://localhost/" } };
+const state = await import("%(module)s");
+state.app.state = { scenario: { status: "idle" } };
+const butter = { product_id: "1", name: "Butter", dishes: ["Main"], unit: "KG", need: 2, in_stock: 1, to_order: 1 };
+state.app.kitchen = { recipes: { recipes: [] }, stock: { lines: [butter] } };
+state.loadLines(state.app.kitchen.stock);
+const dish = { name: "Warm cheese", course: "Dessert", with_text: "with jam", ingredients: [
+  { product_id: "1", name: "Butter", amount_per_portion: 0.01, unit: "KG" },
+  { product_id: "2", name: "Jam", amount_per_portion: 0.02, unit: "KG" },
+] };
+const added = state.addDish(dish, 50, "t");
+const after = state.app.lines.map((line) => [line.product_id, line.need, line.to_order]);
+state.setStock("2", "to_order", 5, "you");
+const byHand = state.app.lines.find((line) => line.product_id === "2").to_order;
+state.useNeed();
+console.log(JSON.stringify({
+  added, after, byHand,
+  changed: state.changedLines().length,
+  back: state.app.lines.map((line) => line.to_order),
+  menu: state.app.kitchen.recipes.recipes.map((recipe) => recipe.name),
+}));
+"""
+
+
+def test_a_spotlight_dish_adds_to_what_the_kitchen_needs_and_the_chef_can_go_back_to_the_need():
+    """The order flow of the console: a dish from Spotlight, a number changed by hand, "use what the recipes need"."""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node is not installed")
+    script = KITCHEN_ARITHMETIC % {"module": (AIMO / "state.js").as_uri()}
+    result = subprocess.run([node, "--input-type=module", "-e", script], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    drawn = json.loads(result.stdout)
+
+    assert drawn["added"] is True and drawn["menu"] == ["Warm cheese"]
+    # 50 portions: 0.5 kg more butter (2.5 needed, 1 in stock), and 1 kg of jam the kitchen did not have.
+    assert drawn["after"] == [["1", 2.5, 1.5], ["2", 1, 1]]
+    assert drawn["byHand"] == 5 and drawn["changed"] == 2
+    assert drawn["back"] == [1.5, 1]
+
+
 def test_the_console_is_the_version_that_opens_and_the_others_must_be_asked_for():
     alone, asked = loaded(), loaded("?v=c")
 

@@ -389,7 +389,9 @@ export function orderCta({ wide = false } = {}) {
   }
   if (revealing() || status() === "running") return `<button class="btn btn--go${size}" type="button" disabled><span class="spinner"></span>${ASSISTANT} is working</button>`;
   if (pendingApproval()) return `<a class="btn btn--sign${size}" href="#/approvals">${icon("pen", 16)}Review and sign</a>`;
-  return `<button class="btn btn--quiet${size}" type="button" data-action="new-order">New order</button>`;
+  // Nothing was ordered: the chef can go back to the quantities that were asked, correct them and order again.
+  const correct = status() === "refused" ? `<button class="btn btn--go${size}" type="button" data-action="correct" ${app.busy ? "disabled" : ""}>Correct quantities</button>` : "";
+  return `${correct}<button class="btn btn--quiet${size}" type="button" data-action="new-order">New order</button>`;
 }
 
 export function orderBar() {

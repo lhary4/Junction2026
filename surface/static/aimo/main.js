@@ -1,8 +1,8 @@
 /*
  * The clean portal, in three versions of the same product (?v=a, b or c):
  *   a  Brief    one column, the assistant's card is the page
- *   b  Console  a sidebar and a dashboard, the order on its own screen
- *   c  Guided   menu, stock, order, one step at a time
+ *   b  Console  a sidebar and a dashboard; the order button opens the flow recipes, stock, order (the main version)
+ *   c  Guided   the same flow as the home screen, without the sidebar
  * The orders, approvals, rules and audit screens are the same in all three.
  *
  * This file holds the frames, the home screens, the events and the actions. See core.js for where the data comes from.
@@ -20,6 +20,8 @@ import {
   icon,
   money,
   qty,
+  unitWord,
+  round3,
   dayShort,
   dayLong,
   kgCo2,
@@ -56,6 +58,10 @@ import {
   loadLines,
   setStock,
   changeText,
+  changedLines,
+  neededNow,
+  useNeed,
+  addDish,
   ecoKey,
   ecoOffer,
   swapLine,
@@ -132,7 +138,7 @@ function frameSide(view) {
       <aside class="side">
         ${brand()}
         <nav class="nav nav--side" aria-label="Sections">${navLinks(true)}</nav>
-        <a class="btn btn--go btn--wide side__new" href="#/order">New order</a>
+        <a class="btn btn--go btn--wide side__new" href="#/order">${orderOnScreen() ? "See the order" : "New order"}</a>
         <div class="side__foot">
           ${limit}
           ${agentChip()}
@@ -140,6 +146,44 @@ function frameSide(view) {
         </div>
       </aside>
       <main class="view">${view}</main>
+      ${chatWindow()}
+    </div>`;
+}
+
+/*
+ * The conversation with the assistant, in a window at the bottom right (console version). It opens on demand and
+ * keeps the whole exchange. The assistant's work on an order is not told here: it has its own card, line by line.
+ */
+function chatWindow() {
+  const raised = app.route === "order" && app.step === 3 ? " chat--raised" : "";
+  if (!app.chatOpen) {
+    return `<div class="chat${raised}"><button class="chat__launcher" type="button" data-action="toggle-chat" aria-expanded="false">${icon("spark", 16)}<span>Ask ${ASSISTANT}</span></button></div>`;
+  }
+  const hello = `<li class="say say--agent"><span class="say__who">${ASSISTANT}</span><span class="say__text">Ask me about the order, or tell me what changed in the stock. I can change the stock table and take a greener product Valio offers. I never sign: you do, on this page.</span></li>`;
+  const bubbles = app.talk
+    .map(
+      (line) => `<li class="say say--${line.who === "chef" ? "chef" : "agent"}${line.failed ? " say--failed" : ""}">
+          <span class="say__who">${line.who === "chef" ? "You" : ASSISTANT}</span>
+          <span class="say__text">${esc(line.text)}</span>
+          ${(line.changes ?? []).map((change) => `<span class="say__change">${icon("check", 14)}${esc(change)}</span>`).join("")}
+        </li>`
+    )
+    .join("");
+  const thinking = app.ask.busy ? '<li class="say say--agent"><span class="say__text"><span class="spinner"></span> Thinking</span></li>' : "";
+  const placeholder = app.up.assistant ? "Ask, or say what changed in the stock" : `${ASSISTANT}'s chat is not running`;
+  return `<div class="chat is-open${raised}">
+      <section class="chat__window" aria-label="Conversation with ${ASSISTANT}">
+        <header class="chat__head">
+          <p class="chat__title">${icon("spark", 16)}${ASSISTANT}<span class="chat__light${app.up.assistant ? " is-on" : ""}"></span></p>
+          <button class="chat__close" type="button" data-action="toggle-chat" aria-label="Close the conversation">${icon("cross", 16)}</button>
+        </header>
+        <ol class="chat__talk" id="talk" aria-live="polite">${hello}${bubbles}${thinking}</ol>
+        <form class="ask__form chat__form" id="ask" autocomplete="off">
+          <label class="visually-hidden" for="ask-text">Message to ${ASSISTANT}</label>
+          <input class="ask__text" id="ask-text" name="text" type="text" maxlength="500" placeholder="${esc(placeholder)}" ${app.ask.busy ? "disabled" : ""} />
+          <button class="ask__send" type="submit" aria-label="Send" ${app.ask.busy ? "disabled" : ""}>${icon("send", 16)}</button>
+        </form>
+      </section>
     </div>`;
 }
 
@@ -246,31 +290,10 @@ function todayConsole() {
     </div>`;
 }
 
-/* The order on its own screen: the lines and the rules on the left, the assistant on the right, the bar below. */
-function orderScreen() {
-  const quote = orderOnScreen() && app.shown >= 2 ? app.state.quote : null;
-  return `<div class="page page--wide page--order">
-      <header class="page__head">
-        <div>
-          <h1 class="page__title">${quote ? "Quote signed by Valio Aimo" : "Order for the week"}</h1>
-          <p class="page__lead">${esc(quote ? `Delivery ${dayLong(quote.aimo.delivery_date)}. Prices before tax.` : weekLine())}</p>
-        </div>
-      </header>
-      <div class="split split--order">
-        <div class="split__main">
-          <div class="card card--table">${linesBlock()}</div>
-          ${guards()}
-        </div>
-        <div class="split__side">${agentCard({ compact: true })}</div>
-      </div>
-      ${orderBar()}
-    </div>`;
-}
-
-/* ---------- Home, version C: guided ---------- */
+/* ---------- The order flow: recipes, stock, order (the console's order screen, and the home of version C) ---------- */
 
 function guidedSteps() {
-  const names = ["Menu", "Stock", "Order"];
+  const names = ["Recipes", "Stock", "Order"];
   const metas = [`${plural(menuNames().length, "recipe", "recipes")}`, `${missingLines().length} short`, orderOnScreen() ? whoSigns().text : "then the signatures"];
   return `<ol class="stepper">${names
     .map((name, index) => {
@@ -313,7 +336,123 @@ function menuStep() {
     .map((service) => `<div class="day"><p class="day__date">${esc(dayShort(service.date))}</p><p class="day__covers"><b>${service.booked}</b> booked · ${service.projected} planned</p></div>`)
     .join("");
   return `<div class="days">${days}</div><div class="recipes">${cards}</div>
-    <p class="tbl__note">Quantities for one service of ${esc(String(app.kitchen.recipes?.covers_per_service ?? 50))} covers.</p>`;
+    <p class="tbl__note">Quantities for one service of ${esc(String(app.kitchen.recipes?.covers_per_service ?? 50))} covers.</p>
+    ${spotlightCard()}`;
+}
+
+/*
+ * Spotlight: a dish for a food trend, made of products of Valio's catalog, that the chef can add to the menu.
+ * The trends are sample lines written for the demo (kitchen/trends.json) and the card says so. The dish comes from
+ * the page's service (POST /recommend): Gemini writes it from the catalog, or a kept answer when it does not reply.
+ */
+function spotlightCard() {
+  const trends = app.trends;
+  if (!trends.length) return "";
+  const active = trends.find((trend) => trend.id === app.trendId) ?? trends[0];
+  const spot = app.spotlight;
+  const portions = Math.max(1, Number(spot.portions) || 50);
+  const pills = trends
+    .map((trend) => `<button class="chipbtn${trend.id === active.id ? " is-on" : ""}" type="button" data-trend="${esc(trend.id)}">${esc(trend.title)}</button>`)
+    .join("");
+  let body = "";
+  if (spot.busy) {
+    body = `<p class="spot__wait"><span class="spinner"></span>Matching this trend with Valio Aimo's catalog</p>`;
+  } else if (spot.recipe) {
+    const rows = (spot.recipe.ingredients ?? [])
+      .map(
+        (item) => `<tr>
+          <td><b>${esc(item.name)}</b><span class="spot__id mono">#${esc(item.product_id)}</span></td>
+          <td class="num">${esc(qty(item.amount_per_portion, item.unit))}</td>
+          <td class="num"><b>${esc(qty(round3(Number(item.amount_per_portion) * portions), item.unit))}</b></td>
+        </tr>`
+      )
+      .join("");
+    body = `<div class="spot__dish">
+        <p class="eyebrow">${esc(spot.recipe.course)}</p>
+        <h4 class="spot__name">${esc(spot.recipe.name)}</h4>
+        <p class="muted">${esc(spot.recipe.with_text)}. ${esc(spot.recipe.trend_reason)}</p>
+      </div>
+      <table class="tbl">
+        <thead><tr><th>Valio product</th><th class="num">A portion</th><th class="num">For ${esc(String(portions))} portions</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+      <div class="spot__actions">
+        <label class="spot__portions">Portions
+          <input class="cellfield__input" id="spot-portions" type="number" min="1" max="2000" value="${esc(String(portions))}" ${canEdit() && !spot.added ? "" : "disabled"} />
+        </label>
+        <button class="btn btn--go" type="button" data-action="spot-add" ${canEdit() && !spot.added ? "" : "disabled"}>
+          ${spot.added ? `${icon("check", 16)}Added to the menu and the order` : `Add to the menu and the order`}
+        </button>
+        <span class="muted spot__source">${spot.source === "live_llm" ? `Written by ${esc(spot.model)} from Valio's catalog` : "A kept answer: the model did not reply"}</span>
+      </div>`;
+  } else {
+    body = `<div class="spot__start">
+        <p class="muted">${esc(active.headline ?? "")}</p>
+        <button class="btn btn--quiet" type="button" data-action="spot-generate">${icon("spark", 16)}Propose a dish</button>
+      </div>`;
+  }
+  return `<section class="card spot">
+      <header class="spot__head">
+        <div><p class="eyebrow">Valio Aimo Spotlight · sample trend</p><h3 class="spot__title">${esc(active.title)}</h3></div>
+        ${trends.length > 1 ? `<div class="chipbar">${pills}</div>` : ""}
+      </header>
+      ${body}
+    </section>`;
+}
+
+/* One cell of the stock step that the chef can change by hand. */
+function cell(line, name, label) {
+  const who = line.by[name];
+  return `<span class="cellfield${who ? " is-changed" : ""}" ${who ? `title="Changed by ${esc(who)}"` : ""}>
+      <input class="cellfield__input" type="text" inputmode="decimal" autocomplete="off" value="${esc(line[name])}"
+        data-cell="${esc(line.product_id)}:${name}" aria-label="${esc(`${label}, ${line.name}, in ${unitWord(line.unit)}`)}" ${canEdit() ? "" : "disabled"} />
+      <span class="cellfield__unit">${esc(unitWord(line.unit, line[name]))}</span>
+    </span>`;
+}
+
+/* The stock step: the count, and what to order. Every number can be changed by hand until an order is open. */
+function stockStep() {
+  const stock = app.kitchen.stock;
+  const missing = missingLines();
+  const shown = app.stockFilter === "missing" ? missing : [...missing, ...app.lines.filter((line) => line.to_order <= 0)];
+  const rows = shown
+    .map((line) => {
+      const short = line.to_order > 0;
+      const above = line.to_order > neededNow(line);
+      const swapped = line.swapped_from ? ` <span class="tag tag--eco">Greener swap</span>` : "";
+      return `<tr class="${short ? "is-short" : ""}">
+          <td><b>${esc(line.name)}</b>${above ? ' <span class="tag tag--warn" title="More than the recipes need, with what is in stock">above need</span>' : ""}${swapped}</td>
+          <td class="muted">${esc(line.dishes.join(", "))}</td>
+          <td class="num">${esc(qty(line.need, line.unit))}</td>
+          <td class="num">${cell(line, "in_stock", "In stock")}</td>
+          <td class="num">${cell(line, "to_order", "To order")}</td>
+        </tr>`;
+    })
+    .join("");
+  const changed = changedLines().length;
+  let note = `Counted on ${stock ? dayLong(stock.counted_at) : "an unknown day"}${stock?.counted_by ? `, ${stock.counted_by}` : ""}. You can change any number.`;
+  let tone = "";
+  if (!canEdit()) {
+    note = orderOnScreen() && !revealing() && status() !== "waiting_for_human" ? "These are the quantities of the order on screen. Start a new order to change them." : "An order is open with these quantities. They are locked until it is signed or rejected.";
+  } else if (app.correcting) {
+    note = "The rejected order asked for these quantities. Correct them, then order again.";
+    tone = " stockbar__note--warn";
+  }
+  const chip = (id, label, count) => `<button class="chipbtn${app.stockFilter === id ? " is-on" : ""}" type="button" data-stock-filter="${id}">${label}<span>${count}</span></button>`;
+  return `<div class="stockbar">
+      <p class="stockbar__note${tone}">${canEdit() ? "" : icon("lock", 14)}${esc(note)}
+        ${app.correcting && canEdit() ? '<button class="link" type="button" data-action="use-need">Use what the recipes need</button>' : ""}</p>
+      <div class="chipbar">
+        ${changed && canEdit() ? `<button class="link" type="button" data-action="undo-stock">Undo ${esc(plural(changed, "change", "changes"))}</button>` : ""}
+        ${chip("all", "All", app.lines.length)}${chip("missing", "To order", missing.length)}
+      </div>
+    </div>
+    <div class="card card--table">
+      <table class="tbl tbl--rows tbl--stock">
+        <thead><tr><th>Ingredient</th><th>Used in</th><th class="num">Needed</th><th class="num">In stock</th><th class="num">To order</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
 }
 
 function todayGuided() {
@@ -323,12 +462,13 @@ function todayGuided() {
     body = menuStep();
     next = `<button class="btn btn--go" type="button" data-step="2">Check the stock${icon("arrow", 16)}</button>`;
   } else if (app.step === 2) {
-    body = `<div class="card card--table">${stockTable()}</div>`;
-    next = `<button class="btn btn--go" type="button" data-step="3">Prepare the order${icon("arrow", 16)}</button>`;
+    body = stockStep();
+    next = `<button class="btn btn--go" type="button" data-step="3">${orderOnScreen() ? "Back to the order" : "Prepare the order"}${icon("arrow", 16)}</button>`;
   } else {
+    // In the console the conversation has its own window, so the card only shows the assistant's work.
     body = `<div class="split split--order">
         <div class="split__main"><div class="card card--table">${linesBlock()}</div>${guards()}</div>
-        <div class="split__side">${agentCard({ compact: true })}</div>
+        <div class="split__side">${agentCard({ compact: true, ask: app.variant !== "b" })}</div>
       </div>`;
   }
   return `<div class="page page--wide page--order">
@@ -348,7 +488,7 @@ function viewHtml() {
   else if (app.route === "approvals") view = approvalsPage();
   else if (app.route === "rules") view = rulesPage();
   else if (app.route === "audit") view = auditPage();
-  else if (app.route === "order" && app.variant === "b") view = orderScreen();
+  else if (app.route === "order" && app.variant === "b") view = todayGuided();
   else view = app.variant === "b" ? todayConsole() : app.variant === "c" ? todayGuided() : todayBrief();
   return problem ? view.replace('<div class="page', `<div class="page-problem">${problem}</div><div class="page`) : view;
 }
@@ -382,19 +522,25 @@ function devStrip() {
 function draw() {
   const active = document.activeElement;
   const keep =
-    active && active !== document.body && (active.id || active.dataset?.rule)
-      ? { id: active.id, rule: active.dataset.rule, type: active.type, value: active.value, start: active.selectionStart, end: active.selectionEnd }
+    active && active !== document.body && (active.id || active.dataset?.rule || active.dataset?.cell)
+      ? { id: active.id, rule: active.dataset.rule, cell: active.dataset.cell, type: active.type, value: active.value, start: active.selectionStart, end: active.selectionEnd }
       : null;
   const frame = app.variant === "b" ? frameSide : frameTop;
   setHtml(el("app"), frame(viewHtml()) + proofPanel());
+  const talk = el("talk");
+  if (talk) talk.scrollTop = talk.scrollHeight; // the conversation opens on its last line
   setHtml(el("dev"), devStrip());
   document.body.dataset.variant = app.variant;
   document.body.classList.toggle("has-strip", app.strip);
   document.title = `Valio Aimo: ${NAV.find(([route]) => route === app.route)?.[1] ?? "Order"} (concept mock-up)`;
   if (keep && document.activeElement !== active) {
-    const again = keep.id ? el(keep.id) : [...document.querySelectorAll(`[data-rule="${keep.rule}"]`)].find((node) => node.type === keep.type);
+    const again = keep.id
+      ? el(keep.id)
+      : keep.cell
+        ? document.querySelector(`[data-cell="${keep.cell}"]`)
+        : [...document.querySelectorAll(`[data-rule="${keep.rule}"]`)].find((node) => node.type === keep.type);
     if (again) {
-      if (keep.id === "ask-text") again.value = keep.value;
+      if (keep.id === "ask-text" || keep.cell) again.value = keep.value; // what is being typed is not lost
       again.focus({ preventScroll: true });
       try {
         if (keep.start !== null && again.setSelectionRange && again.type !== "number" && again.type !== "range") again.setSelectionRange(keep.start, keep.end);
@@ -501,9 +647,68 @@ function startOver() {
   app.detailsOpen = false;
   app.proof = null;
   app.step = 1;
+  app.correcting = false;
   app.ask = { busy: false, question: null, answer: null, changes: [], failed: false };
   app.eco.dismissed = new Set();
+  resetLines();
+}
+
+/* The stock table as it was counted, and the menu without the dishes Spotlight added. */
+function resetLines() {
+  const recipes = app.kitchen.recipes?.recipes;
+  if (recipes) app.kitchen.recipes.recipes = recipes.filter((recipe) => !String(recipe.id).startsWith("trend-"));
+  app.spotlight.added = false;
   loadLines(app.kitchen.stock);
+}
+
+/*
+ * After a rejection: back to the stock step with the quantities the rejected order asked for, so the chef can
+ * correct them and order again (the first page does the same).
+ */
+async function correctQuantities() {
+  await guarded(async () => {
+    app.state = await idleState();
+    clearTimeout(revealTimer);
+    app.shown = 0;
+    app.fresh = null;
+    app.sentKey = null;
+    app.proof = null;
+    app.correcting = true;
+    app.step = 2;
+    go(orderRoute());
+  });
+}
+
+/* ---------- Spotlight ---------- */
+
+async function proposeDish() {
+  const spot = app.spotlight;
+  if (spot.busy) return;
+  Object.assign(spot, { busy: true, added: false });
+  draw();
+  try {
+    const answer = await assistant.recommend({
+      trend_id: app.trendId,
+      portions: Math.max(1, Number(spot.portions) || 50),
+      existing_recipes: menuNames(),
+    });
+    Object.assign(spot, { recipe: answer.recipe, source: answer.source, model: answer.model });
+  } catch (error) {
+    spot.recipe = null;
+    toast(error.status ? `Spotlight could not propose a dish: ${error.message}` : "Spotlight needs the page's service, and it does not answer.");
+  } finally {
+    spot.busy = false;
+    draw();
+  }
+}
+
+function addSpotlightDish() {
+  const spot = app.spotlight;
+  const portions = Math.max(1, Number(spot.portions) || 50);
+  if (spot.added || !addDish(spot.recipe, portions, app.trendId)) return;
+  spot.added = true;
+  toast(`Added "${spot.recipe.name}" for ${portions} portions`);
+  draw();
 }
 
 async function chooseScenario(id) {
@@ -547,7 +752,8 @@ async function send() {
     app.shown = 0;
     app.fresh = null;
     app.linesOpen = true;
-    if (app.variant === "c") app.step = 3;
+    app.correcting = false;
+    app.step = 3;
     draw();
     app.state = await liveOrRecorded(
       () => driver.run(app.scenarioId, { lines, delivery_date: deliveryDate }),
@@ -562,8 +768,7 @@ async function send() {
 async function newOrder() {
   await guarded(async () => {
     app.state = await idleState();
-    startOver();
-    if (app.variant === "c") app.step = 3;
+    startOver(); // a new order starts at the recipes
     go(orderRoute());
   });
 }
@@ -593,13 +798,15 @@ async function decide(decision, thenEdit = false) {
     }
     toast(decision === "approve" ? "Signed" : "Rejected: nothing is ordered");
     if (thenEdit) {
+      // The quantities of the rejected order stay in the stock table, ready to be corrected.
       app.state = await idleState();
-      startOver();
-      if (app.variant === "c") app.step = 2;
+      clearTimeout(revealTimer);
+      Object.assign(app, { shown: 0, fresh: null, sentKey: null, proof: null, correcting: true, step: 2 });
       go(orderRoute());
       return;
     }
     app.shown = Math.min(app.shown, 3); // the signature step arrives again, signed this time
+    app.step = 3;
     go(orderRoute());
     reveal();
     watch();
@@ -643,8 +850,10 @@ function applySwap(productId, by) {
 
 async function sendChat(text) {
   if (!text || app.ask.busy) return;
-  const before = app.ask.question && app.ask.answer ? [{ who: "chef", text: app.ask.question }, { who: "assistant", text: app.ask.answer }] : [];
+  // The assistant is given the last lines of the conversation, so a follow-up question makes sense to it.
+  const before = app.talk.filter((line) => !line.failed).slice(-8).map((line) => ({ who: line.who, text: line.text }));
   app.ask = { busy: true, question: text, answer: null, changes: [], failed: false };
+  app.talk.push({ who: "chef", text });
   draw();
   try {
     const answer = await assistant.chat([...before, { who: "chef", text: text.slice(0, 2000) }], pageFacts());
@@ -660,6 +869,7 @@ async function sendChat(text) {
     app.ask.failed = true;
   } finally {
     app.ask.busy = false;
+    app.talk.push({ who: "assistant", text: app.ask.answer, changes: app.ask.changes, failed: app.ask.failed });
     draw();
     el("ask-text")?.focus();
   }
@@ -818,10 +1028,8 @@ function go(route) {
 function readRoute() {
   const wanted = window.location.hash.replace(/^#\//, "").split("/")[0];
   app.route = ROUTES.includes(wanted) ? wanted : "today";
-  if (app.route === "order" && app.variant !== "b") {
-    app.route = "today";
-    if (app.variant === "c") app.step = 3;
-  }
+  if (wanted === "order" && orderOnScreen()) app.step = 3; // an order is open: the flow opens on it
+  if (app.route === "order" && app.variant !== "b") app.route = "today";
   app.proof = null;
   if (["orders", "approvals"].includes(app.route)) loadSession();
   if (app.route === "audit") loadLedger();
@@ -835,7 +1043,7 @@ function setVariant(variant) {
   const url = new URL(window.location.href);
   url.searchParams.set("v", variant);
   window.history.replaceState(null, "", url);
-  if (variant === "c" && hasRun()) app.step = 3;
+  if (orderOnScreen()) app.step = 3;
   readRoute();
 }
 
@@ -844,7 +1052,7 @@ function setVariant(variant) {
 document.addEventListener("click", (event) => {
   // button[data-variant], not [data-variant]: the body carries data-variant too (for the stylesheet), and a click
   // on plain text must not be read as "switch to the version on screen".
-  const target = event.target.closest("[data-action],[data-proof],[data-scenario],button[data-variant],[data-reset],[data-step],[data-eco-swap],[data-eco-dismiss],[data-unswap],[data-ledger],[data-ledger-filter],[data-rule-set],[data-rule-toggle],[data-allergen-remove]");
+  const target = event.target.closest("[data-action],[data-proof],[data-scenario],button[data-variant],[data-reset],[data-step],[data-stock-filter],[data-trend],[data-ledger-tab],[data-eco-swap],[data-eco-dismiss],[data-unswap],[data-ledger],[data-ledger-filter],[data-rule-set],[data-rule-toggle],[data-allergen-remove]");
   if (!target) return;
   const data = target.dataset;
   if (data.scenario) return void chooseScenario(data.scenario);
@@ -852,6 +1060,22 @@ document.addEventListener("click", (event) => {
   if ("reset" in data) return void chooseScenario(app.scenarioId);
   if (data.step) {
     app.step = Number(data.step);
+    window.scrollTo(0, 0);
+    return void draw();
+  }
+  if (data.stockFilter) {
+    app.stockFilter = data.stockFilter;
+    return void draw();
+  }
+  if (data.trend) {
+    if (data.trend !== app.trendId) {
+      app.trendId = data.trend;
+      Object.assign(app.spotlight, { recipe: null, added: false });
+    }
+    return void draw();
+  }
+  if (data.ledgerTab) {
+    app.ledger.tab = data.ledgerTab;
     return void draw();
   }
   if (data.proof) return void openProof(data.proof);
@@ -897,6 +1121,23 @@ document.addEventListener("click", (event) => {
       return void decide("reject");
     case "reject-edit":
       return void decide("reject", true);
+    case "correct":
+      return void correctQuantities();
+    case "use-need":
+      useNeed();
+      return void draw();
+    case "undo-stock":
+      resetLines();
+      return void draw();
+    case "spot-generate":
+      return void proposeDish();
+    case "spot-add":
+      return void addSpotlightDish();
+    case "toggle-chat":
+      app.chatOpen = !app.chatOpen;
+      draw();
+      if (app.chatOpen) el("ask-text")?.focus();
+      return;
     case "close-proof":
       app.proof = null;
       return void draw();
@@ -949,6 +1190,19 @@ document.addEventListener("input", (event) => {
 
 document.addEventListener("change", (event) => {
   const node = event.target;
+  if (node.dataset?.cell) {
+    // A number typed in the stock step. The redraw waits for the focus to reach the next field, which then keeps it.
+    const [productId, field] = node.dataset.cell.split(":");
+    const amount = Number(String(node.value).trim().replace(",", "."));
+    if (node.value.trim() !== "" && Number.isFinite(amount) && amount >= 0) setStock(productId, field, amount, "you");
+    const line = app.lines.find((entry) => entry.product_id === productId);
+    if (line) node.value = line[field]; // what was typed and could not be read goes back to the number in the table
+    return void setTimeout(draw, 0);
+  }
+  if (node.id === "spot-portions") {
+    app.spotlight.portions = Math.min(2000, Math.max(1, Math.round(Number(node.value) || 50)));
+    return void draw();
+  }
   if (node.matches?.("[data-allergen-add]") && node.value) {
     setRule("blocked_allergens", [...draft().blocked_allergens, node.value]);
     return void draw();
@@ -1039,7 +1293,7 @@ async function checkServices() {
         app.kitchen.stock = await kitchenApi.stock(open).catch(() => app.kitchen.stock);
         loadLines(app.kitchen.stock);
       }
-      if (app.variant === "c") app.step = 3;
+      app.step = 3;
     }
     loadSession();
     loadLedger();
@@ -1049,15 +1303,18 @@ async function checkServices() {
 }
 
 async function start() {
-  const [recipes, bookings, stock, history, idle] = await Promise.all([
+  const [recipes, bookings, stock, history, idle, trends] = await Promise.all([
     kitchenApi.recipes().catch(() => null),
     kitchenApi.bookings().catch(() => null),
     kitchenApi.stock(app.scenarioId).catch(() => null),
     kitchenApi.history().catch(() => null),
     recorded("idle").catch(() => null),
+    kitchenApi.trends().catch(() => null),
   ]);
   app.kitchen = { recipes, bookings, stock };
   app.history = history?.orders ?? [];
+  app.trends = trends?.trends ?? [];
+  app.trendId = app.trends[0]?.id ?? null;
   app.state = idle;
   loadLines(stock);
   readRoute();
