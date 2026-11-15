@@ -133,3 +133,46 @@ def test_the_script_has_no_syntax_error():
         pytest.skip("Node is not installed")
     result = subprocess.run([node, "--check", str(STATIC / "portal.js")], capture_output=True, text=True, check=False)
     assert result.returncode == 0, result.stderr
+
+
+# What the two footprint functions of portal.js need around them to run alone in Node, and three cases to draw.
+FOOTPRINT_HARNESS = """
+const app = { eco: { loading: false } };
+let data = null;
+let table = [];
+const ecoNow = () => data;
+const orderLines = () => table;
+const swappedLines = () => [];
+const icon = () => "";
+const esc = (text) => String(text);
+const kgCo2 = (value) => `${value} kg CO2e`;
+const linesKey = (lines) => (lines ?? []).map((line) => `${line.product_id}:${line.amount}`).sort().join("|");
+const ecoKey = () => linesKey(orderLines());
+%s
+const drawn = {};
+table = [{ product_id: "475072", amount: 21 }];
+data = { method: "m", total_kg_co2e: 0, unknown: ["475072"], lines: [{ product_id: "475072" }] };
+drawn.no_data = footprintLine();
+table = [{ product_id: "463437", amount: 6.45 }];
+data = { method: "m", total_kg_co2e: 42.8, unknown: [], lines: [{ product_id: "463437" }] };
+drawn.same_lines = quoteFootprintLine({ aimo: { requested: [{ product_id: "463437", amount: 6.45 }] } });
+drawn.other_quantities = quoteFootprintLine({ aimo: { requested: [{ product_id: "463437", amount: 77.4 }] } });
+console.log(JSON.stringify(drawn));
+"""
+
+
+def test_the_footprint_line_never_shows_a_wrong_figure():
+    """No data is never drawn as 0 kg CO2e, and a quote for other quantities gets no estimate under it."""
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("Node is not installed")
+    script = (STATIC / "portal.js").read_text(encoding="utf-8")
+    functions = script[script.index("function footprintLine() {") : script.index("function offerFacts(")]
+    result = subprocess.run([node, "-e", FOOTPRINT_HARNESS % functions], capture_output=True, text=True, check=False)
+    assert result.returncode == 0, result.stderr
+    drawn = json.loads(result.stdout)
+
+    assert "no estimate" in drawn["no_data"]
+    assert "0 kg" not in drawn["no_data"]
+    assert "42.8 kg CO2e" in drawn["same_lines"]
+    assert drawn["other_quantities"] == ""

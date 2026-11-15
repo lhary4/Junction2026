@@ -562,6 +562,10 @@ function footprintLine() {
     if (app.eco.loading) return '<p class="eco-total">Estimating the carbon footprint…</p>';
     return orderLines().length ? '<p class="eco-total eco-total--off">Carbon footprint: no estimate for these quantities without Valio\'s gateway.</p>' : "";
   }
+  // No line has a footprint: say so. A total of "0 kg CO2e" would read as no emissions, and unknown is never zero.
+  if (data.lines.length && data.unknown.length === data.lines.length) {
+    return `<p class="eco-total eco-total--off">Carbon footprint: no estimate, Valio has no footprint data for ${data.lines.length === 1 ? "this product" : "these products"}.</p>`;
+  }
   const swaps = swappedLines();
   const saved = swaps.reduce((sum, line) => sum + line.swapped_from.offer.saving_kg_co2e, 0);
   const unknown = data.unknown.length ? `, ${data.unknown.length} ${data.unknown.length === 1 ? "line" : "lines"} without data left out` : "";
@@ -569,6 +573,13 @@ function footprintLine() {
       ${saved ? `<span class="eco-total__saved">${esc(kgCo2(saved))} less with your greener ${swaps.length === 1 ? "swap" : "swaps"}</span>` : ""}
       <span class="muted">Product-group averages, an estimate${esc(unknown)}. Not part of the signed quote.</span></p>`;
 }
+
+/*
+ * Under a quote, the estimate only shows when the quote was asked for the very lines it was estimated for.
+ * The attack's quote carries its own quantities, twelve weeks at once: the estimate of the chef's table under it
+ * would be a figure for another order, so nothing shows.
+ */
+const quoteFootprintLine = (quote) => (linesKey(quote.aimo.requested) === ecoKey() ? footprintLine() : "");
 
 function offerFacts(offer) {
   return `<dl class="facts">
@@ -1026,7 +1037,7 @@ function quoteTable(state) {
       <thead><tr><th>Product</th><th class="num">Quantity</th><th class="num">Unit price</th><th class="num">Total</th><th>Valio's stock</th></tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr><td colspan="3">Total before tax</td><td class="num"><b>${esc(money(total.amount, quote.currency))}</b></td><td></td></tr></tfoot>
-    </table>${stockNote(quote)}${footprintLine()}`;
+    </table>${stockNote(quote)}${quoteFootprintLine(quote)}`;
 }
 
 /* A card moves in once, when the step it belongs to lights up. */
