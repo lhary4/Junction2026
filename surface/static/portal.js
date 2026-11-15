@@ -1078,6 +1078,7 @@ function trendRecommendationView() {
       <div>
         <span class="tag">Valio Aimo Spotlight · sample trend</span>
         <h3 class="panel__title" title="${esc(activeTrend?.headline ?? "")} (${esc(activeTrend?.source ?? "Sample trend, synthetic")})">${esc(activeTrend?.title ?? "Seasonal Food Trend")}</h3>
+        ${activeTrend?.headline ? `<p class="trend-card__headline">${esc(activeTrend.headline)} <span class="trend-source-tiny">(${esc(activeTrend.source ?? "Sample trend, synthetic")}${activeTrend.published_at ? ` · ${esc(activeTrend.published_at)}` : ""})</span></p>` : ""}
       </div>
     </div>
     ${trends.length > 1 ? `<div class="trend-card__pills">${trendPills}</div>` : ""}
