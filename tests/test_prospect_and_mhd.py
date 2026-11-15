@@ -34,6 +34,10 @@ def test_prospect_differs_by_customer_tier_and_cuisine():
     assert pizzeria["items"][0]["product"]["id"] == "475742"
     assert bistro["items"][0]["product"]["id"] == "460395"
 
+    demo = client.get("/prospect", params={"customer": "demo-restaurant-helsinki", "delivery_date": DELIVERY.isoformat()}).json()
+    assert demo["customer_name"] == "Demo Restaurant Helsinki"
+    assert demo["contract_discount_pct"] == 5
+
 
 def test_signed_quote_matches_prospect_price_and_normal_orders_unchanged():
     prospect = build_prospect(customer="hotel-nordic-chain", delivery_date=DELIVERY)
@@ -93,3 +97,32 @@ def test_harness_shelf_life_window_flags_short_lots_for_human_signoff():
     assert len(safe_rules) == 1
     assert safe_rules[0].outcome == "pass"
     assert safe_verdict.decision == "auto"
+
+
+def test_driver_forwards_claim_promo_to_gateway_quote():
+    from dataclasses import replace
+
+    from scenarios.run import Driver
+
+    gw_client = TestClient(merchant_app)
+    posted_bodies: list[dict] = []
+
+    class _CapturingGateway:
+        def post(self, path: str, json: dict):
+            posted_bodies.append(json)
+            return gw_client.post(path, json=json)
+
+    drv = Driver(gateway=_CapturingGateway())
+    scenario = drv.scenarios["normal-order"]
+    needs = [Need(product_id=pid, amount=amt, unit=unit) for pid, amt, unit in scenario.needs] + [
+        Need(product_id="476890", amount=2.0, unit="KG", claim_promo=True)
+    ]
+    replaced = replace(
+        scenario,
+        needs=tuple((n.product_id, n.amount, n.unit) for n in needs),
+        promo_products=frozenset(n.product_id for n in needs if n.claim_promo),
+    )
+    checkout = drv._quote(replaced, replaced.needs)
+    assert any(n.get("claim_promo") is True and n["product_id"] == "476890" for n in posted_bodies[0]["needs"])
+    promo_line = next(li for li in checkout.checkout.line_items if li.item.id == "476890")
+    assert checkout.checkout.aimo.lines[promo_line.id].promo_discount_pct == 30

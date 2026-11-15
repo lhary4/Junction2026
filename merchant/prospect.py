@@ -41,6 +41,14 @@ class ProspectLot:
 
 
 CUSTOMERS: dict[str, CustomerProfile] = {
+    "demo-restaurant-helsinki": CustomerProfile(
+        customer_id="demo-restaurant-helsinki",
+        name="Demo Restaurant Helsinki",
+        tier="Partner Bistro (-5%)",
+        contract_discount_pct=5,
+        interests=("nordic_dairy", "herbs", "root_veg", "dairy"),
+        cuisine_label="Modern Finnish bistro",
+    ),
     "ravintola-demo": CustomerProfile(
         customer_id="ravintola-demo",
         name="Ravintola Demo",

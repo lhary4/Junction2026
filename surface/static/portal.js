@@ -1104,10 +1104,14 @@ function quoteTable(state) {
       const facts = quote.aimo.lines[item.id] ?? {};
       const lineTotal = item.totals.find((entry) => entry.type === "total");
       const replaces = facts.substitute_for ? `<span class="tag tag--warn">Substitute</span> <span class="muted">for ${esc(facts.substitute_for.name)}</span>` : "";
+      const promoBadge = facts.promo_discount_pct ? `<span class="tag tag--eco">-${facts.promo_discount_pct}% deal · ${facts.shelf_life_days}d</span>` : "";
+      const unitPrice = facts.base_unit_price_minor && facts.promo_discount_pct
+        ? `<span class="prospect-price-old">${esc(money(facts.base_unit_price_minor, quote.currency))}</span> <b>${esc(money(item.item.price, quote.currency))}</b>`
+        : esc(money(item.item.price, quote.currency));
       return `<tr>
-          <td><b>${esc(item.item.title)}</b>${replaces ? `<br />${replaces}` : ""}</td>
+          <td><b>${esc(item.item.title)}</b>${replaces ? `<br />${replaces}` : ""}${promoBadge ? ` ${promoBadge}` : ""}</td>
           <td class="num">${esc(qty(item.quantity, facts.sales_unit))}</td>
-          <td class="num">${esc(money(item.item.price, quote.currency))}</td>
+          <td class="num">${unitPrice}</td>
           <td class="num"><b>${esc(money(lineTotal.amount, quote.currency))}</b></td>
           <td>${esc(stockText(facts.stock))}</td>
         </tr>`;

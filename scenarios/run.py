@@ -118,6 +118,7 @@ class Scenario:
     # whose mandate the agent tries to reuse.
     attack: bool = False
     other_needs: tuple[tuple[str, float, str], ...] = ()
+    promo_products: frozenset[str] = frozenset()
 
 
 # What the kitchen is missing for one week of the menu's dairy and dry goods.
@@ -239,7 +240,11 @@ class Driver:
         if scenario is None:
             raise DriverError(404, f"no scenario {scenario_id!r} (there is: {', '.join(self.scenarios)})")
         if needs and not scenario.attack:
-            scenario = replace(scenario, needs=tuple((need.product_id, need.amount, need.unit) for need in needs))
+            scenario = replace(
+                scenario,
+                needs=tuple((need.product_id, need.amount, need.unit) for need in needs),
+                promo_products=frozenset(need.product_id for need in needs if need.claim_promo),
+            )
         run = _Run(scenario)
         with self._lock:
             if self._current and self._current.running:
@@ -489,7 +494,15 @@ class Driver:
         body = {
             "customer": scenario.customer,
             "delivery_date": scenario.delivery_date,
-            "needs": [{"product_id": product, "amount": amount, "unit": unit} for product, amount, unit in needs],
+            "needs": [
+                {
+                    "product_id": product,
+                    "amount": amount,
+                    "unit": unit,
+                    **({"claim_promo": True} if product in scenario.promo_products else {}),
+                }
+                for product, amount, unit in needs
+            ],
         }
         return CheckoutResponse.model_validate(self._post(self.gateway, "gateway", "/checkouts", body))
 
