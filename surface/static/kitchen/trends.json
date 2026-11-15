@@ -1,21 +1,19 @@
 {
-  "_sample": "Synthetic cached Google News RSS foodservice trend snapshot for the demo (2026-11-14).",
-  "cached_at": "2026-11-14T18:00:00+02:00",
+  "_sample": "Synthetic food trends written for the demo on 14/11/2026. They are not real headlines and come from no news service.",
+  "written_at": "2026-11-14T18:00:00+02:00",
   "trends": [
     {
       "id": "nordic-warm-cheese",
       "title": "Warm Finnish Leipäjuusto & Cloudberry Revival",
       "headline": "Nordic kitchens lean into hyper-local winter comfort: warm bread cheese and Arctic berries top seasonal bistro menus",
-      "source": "Google News · Foodservice & Hospitality",
-      "published_at": "2026-11-14",
+      "source": "Sample trend, synthetic",
       "tags": ["Seasonal", "Finnish Origin", "Low-Waste Dessert"]
     },
     {
       "id": "oat-comfort-bowl",
       "title": "Plant-Forward Oat & Root Vegetable Comfort",
       "headline": "Chefs cut menu carbon footprint with Nordic oat-based sauces and roasted root vegetables",
-      "source": "Google News · Sustainable Dining",
-      "published_at": "2026-11-13",
+      "source": "Sample trend, synthetic",
       "tags": ["Low Carbon", "Plant-Forward", "Winter"]
     }
   ]

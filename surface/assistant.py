@@ -265,8 +265,7 @@ def _pick_trend(trend_id: str | None) -> dict[str, Any]:
             "id": "nordic-warm-cheese",
             "title": "Warm Finnish Leipäjuusto & Cloudberry Revival",
             "headline": "Nordic kitchens lean into hyper-local winter comfort: warm bread cheese and Arctic berries top seasonal bistro menus",
-            "source": "Google News · Foodservice & Hospitality",
-            "published_at": "2026-11-14",
+            "source": "Sample trend, synthetic",
             "tags": ["Seasonal", "Finnish Origin"],
         }
     if trend_id:
@@ -378,14 +377,14 @@ def recommend_recipe(request: RecommendRequest) -> RecommendResponse:
 
     candidates = _catalog_candidates(catalog)
     prompt = (
-        f"Food trend from Google News:\n{json.dumps(trend, ensure_ascii=False)}\n\n"
+        f"Food trend:\n{json.dumps(trend, ensure_ascii=False)}\n\n"
         f"Existing menu dishes (avoid duplicating): {json.dumps(request.existing_recipes, ensure_ascii=False)}\n"
         f"Target portions: {request.portions}\n\n"
         f"Allowed Valio catalog products (pick 3 to 5 ONLY from this list, using their exact product_id and unit):\n"
         f"{json.dumps(candidates, ensure_ascii=False)}"
     )
     system = (
-        "You are a Nordic culinary R&D chef for Valio Aimo. Given a Google News food trend, design ONE practical "
+        "You are a Nordic culinary R&D chef for Valio Aimo. Given a food trend, design ONE practical "
         "restaurant dish using ONLY product_ids from the allowed Valio catalog list. Use realistic per-portion quantities "
         "(e.g. 0.05 to 0.25 KG/L/ST per portion) and the exact unit of each chosen product."
     )

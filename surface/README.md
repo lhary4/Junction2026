@@ -69,6 +69,7 @@ Each confirmed step gets a green tick with its time, and a short message confirm
 
 Always on screen:
 
+- **The mock-up notice**, at the left of the top row: "Concept mock-up · Junction 2026 · synthetic data · not a Valio Aimo service". It is in the header because the strip at the bottom is below the fold at 1920x1080: a recording that never scrolls would not show it. The Spotlight card on the recipes step says "sample trend": its two trends are lines written for the demo (`kitchen/trends.json`), not headlines from a news service.
 - **Who signs**, on the left: the eight steps of the order, in the chef's words with the AP2 term under each. They light up one after the other in about three seconds, with who signed and the start of each signature. Steps 1 to 7 come from the demo state. Step 8, "Delivery scheduled", is read by the page from the order Valio accepted (its delivery date and status).
 - **The spending limit**, above the steps, with a Change button. See "Not built yet" below.
 - **Aimo Personal Assistant**, on the right: the conversation, with a field to write to it.

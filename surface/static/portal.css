@@ -170,6 +170,20 @@ input {
   justify-content: flex-end;
 }
 
+/* Says on every screen, and in every recording, that this is a mock-up on synthetic data */
+.site__notice {
+  /* The row stretches its children to its full height (the tabs need it): the notice sits in the middle, off the tabs. */
+  align-self: center;
+  margin: 0 auto 0 16px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--lime-band);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .account {
   position: relative;
 }
@@ -2802,6 +2816,7 @@ body {
   align-items: stretch;
   gap: 2px;
   overflow-x: auto;
+  flex: none; /* the tabs keep their width: on a narrow window the notice beside them is the one that is cut */
 }
 
 .site__tab {
