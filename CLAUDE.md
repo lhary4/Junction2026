@@ -31,6 +31,7 @@ One owner per folder. Do not edit a folder you do not own: ask its owner.
 |---|---|---|
 | `contract/`, `trust/`, `common/clock.py`, `pyproject.toml`, `scripts/` | Adrien | Pydantic models, AP2 signing library, freezable time, dependencies, data scripts |
 | `merchant/` | Adrien | Valio gateway: search, quote, order, receipt |
+| `deploy/` | Adrien | Hosted demo: systemd units and the reverse proxy block (README, "Hosted demo") |
 | `harness/`, `common/audit.py` | Léon | Rules, Gemini judge, signer, approvals, hash-chained log |
 | `surface/`, `agent_mcp/`, `scenarios/`, `docs/demo-script.md` | Colette | Page, MCP tools, demo policy, prompts, pitch |
 | `team/<name>/` | Each person | `START.md` and `notes.md` |

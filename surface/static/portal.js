@@ -20,9 +20,16 @@
  */
 
 const query = new URLSearchParams(window.location.search);
-const DRIVER_URL = (query.get("driver") || "http://localhost:8003").replace(/\/$/, "");
-const HARNESS_URL = (query.get("harness") || "http://localhost:8002").replace(/\/$/, "");
-const ASSISTANT_URL = (query.get("assistant") || "http://localhost:8004").replace(/\/$/, "");
+/*
+ * Where the three services are. On a laptop each one has its own port. Hosted (README, "Hosted demo"), one address
+ * serves everything: the page at the root and each service under its name, a prefix the reverse proxy cuts off
+ * (deploy/Caddyfile.snippet). ?driver=, ?harness= and ?assistant= still win over both.
+ */
+const ON_LAPTOP = ["localhost", "127.0.0.1", ""].includes(window.location.hostname); // "" is a page opened as a file
+const serviceUrl = (name, port) => (query.get(name) || (ON_LAPTOP ? `http://localhost:${port}` : `/${name}`)).replace(/\/$/, "");
+const DRIVER_URL = serviceUrl("driver", 8003);
+const HARNESS_URL = serviceUrl("harness", 8002);
+const ASSISTANT_URL = serviceUrl("assistant", 8004);
 const REVEAL_MS = 420; // time between two steps lighting up: eight steps take under four seconds
 const POLL_MS = 1000;
 const SERVICES_MS = 5000; // how often the page looks whether the services are there

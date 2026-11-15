@@ -1,0 +1,58 @@
+# The block added to the Caddyfile of the server's reverse proxy (README, "Hosted demo").
+# Replace <token> by 24 random characters. It is the only thing that protects the MCP server: it is shared out of
+# the repo and never committed.
+#
+# Read `route` from top to bottom: the first `handle` that matches answers, the others are skipped.
+# 172.18.0.1 is the server seen from Caddy's Docker network (deploy/junction-bridge@.socket).
+valio.adriencaillo.com {
+	header X-Robots-Tag "noindex, nofollow"
+
+	route {
+		# The MCP server, only under the secret path, passed on as /mcp.
+		# flush_interval -1: no buffering, the MCP answers are streamed.
+		@mcp path /mcp-<token> /mcp-<token>/
+		handle @mcp {
+			rewrite * /mcp
+			reverse_proxy 172.18.0.1:8005 {
+				flush_interval -1
+				# The MCP server refuses any request that says which site it comes from (an Origin header): a
+				# protection made for a server on a laptop. Here the secret path is the protection, so the
+				# header is dropped and a chat that sends one is not turned away.
+				header_up -Origin
+			}
+		}
+
+		# Any other address that starts with /mcp does not exist.
+		handle /mcp* {
+			respond 404
+		}
+
+		# Closed to visitors: what no page calls. The agent's own routes on the driver (the MCP server calls the
+		# driver on the server itself), the harness route that judges and signs (only the driver calls it, on the
+		# server itself), and the API pages FastAPI generates.
+		@closed path /driver/agent/* /harness/authorize /driver/docs /driver/redoc /driver/openapi.json /harness/docs /harness/redoc /harness/openapi.json /docs /redoc /openapi.json
+		handle @closed {
+			respond 404
+		}
+
+		# The services the page calls, each under its name. The name is cut off before the request is passed on.
+		handle /driver/* {
+			uri strip_prefix /driver
+			reverse_proxy 172.18.0.1:8003
+		}
+		handle /harness/* {
+			uri strip_prefix /harness
+			reverse_proxy 172.18.0.1:8002
+		}
+		handle /assistant/* {
+			uri strip_prefix /assistant
+			reverse_proxy 172.18.0.1:8004
+		}
+
+		# Everything else is the page and its files, served by the same service as the chat.
+		handle {
+			encode gzip
+			reverse_proxy 172.18.0.1:8004
+		}
+	}
+}

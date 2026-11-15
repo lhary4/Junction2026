@@ -158,6 +158,19 @@ def test_auto_verdict_signs_as_agent_verifies_receipt_and_orders(harness_env):
     assert AuditLog(default_log_path("buyer")).verify() is None
 
 
+def test_hosted_the_approval_link_starts_with_the_public_address(harness_env, monkeypatch):
+    """Hosted, HARNESS_URL is an address only the server can open: the chef's link starts with PUBLIC_ORIGIN."""
+    client, _, _, _ = harness_env
+    monkeypatch.setenv("HARNESS_URL", "http://127.0.0.1:8002")
+    monkeypatch.setenv("PUBLIC_ORIGIN", "https://demo.example/")
+
+    resp = client.post("/authorize", json={"checkout_id": "chk_act2_demo", "request_text": "Make it 2,000 litres."})
+
+    pending = AuthorizationStatus.model_validate(resp.json())
+    assert pending.status == "pending_approval"
+    assert pending.approval_url == f"https://demo.example/#/approvals/{pending.approval_id}"
+
+
 def test_human_then_approve_orders_with_human_signature_once(harness_env):
     client, _, completed_calls, tmp_path = harness_env
 

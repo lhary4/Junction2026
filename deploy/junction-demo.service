@@ -1,0 +1,39 @@
+# The four services of the demo, started by scripts/dev.py exactly as on a laptop:
+# gateway 8001, harness 8002, driver 8003, page and chat 8004. They only listen on 127.0.0.1.
+#
+# This unit is the main switch of the hosted demo (README, "Hosted demo"):
+#   systemctl start junction-demo     also starts the MCP server and the four relays below
+#   systemctl stop junction-demo      stops all of them
+[Unit]
+Description=Junction 2026 demo: gateway, harness, driver, page and chat (scripts/dev.py)
+After=network-online.target
+Wants=network-online.target
+Wants=junction-mcp.service
+Wants=junction-bridge@8002.socket junction-bridge@8003.socket junction-bridge@8004.socket junction-bridge@8005.socket
+
+[Service]
+User=junction
+Group=junction
+WorkingDirectory=/opt/junction-2026/repo
+# The Python of the project's own environment (.venv, made by `uv sync`). scripts/dev.py reads .env by itself.
+ExecStart=/opt/junction-2026/repo/.venv/bin/python scripts/dev.py
+Environment=PYTHONUNBUFFERED=1
+Restart=always
+RestartSec=3
+
+# In live mode a service that reads the catalog holds the 86 MB product file in memory (about 500 MB each: the
+# gateway, and the page's service once Spotlight is used; 1.2 GB measured with both). The server is shared: past
+# this ceiling the demo is what gets stopped and restarted, never what else runs there.
+MemoryHigh=1500M
+MemoryMax=1800M
+OOMScoreAdjust=800
+
+# The services may write inside the project folder (state/) and nowhere else on the server.
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/opt/junction-2026
+PrivateTmp=true
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
