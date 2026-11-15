@@ -1703,6 +1703,49 @@ input {
   color: var(--waiting);
 }
 
+/* What changes with a substitute, one line a side: cost, the dish, the kitchen's work, storage and delivery */
+.tradeoffs {
+  margin-top: 2px;
+}
+
+.tradeoff {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 7px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.82rem;
+}
+
+.tradeoff:first-child {
+  border-top: 0;
+}
+
+.tradeoff__side {
+  position: relative;
+  padding-left: 22px;
+  font-weight: 700;
+}
+
+.tradeoff__side .icon {
+  position: absolute;
+  left: 0;
+  top: 1px;
+  width: 16px;
+  height: 16px;
+  vertical-align: 0;
+  color: var(--done);
+}
+
+.tradeoff--note .icon {
+  color: var(--petrol);
+}
+
+.tradeoff--ask .tradeoff__side,
+.tradeoff--ask .icon {
+  color: var(--waiting);
+}
+
 .toggle {
   margin-top: 10px;
   min-height: 32px;

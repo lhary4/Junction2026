@@ -1094,6 +1094,7 @@ function productFacts(title, name, facts, extra = "") {
       <dl class="facts">
         <dt>Brand</dt><dd>${esc(facts.brand ?? "unknown")}</dd>
         <dt>Pack</dt><dd>${esc(size)}</dd>
+        <dt>Storage</dt><dd>${esc(storageText(facts.temperature_condition))}</dd>
         <dt>Contains</dt><dd>${esc(allergenText(facts.allergens))}</dd>
         <dt>Claims</dt><dd>${esc(claims)}</dd>
         <dt>Labels</dt><dd>${esc(labels)}</dd>
@@ -1121,6 +1122,92 @@ function confidenceBars(approval) {
     .join("");
 }
 
+/* ---------- The trade-offs of a substitute ---------- */
+
+// The storage classes of Valio's product file that we can name. Another class shows by its number, never guessed.
+const STORAGE_WORDS = { 3: "chilled", 7: "frozen", 8: "ambient" };
+const storageKnown = (code) => code !== null && code !== undefined;
+const storageText = (code) => (storageKnown(code) ? (STORAGE_WORDS[code] ?? `storage class ${code}`) : "unknown");
+
+/*
+ * What changes for the kitchen with the substitute, on four sides: cost, the dish, the work in the kitchen,
+ * storage and delivery. Every figure is read from the quote Valio signed or from the assistant's answers.
+ * The page puts two signed prices side by side and says which is lower: it never works out a price, a saving
+ * or a time. What the data does not say is said, not guessed.
+ * tone: "good" nothing to weigh, "note" something changes, "ask" a reason the chef is asked.
+ */
+function tradeOffs(state) {
+  const { quote, approval } = state;
+  const item = quote.line_items.find((entry) => quote.aimo.lines[entry.id]?.substitute_for);
+  if (!item) return [];
+  const facts = quote.aimo.lines[item.id];
+  const asked = facts.substitute_for;
+  const perUnit = (minor, unit) => `${money(minor, quote.currency)} a ${String(unit).toLowerCase()}`;
+
+  // Cost: Valio's price a kilo or a litre for both products, when the quote carries both.
+  const ours = facts.comparison_price_minor;
+  const theirs = asked.comparison_price_minor;
+  const total = `${money(approval.total_minor, approval.currency)} for the order.`;
+  let cost = { tone: "note", text: `${perUnit(ours, facts.comparison_unit)}, ${total} Valio's quote has no price for the one you asked for.` };
+  if (Number.isFinite(theirs) && asked.comparison_unit === facts.comparison_unit) {
+    const word = ours < theirs ? "Cheaper" : ours > theirs ? "More expensive" : "Same price";
+    cost = { tone: ours > theirs ? "ask" : "good", text: `${word}: ${perUnit(ours, facts.comparison_unit)}, against ${perUnit(theirs, asked.comparison_unit)} for the one you asked for. ${total}` };
+  }
+
+  // The dish: the assistant's two answers, with the line under which it asks the chef.
+  const answer = (key) => (approval.judge ?? []).find((entry) => entry.question_key === key && Number.isFinite(entry.probability));
+  const percent = (entry) => `${Math.round(entry.probability * 100)}%`;
+  const same = answer("same_use");
+  const fits = answer("within_preferences");
+  const sure = [same && `${percent(same)} sure it works the same way in the dish`, fits && `${percent(fits)} sure it fits your kitchen's preferences`].filter(Boolean);
+  const unsure = [same, fits].filter((entry) => entry && entry.routed !== "auto");
+  const dish = sure.length
+    ? { tone: unsure.length ? "ask" : "good", text: `${ASSISTANT} is ${sure.join(", and ")}.${unsure.length ? ` Below ${Math.round(unsure[0].auto_threshold * 100)}%, it asks you.` : ""}` }
+    : { tone: "ask", text: `${ASSISTANT} could not tell whether it works the same way in the dish, so it asks you.` };
+
+  // The work in the kitchen: how the product comes. Valio's data has no preparation time, and the page says so.
+  const size = facts.size_per_sales_unit;
+  const askedSize = asked.size_per_sales_unit;
+  const packs = size?.value ? `${qty(item.quantity, facts.sales_unit)} of ${qty(size.value, size.unit)} each` : qty(item.quantity, facts.sales_unit);
+  const samePack = Boolean(size?.value && askedSize?.value && size.value === askedSize.value && size.unit === askedSize.unit && facts.sales_unit === asked.sales_unit);
+  let before = "The pack size of the one you asked for is unknown.";
+  if (samePack) before = "Same pack size as the one you asked for.";
+  else if (askedSize?.value && asked.sales_unit === askedSize.unit) before = `The one you asked for is sold by the ${unitWord(askedSize.unit, 1)}.`;
+  else if (askedSize?.value) before = `The one you asked for comes in packs of ${qty(askedSize.value, askedSize.unit)}.`;
+  const work = { tone: samePack ? "good" : "note", text: `${packs}. ${before} Valio's data gives no preparation time.` };
+
+  // Storage and delivery: the storage class of both, Valio's stock, the delivery day, and how reliably Valio delivered it.
+  const here = facts.temperature_condition;
+  const there = asked.temperature_condition;
+  let storage = { tone: "note", text: `Storage: ${storageText(here)}, and ${storageText(there)} for the one you asked for.` };
+  if (storageKnown(here) && here === there) storage = { tone: "good", text: `${titleCase(storageText(here))}, like the one you asked for.` };
+  else if (storageKnown(here) && storageKnown(there)) storage = { tone: "ask", text: `Storage changes: ${storageText(here)}, where the one you asked for is ${storageText(there)}.` };
+  const reliability = facts.delivery_reliability;
+  const delivered =
+    reliability && reliability.certainty !== "unknown" && Number.isFinite(reliability.value)
+      ? `In the past Valio delivered ${Math.round(reliability.value * 100)}% of what was ordered of it.`
+      : "Valio has no delivery history for it.";
+  const logistics = { tone: storage.tone, text: `${storage.text} Valio's stock: ${stockText(facts.stock)}. Delivery ${dayLong(quote.aimo.delivery_date)}. ${delivered}` };
+
+  return [
+    { key: "cost", label: "Cost", ...cost },
+    { key: "dish", label: "In the dish", ...dish },
+    { key: "work", label: "In the kitchen", ...work },
+    { key: "logistics", label: "Storage, delivery", ...logistics },
+  ];
+}
+
+const TRADE_OFF_ICON = { good: "check", note: "arrow", ask: "pen" };
+const tradeOffRows = (state) =>
+  tradeOffs(state)
+    .map(
+      (row) => `<li class="tradeoff tradeoff--${esc(row.tone)}">
+          <span class="tradeoff__side">${icon(TRADE_OFF_ICON[row.tone])}${esc(row.label)}</span>
+          <span class="tradeoff__text">${esc(row.text)}</span>
+        </li>`
+    )
+    .join("");
+
 function approvalCard(state) {
   const approval = state.approval;
   const quote = state.quote;
@@ -1140,16 +1227,18 @@ function approvalCard(state) {
     const shortfall = (quote.aimo.shortfalls ?? []).find((entry) => entry.product_id === facts.substitute_for.product_id);
     const why = shortfall ? `Valio cannot deliver what you asked for: ${SHORTFALL_WORDS[shortfall.reason] ?? words(shortfall.reason)}.` : "Valio proposes another product than the one you asked for.";
     const candidates = (quote.aimo.alternatives ?? []).length;
-    // What a chef looks at first: the same allergens or not (a check of the harness), and how sure the assistant is.
+    // Valio's gateway ranks substitutes in three tiers (good, better, best) and says why: the page repeats both.
+    const chosen = (quote.aimo.alternatives ?? []).find((entry) => entry.chosen && entry.product_id === facts.product_id);
+    const found = candidates === 1 ? " Valio found one substitute and proposes it" : candidates ? ` Valio ranked ${candidates} substitutes and proposes this one` : "";
+    const ranked = found ? `${found}${chosen ? `, in its "${chosen.tier}" tier (${chosen.why})` : ""}.` : "";
+    // What a chef looks at first: the same allergens or not (a check of the harness), then what changes on four sides.
     const allergens = state.verdict?.rules.find((rule) => rule.rule_id === "allergen-unchanged-on-substitution");
     const allergenFact = allergens ? checkLine(allergens) : null;
-    const fits = (approval.judge ?? []).find((answer) => answer.question_key === "within_preferences");
-    const sure = fits && Number.isFinite(fits.probability)
-      ? `${ASSISTANT} is ${Math.round(fits.probability * 100)}% sure it fits your kitchen's preferences. Below ${Math.round(fits.auto_threshold * 100)}%, it asks you.`
-      : `${ASSISTANT} could not tell whether it fits your kitchen's preferences, so it asks you.`;
     const extra = `<dt>Price</dt><dd>${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}</dd>
       <dt>Valio's stock</dt><dd>${esc(stockText(facts.stock))}</dd>`;
-    body = `<p class="card__note">${esc(why)}${candidates === 1 ? " Valio found one substitute and proposes it." : candidates ? ` Valio ranked ${candidates} substitutes and proposes this one.` : ""}</p>
+    const askedMinor = facts.substitute_for.comparison_price_minor;
+    const askedPrice = Number.isFinite(askedMinor) ? `${money(askedMinor, quote.currency)} a ${String(facts.substitute_for.comparison_unit).toLowerCase()}` : "not in the quote";
+    body = `<p class="card__note">${esc(why)}${esc(ranked)}</p>
       <div class="swap">
         <p class="swap__from"><span class="card__label">You asked for</span>${esc(facts.substitute_for.name)}</p>
         <span class="swap__arrow" aria-hidden="true">${icon("arrow")}</span>
@@ -1157,16 +1246,16 @@ function approvalCard(state) {
       </div>
       <ul class="keys">
         ${allergenFact ? `<li class="key key--${esc(allergenFact.outcome)}">${allergenFact.outcome === "pass" ? icon("check") : icon("pen")}${esc(allergenFact.label)}${allergenFact.value ? `: ${esc(allergenFact.value)}` : ""}</li>` : `<li class="key">Contains: ${esc(allergenText(facts.allergens))}</li>`}
-        <li class="key">${esc(money(facts.comparison_price_minor, quote.currency))} a ${esc(String(facts.comparison_unit).toLowerCase())}, ${esc(money(approval.total_minor, approval.currency))} for the order</li>
-        <li class="key key--human">${icon("spark")}${esc(sure)}</li>
       </ul>
+      <p class="card__label card__label--gap">What changes if you take it</p>
+      <ul class="tradeoffs">${tradeOffRows(state)}</ul>
       <button class="toggle" type="button" data-action="details" role="switch" aria-checked="${app.detailsOpen}">
         <span class="toggle__track" aria-hidden="true"><span class="toggle__knob"></span></span>All details of both products
       </button>
       ${
         app.detailsOpen
           ? `<div class="versus">
-              ${productFacts("You asked for", facts.substitute_for.name, facts.substitute_for)}
+              ${productFacts("You asked for", facts.substitute_for.name, facts.substitute_for, `<dt>Price</dt><dd>${esc(askedPrice)}</dd>`)}
               ${productFacts("Valio proposes", item.item.title, facts, extra)}
             </div>
             <p class="card__label card__label--gap">How sure ${ASSISTANT} is</p>
@@ -1671,7 +1760,12 @@ function pageFacts() {
         const check = checkLine(rule);
         return `${OUTCOME_WORDS[check.outcome] ?? check.outcome}: ${check.label}${check.value ? ` (${check.value})` : ""}`;
       }),
-      signature: state.approval && { status: state.approval.status, sign_before: clock(state.approval.deadline) },
+      signature: state.approval && {
+        status: state.approval.status,
+        sign_before: clock(state.approval.deadline),
+        // What the card shows about the substitute, so the chat can explain the trade-off in the page's own words.
+        what_changes_with_the_substitute: state.approval.status === "pending" ? tradeOffs(state).map((row) => `${row.label}: ${row.text}`) : [],
+      },
       receipt: state.order && { order_id: state.order.order_id, total: money(state.order.total_minor, state.order.currency), delivery: dayLong(state.order.delivery_date), signed_by: state.order.signed_by },
       refused_attempts: (state.attacks ?? []).map((attack) => `${lexicon(attack.title)}: ${attack.status}`),
     };
