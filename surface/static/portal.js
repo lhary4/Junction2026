@@ -162,10 +162,13 @@ const app = {
   prospectOpen: false,
   prospectBusy: false,
   prospect: null,
+  prospectQty: {},
   prospectAdded: new Set(),
 };
 
 const activeCustomer = () => app.state?.kitchen?.customer || "ravintola-demo";
+const defaultProspectQty = (item) =>
+  Math.min(item.available_base_quantity, item.base_unit === "KG" ? 5 : item.base_unit === "L" ? 4 : 2);
 
 /* ---------- Small helpers ---------- */
 
@@ -900,16 +903,24 @@ function prospectView() {
           item.portion_hint,
           ...(item.match_reasons ?? []),
         ].join(" · ");
+        const chosenQty = app.prospectQty[item.product.id] ?? defaultProspectQty(item);
         return `<tr title="${esc(tip)}">
           <td><b>${esc(item.product.name)}</b></td>
           <td><span class="tag${urgent ? " tag--warn" : ""}">${esc(item.shelf_life_days)}d</span></td>
           <td class="num"><span class="prospect-price-old">${esc(money(item.contract_price_minor))}</span> <b>${esc(money(item.promo_price_minor))}</b> <span class="tag tag--eco">-${item.discount_pct}%</span></td>
+          <td class="num"><span class="field">
+            <input class="field__input" type="text" inputmode="decimal" autocomplete="off"
+              data-prospect-qty="${esc(item.product.id)}" value="${esc(chosenQty)}"
+              aria-label="${esc(`Quantity for ${item.product.name} in ${unitWord(item.base_unit)}`)}"
+              ${canEdit() && !added ? "" : "disabled"} />
+            <span class="field__unit">${esc(unitWord(item.base_unit, chosenQty))}</span>
+          </span></td>
           <td class="num"><button class="btn btn--ghost" type="button" data-action="add-prospect" data-product-id="${esc(item.product.id)}" ${canEdit() && !added ? "" : "disabled"}>${added ? "Added" : "Add"}</button></td>
         </tr>`;
       })
       .join("");
     body = `<table class="tbl tbl--tight">
-      <thead><tr><th>Product</th><th>Shelf life</th><th class="num">Price</th><th class="num"></th></tr></thead>
+      <thead><tr><th>Product</th><th>Shelf life</th><th class="num">Price</th><th class="num">Qty</th><th class="num"></th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   }
@@ -1697,6 +1708,7 @@ function startOver() {
   app.talk = [];
   app.eco.dismissed = new Set();
   app.prospect = null;
+  app.prospectQty = {};
   app.prospectAdded = new Set();
   loadLines(app.kitchen.stock);
   say("agent", openingLine());
@@ -2149,10 +2161,26 @@ async function fetchProspect(customer) {
   }
 }
 
+function parsePositiveQty(raw, max) {
+  const typed = String(raw ?? "").trim().replace(",", ".");
+  if (!/^\d+(\.\d+)?$/.test(typed)) return null;
+  const num = Number(typed);
+  if (!(num > 0)) return null;
+  return round3(Math.min(num, max));
+}
+
 function addProspectItem(productId) {
   const item = (app.prospect?.items ?? []).find((entry) => entry.product.id === productId);
   if (!item || !canEdit() || app.prospectAdded.has(productId)) return;
-  const addQty = Math.min(item.available_base_quantity, item.base_unit === "KG" ? 5 : item.base_unit === "L" ? 4 : 2);
+  const inputEl = document.querySelector(`[data-prospect-qty="${CSS.escape(productId)}"]`);
+  const parsed = parsePositiveQty(inputEl?.value ?? app.prospectQty[productId], item.available_base_quantity);
+  if (inputEl && parsed === null) {
+    toast("Please enter a positive quantity.", true);
+    inputEl.focus();
+    return;
+  }
+  const addQty = parsed ?? defaultProspectQty(item);
+  app.prospectQty[productId] = addQty;
   const existing = app.lines.find((line) => line.product_id === productId);
   if (existing) {
     existing.need = round3(existing.need + addQty);
@@ -2252,6 +2280,16 @@ function addRecommendedDish() {
   toast(`Added "${rec.name}" (${portions} portions)`);
   draw();
 }
+
+document.addEventListener("input", (event) => {
+  const qtyInput = event.target.closest("[data-prospect-qty]");
+  if (!qtyInput) return;
+  const pid = qtyInput.dataset.prospectQty;
+  const item = (app.prospect?.items ?? []).find((entry) => entry.product.id === pid);
+  if (!item) return;
+  const parsed = parsePositiveQty(qtyInput.value, item.available_base_quantity);
+  if (parsed !== null) app.prospectQty[pid] = parsed;
+});
 
 /* A number typed in the stock table. The field that has the focus keeps it when the table is drawn again. */
 document.addEventListener("change", (event) => {
