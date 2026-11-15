@@ -121,6 +121,12 @@ export const CHECK_WORDS = {
     human: "Not sure enough that the substitute fits your kitchen",
     deny: "The substitute does not fit your kitchen's preferences",
   },
+  "shelf-life-window": {
+    name: "Shelf-life window",
+    pass: "Discounted lot shelf life fits your service window",
+    human: "Short shelf life on a discounted item: check if you can use it in time",
+    deny: "Shelf life is too short for delivery",
+  },
 };
 export const OUTCOME_WORDS = { pass: "OK", human: "You decide", deny: "Blocked" };
 
