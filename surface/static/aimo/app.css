@@ -2918,3 +2918,90 @@ body.has-strip .dev {
     display: none;
   }
 }
+
+/* ---------- Backend component badges & sub-lines in assistant workLog ---------- */
+
+.step__actor {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  vertical-align: middle;
+  border: 1px solid rgba(19, 36, 42, 0.14);
+  background: rgba(19, 36, 42, 0.05);
+  color: #365058;
+}
+.step__actor--gateway {
+  background: #e6f2f4;
+  border-color: #b7d7dd;
+  color: #0f4c5c;
+}
+.step__actor--harness {
+  background: #eef4e8;
+  border-color: #c5dab2;
+  color: #2f5a1e;
+}
+.step__actor--ai {
+  background: #f3ecfa;
+  border-color: #d6c2ee;
+  color: #5b2e8a;
+}
+.step__actor--chef {
+  background: #fdf2e6;
+  border-color: #efd0ad;
+  color: #8a4b0f;
+}
+
+.step__sub {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.step__sub-item {
+  font-size: 12px;
+  color: #4f646b;
+  padding-left: 10px;
+  border-left: 2px solid rgba(19, 36, 42, 0.18);
+}
+.step__sub-item--gateway { border-left-color: #0f4c5c; }
+.step__sub-item--pass { border-left-color: #2f5a1e; }
+.step__sub-item--warn { border-left-color: #b85d19; color: #8a4b0f; }
+.step__sub-item--ai { border-left-color: #5b2e8a; color: #5b2e8a; }
+
+/* ---------- Customer MHD / overstock prospect ---------- */
+
+.prospect-bar,
+.prospect-card {
+  padding: 16px 18px;
+}
+.prospect-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.prospect-card .tbl {
+  margin-top: 12px;
+}
+.prospect-price-old {
+  text-decoration: line-through;
+  color: #7c8d92;
+  margin-right: 4px;
+  font-size: 12px;
+}
+.prospect-qty {
+  width: 66px;
+  padding: 4px 6px;
+  border: 1px solid rgba(19, 36, 42, 0.22);
+  border-radius: 6px;
+  font: inherit;
+  text-align: right;
+  background: #fff;
+}

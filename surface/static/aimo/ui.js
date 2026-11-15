@@ -101,12 +101,19 @@ function agentState() {
 function logLine(line) {
   const proof = line.proof ? `<span class="log__proof mono" title="${esc(line.proof)}">${esc(shortProof(line.proof))}</span>` : "";
   const full = line.more ?? line.detail ?? "";
+  const actor = line.actor ? `<span class="step__actor step__actor--${esc(line.actor.tone)}">${esc(line.actor.label)}</span>` : "";
+  const sub = line.breakdown?.length
+    ? `<ul class="step__sub">${line.breakdown
+        .map((entry) => `<li class="step__sub-item step__sub-item--${esc(entry.tone)}">${esc(entry.text)}</li>`)
+        .join("")}</ul>`
+    : "";
   return `<li class="log__line log__line--${esc(line.tone)}${line.fresh ? " is-fresh" : ""}">
       <span class="log__dot">${line.tone === "working" ? '<span class="spinner"></span>' : icon(LOG_ICON[line.tone] ?? "dot", 14)}</span>
       <span class="log__who">${line.who ? whoChip(line.who) : ""}</span>
       <div class="log__body">
-        <p class="log__head">${esc(line.head)}</p>
+        <p class="log__head">${esc(line.head)}${actor}</p>
         ${line.detail ? `<p class="log__detail" title="${esc(full)}">${esc(line.detail)}</p>` : ""}
+        ${sub}
       </div>
       ${line.term ? `<span class="log__side"><span class="log__term">${esc(line.term)}</span>${proof}</span>` : ""}
     </li>`;
@@ -270,10 +277,15 @@ function quoteTable(state) {
       const facts = quote.aimo.lines[item.id] ?? {};
       const lineTotal = item.totals.find((entry) => entry.type === "total");
       const replaces = facts.substitute_for ? `<br /><span class="tag tag--warn">Substitute</span> <span class="muted">for ${esc(facts.substitute_for.name)}</span>` : "";
+      const promoTag = facts.claim_promo ? `<br /><span class="tag tag--eco">MHD promo</span>` : "";
+      const unitPriceHtml =
+        facts.claim_promo && facts.base_unit_price_minor && facts.base_unit_price_minor > item.item.price
+          ? `<span class="prospect-price-old">${esc(money(facts.base_unit_price_minor, quote.currency))}</span> <b>${esc(money(item.item.price, quote.currency))}</b>`
+          : esc(money(item.item.price, quote.currency));
       return `<tr>
-          <td><b>${esc(item.item.title)}</b>${replaces}</td>
+          <td><b>${esc(item.item.title)}</b>${replaces}${promoTag}</td>
           <td class="num">${esc(qty(item.quantity, facts.sales_unit))}</td>
-          <td class="num">${esc(money(item.item.price, quote.currency))}</td>
+          <td class="num">${unitPriceHtml}</td>
           <td class="num"><b>${esc(money(lineTotal.amount, quote.currency))}</b></td>
           <td class="muted nowrap">${esc(stockShort(facts.stock))}</td>
         </tr>`;
@@ -663,4 +675,79 @@ export function proofPanel() {
       <div class="proof__body">${body}</div>
     </aside>
     <div class="scrim" data-action="close-proof"></div>`;
+}
+
+export const defaultProspectQty = (item) =>
+  Math.max(1, Math.min(Number(item.recommended_order_quantity ?? 1), Number(item.available_base_quantity ?? 1)));
+
+/* Customer-specific MHD / overstock clearance offers from Valio Aimo Gateway. */
+export function prospectCard() {
+  const { open, busy, data, qty: qtyMap, added } = app.prospect;
+  const customer = app.state?.kitchen?.name ?? "Your kitchen";
+  const toggleBtn = `<button class="btn btn--quiet" type="button" data-action="toggle-prospect" aria-expanded="${open}">
+    ${open ? "Hide clearance deals" : "Clearance & MHD deals"}
+  </button>`;
+  if (!open) {
+    return `<section class="card prospect-bar">
+      <div class="prospect-head">
+        <div>
+          <p class="eyebrow">Valio Aimo Prospect</p>
+          <p class="muted">Short shelf-life & overstock offers tailored for ${esc(customer)}</p>
+        </div>
+        ${toggleBtn}
+      </div>
+    </section>`;
+  }
+  let body = "";
+  if (busy) {
+    body = `<p class="muted"><span class="spinner"></span> Loading offers for ${esc(customer)}...</p>`;
+  } else if (data?.items?.length) {
+    const rows = data.items
+      .map((item) => {
+        const pid = item.product.id;
+        const isAdded = added.has(pid);
+        const chosenQty = qtyMap[pid] ?? defaultProspectQty(item);
+        const unit = item.product.base_unit ?? "KG";
+        const disc = Math.round(Number(item.discount_pct ?? 0));
+        return `<tr>
+          <td>
+            <b>${esc(item.product.name)}</b>
+            <br /><span class="muted">${esc(item.reason || `Expires ${item.expires_at}`)} · ${esc(String(item.days_left))}d left · ${esc(qty(item.available_base_quantity, unit))} avail</span>
+          </td>
+          <td class="num">
+            <span class="prospect-price-old">${esc(money(item.contract_price_minor))}</span>
+            <b>${esc(money(item.promo_price_minor))}</b>
+            <span class="tag tag--eco">-${esc(String(disc))}%</span>
+          </td>
+          <td class="num">
+            <input class="prospect-qty" type="number" min="0.5" max="${esc(String(item.available_base_quantity))}" step="0.5"
+              data-prospect-qty="${esc(pid)}" value="${esc(String(chosenQty))}"
+              ${canEdit() && !isAdded ? "" : "disabled"} />
+            <span class="muted">${esc(unit)}</span>
+          </td>
+          <td class="num">
+            <button class="btn btn--quiet" type="button" data-action="add-prospect" data-product-id="${esc(pid)}" ${canEdit() && !isAdded ? "" : "disabled"}>
+              ${isAdded ? "Added" : "Add"}
+            </button>
+          </td>
+        </tr>`;
+      })
+      .join("");
+    body = `<table class="tbl">
+      <thead><tr><th>Overstock lot</th><th class="num">Promo price</th><th class="num">Qty</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  } else {
+    body = `<p class="muted">No clearance deals right now (or merchant service on port 8001 is offline).</p>`;
+  }
+  return `<section class="card prospect-card">
+    <div class="prospect-head">
+      <div>
+        <p class="eyebrow">Valio Aimo Prospect · ${esc(customer)}</p>
+        <p class="muted">Discounted short shelf-life lots checked against your delivery window</p>
+      </div>
+      ${toggleBtn}
+    </div>
+    ${body}
+  </section>`;
 }

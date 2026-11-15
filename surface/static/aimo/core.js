@@ -330,6 +330,7 @@ export const merchant = {
   audit: () => call(`${URLS.merchant}/audit`, {}, 2500),
   order: (orderId) => call(`${URLS.merchant}/orders/${encodeURIComponent(orderId)}`, {}, 2500),
   checkout: (checkoutId) => call(`${URLS.merchant}/checkouts/${encodeURIComponent(checkoutId)}`, {}, 2500),
+  prospect: (customer) => call(`${URLS.merchant}/prospect?customer=${encodeURIComponent(customer)}`, {}, 8000),
 };
 
 export const assistant = {
