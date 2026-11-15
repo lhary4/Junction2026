@@ -241,7 +241,10 @@ Harness, port 8002 (`harness/`):
 | `GET /approvals?status=pending` | | `[ApprovalRequest]` |
 | `GET /approvals/{id}` | | `ApprovalRequest` |
 | `POST /approvals/{id}/decision` | `{"decision": "approve" or "reject", "decided_by"}` | `AuthorizationStatus` |
-| `GET /policy` | | `BuyerPolicy` |
+| `GET /policy` | | `BuyerPolicy`, the one in force: the policy file, or the change the chef saved |
+| `PUT /policy` | a partial change: `decided_by` (who changed it, required) and one or more of `autonomous_limit_minor` (whole number of cents, 1 or more), `blocked_allergens` (list of codes), `unknown_allergen_data`, `allergen_change_on_substitution`, `late_delivery` (`human` or `deny`), `substitution` (any of `allowed`, `pre_accepted`, `preferences_text`, `judge_auto_threshold`, `judge_floor`) | the `BuyerPolicy` in force after the change. It applies to the next `POST /authorize`, and the open mandates are signed again with the new cap. HTTP 422, and nothing changes, for an unknown field, a field this route cannot change (customer, approver, merchants, currency, end date), a body with no editable field, or a `judge_floor` above `judge_auto_threshold`. One `policy_changed` line in the buyer audit log. Kept in `state/buyer/policy.json`, never in the policy file |
+| `PUT /policy/autonomous-limit` | `{"autonomous_limit_minor", "decided_by"}` | same as `PUT /policy` with the spending limit alone |
+| `POST /policy/reset` | nothing, or `{"decided_by"}` | the `BuyerPolicy` of the policy file: the saved change is forgotten (one `policy_reset` line in the buyer audit log) |
 | `GET /mandates/open` | | the fingerprints of the open mandates the manager signed in advance: `{"policy_id", "issued_at", "checkout_hash", "payment_hash"}`. Hashes only, never the tokens |
 | `GET /audit` | | `[AuditEvent]` |
 | `GET /` | | serves `surface/static` (and `/contract/examples` for `?mock=1`) |

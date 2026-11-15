@@ -241,6 +241,21 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: stopping at the first failed rule (hides other warnings from the approver); letting the agent pass the quote data to the harness (the agent could alter numbers); trusting HTTP 200 without checking the receipt signature; setting the approval deadline to the order cut-off alone (a quote expires in at most 24 hours, which can fall before a later cut-off).
 - Decided in: PR #17, 14/11/2026. Hardened for multi-line quotes, shortfalls, quote-expiry deadlines and network retries: PR #21, 14/11/2026.
 
+## Chef's rules: changed from the settings page, kept and enforced by the harness
+- Status: decided
+- What it is: the chef can change the buyer's rules from the settings page: the amount the agent may sign alone, the blocked allergens, what happens when allergen data is missing, when a substitute changes the allergens or when a delivery is late (a human signs, or it is refused), and the substitution rules (allowed or not, the preferences text, the judge's two thresholds). The page sends the change to the harness. The harness keeps it and applies it from the next order on.
+- Why: a rule must live where it is enforced. A limit kept by the page would only be a number on a screen, and the harness would go on signing under the old one. The spending limit is also written inside the open mandate the manager signs in advance for the agent, and Valio checks that mandate on its own side: the rule and the mandate have to move together.
+- What it changes for us:
+  - The change is saved in the harness's local state (`state/buyer/policy.json`), never in the demo policy file of the repo. Starting the services with `--fresh` removes it, so a rehearsal starts from the demo policy. A reset route does the same without a restart.
+  - After a change, the harness signs the open mandate again with the new cap. Valio then accepts what the agent signs under the new limit, and still refuses what is above it.
+  - Each change is one line in the buyer audit log: what changed, from what to what, and who decided it. Sending the values already in force changes nothing and writes nothing.
+  - An approval that is already waiting keeps its verdict. Raising the limit does not order it behind the chef's back: the chef still answers the card.
+  - A change that makes no sense is refused and nothing moves: a limit of zero, a field the page may not change (who the policy is for, who approves, the allowed merchants, the currency, the end date), a judge floor above its threshold.
+  - Nobody has to prove they are the chef: the route believes the name it is given, like the Approve button of the demo. Anything that can reach the harness can change the rules, an agent included, so in real life this change would be signed with the chef's passkey, like an approval. It matters as soon as the harness can be reached from outside the laptop, for example on a hosted demo.
+- If we change it: `harness/policy.py` and three routes in `harness/app.py`. While a change is saved, an edit of the demo policy file is not seen until a reset or a fresh start.
+- Alternatives we looked at: keeping the limit in the page (shown, not enforced); writing the change into the demo policy file (a rehearsal would leave the repo changed); keeping it only in memory (lost when the harness restarts, while the approvals survive a restart).
+- Decided in: PR #50, 15/11/2026.
+
 ## Audit log: one chained file on each side
 - Status: decided
 - What it is: the buyer's harness and Valio's gateway each write one line per decision (`state/buyer/audit.jsonl` and `state/merchant/audit.jsonl`): what, why, which rule, who. Each line includes a fingerprint of the previous one, so an edited, deleted or swapped line is caught at its exact line number.
