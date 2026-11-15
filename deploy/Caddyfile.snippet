@@ -27,6 +27,14 @@ valio.adriencaillo.com {
 			respond 404
 		}
 
+		# Closed to visitors: what no page calls. The agent's own routes on the driver (the MCP server calls the
+		# driver on the server itself), the harness route that judges and signs (only the driver calls it, on the
+		# server itself), and the API pages FastAPI generates.
+		@closed path /driver/agent/* /harness/authorize /driver/docs /driver/redoc /driver/openapi.json /harness/docs /harness/redoc /harness/openapi.json /docs /redoc /openapi.json
+		handle @closed {
+			respond 404
+		}
+
 		# The services the page calls, each under its name. The name is cut off before the request is passed on.
 		handle /driver/* {
 			uri strip_prefix /driver

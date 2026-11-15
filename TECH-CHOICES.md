@@ -240,6 +240,7 @@ None of us is a seasoned developer. This file explains every technical choice in
   - The page works out where the services are: their own ports on localhost, the three names on its own address anywhere else. Nothing changes on a laptop.
   - The approval link the chef receives starts with `PUBLIC_ORIGIN` (the public address) when that variable is set. Hosted, the harness's own address is a local one that only the server can open.
   - The page is public, with no login: anyone with the link can press the buttons, sign an order and use the chat on our Gemini key. Orders are sandbox orders and the keys are demo keys, so nothing real is at risk, but it is switched off after judging.
+  - The proxy answers "not found" to what no page calls: the agent's own routes on the driver (`/driver/agent/...`), the harness route that judges and signs (`/harness/authorize`) and the API pages the services generate. The MCP server and the driver reach those on the server itself. So a visitor cannot ask for a quote or an authorization from outside, only press the page's buttons. The buttons still place sandbox orders, and the sandbox invoice account holds EUR 20,000: empty the state before the jury.
   - The MCP address ends with a random token that is shared out of the repo. It is the only protection of the MCP server: whoever has the address can place sandbox orders.
   - The gateway is never reachable from outside. The harness, the driver and the MCP server call it on the server.
   - The server is shared with other things and has 4 GB of memory. In live mode every service that reads the catalog holds the 86 MB product file in memory, about 500 MB each (the gateway, and the page's service once Spotlight is used: 1.2 GB measured with both). The demo has a memory ceiling, and it is the first thing stopped and restarted if the server runs out.
@@ -247,7 +248,7 @@ None of us is a seasoned developer. This file explains every technical choice in
   - The server has no access to GitHub. A new version is pushed to it from a laptop.
 - If we change it: `deploy/` (the unit files and the proxy block), the lines at the top of `portal.js` that pick the addresses, and `PUBLIC_ORIGIN` in the harness. Another domain is three places: the proxy block, the MCP unit and `PUBLIC_ORIGIN`.
 - Alternatives we looked at: a tunnel from a laptop (what we used to record the video: it dies with the laptop); a hosting platform such as Render or Fly (four services that share files on disk, a new account and its settings a few hours before the deadline); one subdomain per service (four certificates, and CORS to open in four services); Docker for our services (one more thing to build the last night); opening the services' ports directly (no HTTPS, and the server has no firewall).
-- Decided in: PR #47, 15/11/2026.
+- Decided in: PR #47, 15/11/2026. Routes closed at the proxy: PR #59, 15/11/2026.
 
 ## Buyer harness: rules in plain code, one-use approvals with a cut-off, and receipt verification
 - Status: decided

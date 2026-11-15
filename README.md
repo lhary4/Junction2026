@@ -28,8 +28,12 @@ One public address serves everything, so the browser sees the page and the servi
 | `/harness/...` | 127.0.0.1:8002 | the harness: policy, the chef's signature |
 | `/mcp-<token>` | 127.0.0.1:8005, as `/mcp` | the MCP server |
 | any other `/mcp...` | nothing | 404 |
+| `/driver/agent/...`, `/harness/authorize` | nothing | 404: the agent's own routes and the route that judges and signs |
+| `/docs`, `/redoc`, `/openapi.json`, also under `/driver` and `/harness` | nothing | 404: the API pages FastAPI generates |
 
 The gateway (8001) is never public: only the harness, the driver and the MCP server call it, on the server itself.
+
+The proxy also answers 404 to what no page calls (the last two rows): the MCP server and the driver reach those routes on the server itself, so a visitor cannot ask for a quote or an authorization without the page's buttons or the MCP address. The buttons still place sandbox orders, and the sandbox invoice account holds EUR 20,000: start again from an empty state before the jury (commands below).
 
 - The four services and the MCP server run as the user `junction`, from `/opt/junction-2026/repo`, and only listen on 127.0.0.1. No port is open besides the web ones (80 and 443) the server already had.
 - Caddy, the reverse proxy that was already on the server, does the HTTPS and the routing above: `deploy/Caddyfile.snippet`.
