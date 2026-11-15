@@ -46,6 +46,7 @@ export const app = {
   policy: null,
   rules: { draft: null, saving: false, note: null }, // the rules screen: the chef's unsaved changes
   eco: { data: null, key: null, loading: false, dismissed: new Set() },
+  prospect: { open: false, busy: false, data: null, qty: {}, added: new Set() },
   ask: { busy: false, question: null, answer: null, changes: [], failed: false }, // the last exchange with the assistant, nothing older
   history: [], // sample orders from before the demo
   session: { orders: [], approvals: [], loaded: false }, // what the harness and the gateway hold from this session
@@ -69,7 +70,14 @@ export const neededNow = (line) => round3(Math.max(0, line.need - line.in_stock)
 
 /* The lines the assistant will ask Valio for: what is short in the stock table. */
 export const orderLines = () =>
-  missingLines().map((line) => ({ product_id: line.product_id, name: line.name, amount: line.to_order, unit: line.unit, dish: line.dishes.join(", ") }));
+  missingLines().map((line) => ({
+    product_id: line.product_id,
+    name: line.name,
+    amount: line.to_order,
+    unit: line.unit,
+    dish: line.dishes.join(", "),
+    ...(line.claim_promo ? { claim_promo: true } : {}),
+  }));
 
 export const linesKey = (lines) =>
   (lines ?? [])
@@ -106,6 +114,9 @@ export function quoteTotal(quote) {
 
 export function loadLines(stock) {
   app.lines = (stock?.lines ?? []).map((line) => ({ ...line, counted: line.in_stock, by: {} }));
+  app.prospect.data = null;
+  app.prospect.qty = {};
+  app.prospect.added = new Set();
 }
 
 /* Change one cell, when the chef asks the assistant for it. Returns what changed, or null. */
@@ -235,6 +246,77 @@ function verdictDetail(state) {
   return `${open.map((rule) => checkLine(rule).label).join(". ")}.`;
 }
 
+const STEP_ACTORS = {
+  open_mandate: { label: "Harness · Policy", tone: "harness" },
+  signed_quote: { label: "Valio Gateway", tone: "gateway" },
+  verdict: { label: "Harness Rules", tone: "harness" },
+  closed_mandates: { label: "Harness / Chef", tone: "chef" },
+  merchant_verifies: { label: "Valio Gateway", tone: "gateway" },
+  sandbox_payment: { label: "Valio Gateway", tone: "gateway" },
+  signed_receipt: { label: "Valio Gateway", tone: "gateway" },
+};
+
+function stepActor(step, state) {
+  const base = STEP_ACTORS[step.key];
+  if (!base) return null;
+  let { label, tone } = base;
+  if (step.key === "verdict" && state.verdict?.judge?.length) {
+    label = "Harness + Decision API";
+    tone = "ai";
+  } else if (step.key === "closed_mandates") {
+    if (step.signer === "agent") {
+      label = "Harness · Agent";
+      tone = "harness";
+    } else if (step.signer === "manager" || step.signer === "human" || state.approval) {
+      label = "Surface · Chef";
+      tone = "chef";
+    }
+  }
+  return { label, tone };
+}
+
+function stepBreakdown(step, state) {
+  const lines = [];
+  if (step.key === "signed_quote") {
+    const alts = state.quote?.aimo?.alternatives ?? [];
+    if (alts.length) {
+      lines.push({
+        tone: "gateway",
+        text: `Gateway ranked ${alts.length} catalog substitute${alts.length === 1 ? "" : "s"}`,
+      });
+    }
+  } else if (step.key === "verdict" && state.verdict) {
+    const rules = state.verdict.rules ?? [];
+    const judge = state.verdict.judge ?? [];
+    const deterministic = judge.length ? rules.filter((r) => r.rule_id !== "substitution-within-preferences") : rules;
+    if (deterministic.length) {
+      const passed = deterministic.filter((r) => r.outcome === "pass").length;
+      const allPass = passed === deterministic.length;
+      lines.push({
+        tone: allPass ? "pass" : "warn",
+        text: `Harness: ${passed}/${deterministic.length} deterministic rules passed`,
+      });
+    }
+    if (judge.length) {
+      const scored = judge.map((j) => j.probability).filter((p) => typeof p === "number");
+      const threshold = judge[0]?.auto_threshold ?? 0.85;
+      if (!scored.length) {
+        lines.push({ tone: "warn", text: "Decision API: unreachable → Human (fail-closed)" });
+      } else {
+        const minProb = Math.min(...scored);
+        const auto = judge.every((j) => j.routed === "auto");
+        lines.push({
+          tone: auto ? "pass" : "ai",
+          text: auto
+            ? `Decision API: ${minProb.toFixed(2)} ≥ ${threshold.toFixed(2)} → Auto`
+            : `Decision API: ${minProb.toFixed(2)} < ${threshold.toFixed(2)} → Human`,
+        });
+      }
+    }
+  }
+  return lines;
+}
+
 /* The lines of the assistant's work on screen: what it prepared, then the steps of the order as they arrive. */
 export function workLog() {
   const state = app.state;
@@ -249,8 +331,10 @@ export function workLog() {
       key: step.key,
       tone: outside ? "refused" : step.status,
       who: ["waiting", "skipped"].includes(step.status) ? null : step.signer, // nobody did a step that did not happen
+      actor: stepActor(step, state),
       head: stepHead(step, state),
       detail: short,
+      breakdown: stepBreakdown(step, state),
       more: detail !== short ? detail : null,
       proof: step.proof,
       term: STEP_TERMS[step.key],

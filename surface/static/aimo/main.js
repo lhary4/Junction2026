@@ -65,7 +65,7 @@ import {
   ledgerRows,
   ledgerKey,
 } from "./state.js";
-import { agentCard, linesBlock, guards, orderBar, orderCta, whoSigns, proofPanel } from "./ui.js";
+import { agentCard, linesBlock, guards, orderBar, orderCta, whoSigns, proofPanel, prospectCard, defaultProspectQty } from "./ui.js";
 import { ordersPage, approvalsPage, rulesPage, auditPage, rulesChange } from "./pages.js";
 
 const VARIANT_NAMES = { a: "Brief", b: "Console", c: "Guided" };
@@ -259,6 +259,7 @@ function orderScreen() {
       <div class="split split--order">
         <div class="split__main">
           <div class="card card--table">${linesBlock()}</div>
+          ${prospectCard()}
           ${guards()}
         </div>
         <div class="split__side">${agentCard({ compact: true })}</div>
@@ -920,6 +921,18 @@ document.addEventListener("click", (event) => {
     case "edit-prefs":
       app.rules.editingText = !app.rules.editingText;
       return void draw();
+    case "toggle-prospect": {
+      app.prospect.open = !app.prospect.open;
+      draw();
+      const customer = kitchenName();
+      if (app.prospect.open && (!app.prospect.data || app.prospect.data.customer !== customer) && !app.prospect.busy) {
+        fetchProspect(customer);
+      }
+      return;
+    }
+    case "add-prospect":
+      if (data.productId) addProspectItem(data.productId);
+      return;
     default:
   }
 });
@@ -937,6 +950,15 @@ function readGauge(node) {
 document.addEventListener("input", (event) => {
   const node = event.target;
   if (node.id === "ask-text") return;
+  if (node.dataset?.prospectQty) {
+    const pid = node.dataset.prospectQty;
+    const item = (app.prospect.data?.items ?? []).find((entry) => entry.product.id === pid);
+    const val = Number(String(node.value).replace(",", "."));
+    if (Number.isFinite(val) && val > 0) {
+      app.prospect.qty[pid] = item?.available_base_quantity ? Math.min(val, Number(item.available_base_quantity)) : val;
+    }
+    return;
+  }
   if (!node.dataset?.rule) return;
   readGauge(node);
   if (node.tagName === "TEXTAREA") return void draw();
@@ -1046,6 +1068,53 @@ async function checkServices() {
   }
   draw();
   setTimeout(checkServices, SERVICES_MS);
+}
+
+async function fetchProspect(customer) {
+  if (app.prospect.busy) return;
+  app.prospect.busy = true;
+  draw();
+  try {
+    app.prospect.data = await merchant.prospect(customer);
+  } catch (error) {
+    app.prospect.data = null;
+    toast(`Could not load prospect: ${error.message}`);
+  } finally {
+    app.prospect.busy = false;
+    draw();
+  }
+}
+
+function addProspectItem(productId) {
+  const item = (app.prospect.data?.items ?? []).find((entry) => entry.product.id === productId);
+  if (!item || !canEdit() || app.prospect.added.has(productId)) return;
+  const input = document.querySelector(`[data-prospect-qty="${CSS.escape(productId)}"]`);
+  const raw = Number(String(input?.value ?? app.prospect.qty[productId] ?? "").replace(",", "."));
+  const addQty = Number.isFinite(raw) && raw > 0 ? Math.min(raw, Number(item.available_base_quantity ?? raw)) : defaultProspectQty(item);
+  app.prospect.qty[productId] = addQty;
+  const existing = app.lines.find((line) => line.product_id === productId);
+  if (existing) {
+    existing.to_order = Math.round((existing.to_order + addQty) * 1000) / 1000;
+    existing.need = Math.round((existing.need + addQty) * 1000) / 1000;
+    existing.claim_promo = true;
+    existing.by.to_order = "prospect";
+  } else {
+    app.lines.push({
+      product_id: productId,
+      name: item.product.name,
+      unit: item.product.base_unit ?? "KG",
+      need: addQty,
+      in_stock: 0,
+      to_order: addQty,
+      counted: 0,
+      dishes: ["Clearance / MHD deal"],
+      by: { to_order: "prospect" },
+      claim_promo: true,
+    });
+  }
+  app.prospect.added.add(productId);
+  toast(`Added ${addQty} ${item.product.base_unit ?? "KG"} of ${item.product.name}`);
+  draw();
 }
 
 async function start() {
