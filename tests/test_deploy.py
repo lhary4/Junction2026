@@ -38,6 +38,9 @@ def test_the_mcp_server_is_only_reachable_under_the_secret_path():
     assert f"reverse_proxy 172.18.0.1:{mcp_server.HTTP_PORT}" in proxy
     assert proxy.index("handle @mcp") < proxy.index("handle /mcp*")  # the secret path first, then the 404
     assert re.search(r"handle /mcp\* \{\s*respond 404\s*\}", proxy)
+    mcp_block = proxy[proxy.index("handle @mcp") : proxy.index("handle /mcp*")]
+    assert "flush_interval -1" in mcp_block  # streamed answers are not buffered
+    assert "header_up -Origin" in mcp_block  # the MCP server answers 403 to any Origin header it was not given
 
 
 def test_every_port_the_proxy_calls_has_its_relay():

@@ -15,6 +15,10 @@ valio.adriencaillo.com {
 			rewrite * /mcp
 			reverse_proxy 172.18.0.1:8005 {
 				flush_interval -1
+				# The MCP server refuses any request that says which site it comes from (an Origin header): a
+				# protection made for a server on a laptop. Here the secret path is the protection, so the
+				# header is dropped and a chat that sends one is not turned away.
+				header_up -Origin
 			}
 		}
 
