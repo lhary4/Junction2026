@@ -21,9 +21,9 @@ Environment=PYTHONUNBUFFERED=1
 Restart=always
 RestartSec=3
 
-# In live mode a service that reads the catalog holds the 86 MB product file in memory (about 700 MB each: the
-# gateway, and the page's service once Spotlight is used). The server is shared: past this ceiling the demo is
-# what gets stopped and restarted, never what else runs there.
+# In live mode a service that reads the catalog holds the 86 MB product file in memory (about 500 MB each: the
+# gateway, and the page's service once Spotlight is used; 1.2 GB measured with both). The server is shared: past
+# this ceiling the demo is what gets stopped and restarted, never what else runs there.
 MemoryHigh=1500M
 MemoryMax=1800M
 OOMScoreAdjust=800

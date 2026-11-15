@@ -232,6 +232,23 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Alternatives we looked at: a shell script (does not run on Windows); Docker (one more tool to install during a hackathon); a separate clean-up script (the harness keeps its approvals in memory, so run under a live harness it would empty the files and the harness would write the old approvals back).
 - Decided in: PR #13, 14/11/2026. `--fresh`: PR #18, 14/11/2026.
 
+## Hosting the demo: one small server, one public address
+- Status: decided
+- What it is: for the jury, the whole demo runs on a small rented server (Adrien's, in Helsinki) at https://valio.adriencaillo.com. The four services and the MCP server run there the way `scripts/dev.py` runs them on a laptop, and they only listen to the server itself. A reverse proxy (Caddy: the program that receives all the web traffic of that server and does the HTTPS) is the only door. It serves the page at the root, each service the page calls under its name (`/driver`, `/harness`, `/assistant`), and the MCP server under a secret address. `README.md`, "Hosted demo", has the map and the commands.
+- Why: the jury opens a link and adds one connector in claude.ai, with nothing to install. A tunnel from a laptop stops when the laptop sleeps. One address for everything means the browser treats the page and the services as one site, so there is no cross-site permission (CORS) to open in four services, and one HTTPS certificate covers it all.
+- What it changes for us:
+  - The page works out where the services are: their own ports on localhost, the three names on its own address anywhere else. Nothing changes on a laptop.
+  - The approval link the chef receives starts with `PUBLIC_ORIGIN` (the public address) when that variable is set. Hosted, the harness's own address is a local one that only the server can open.
+  - The page is public, with no login: anyone with the link can press the buttons, sign an order and use the chat on our Gemini key. Orders are sandbox orders and the keys are demo keys, so nothing real is at risk, but it is switched off after judging.
+  - The MCP address ends with a random token that is shared out of the repo. It is the only protection of the MCP server: whoever has the address can place sandbox orders.
+  - The gateway is never reachable from outside. The harness, the driver and the MCP server call it on the server.
+  - The server is shared with other things and has 4 GB of memory. In live mode every service that reads the catalog holds the 86 MB product file in memory, about 500 MB each (the gateway, and the page's service once Spotlight is used: 1.2 GB measured with both). The demo has a memory ceiling, and it is the first thing stopped and restarted if the server runs out.
+  - Live mode follows the real clock: once Valio's order cut-off for the scenarios' delivery day has passed (Sun 15 Nov, 17:00), the three buttons answer "late delivery". Replay mode does not have this limit.
+  - The server has no access to GitHub. A new version is pushed to it from a laptop.
+- If we change it: `deploy/` (the unit files and the proxy block), the lines at the top of `portal.js` that pick the addresses, and `PUBLIC_ORIGIN` in the harness. Another domain is three places: the proxy block, the MCP unit and `PUBLIC_ORIGIN`.
+- Alternatives we looked at: a tunnel from a laptop (what we used to record the video: it dies with the laptop); a hosting platform such as Render or Fly (four services that share files on disk, a new account and its settings a few hours before the deadline); one subdomain per service (four certificates, and CORS to open in four services); Docker for our services (one more thing to build the last night); opening the services' ports directly (no HTTPS, and the server has no firewall).
+- Decided in: PR #47, 15/11/2026.
+
 ## Buyer harness: rules in plain code, one-use approvals with a cut-off, and receipt verification
 - Status: decided
 - What it is: the buyer's web service (port 8002) takes a quote id from the agent, fetches the signed quote directly from Valio, checks Valio's signature first, runs every guardrail rule, and either signs as the agent, opens a one-use approval card for a human, or refuses. After sending a signed permission to Valio, it checks Valio's signed receipt before calling the order confirmed.
@@ -345,7 +362,6 @@ None of us is a seasoned developer. This file explains every technical choice in
 - Decided in: PR #44, 15/11/2026.
 
 ## Open choices (to decide, then move up)
-- **Hosting the demo**: where the services run during judging (one laptop, or a small server so the three of us can use the same instance).
 - **Customer token on the gateway** (planned, after the demo flow): today anyone who can reach the gateway can ask a quote for any customer. Valio told us prices are per customer, so a token must say who is asking.
 
 ## Choices we dropped
