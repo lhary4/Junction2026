@@ -26,7 +26,7 @@
 
 ```
 BUYER SIDE (50-Cover Kitchen)                         VALIO AIMO GATEWAY (:8001)
-  Portal Driver or External ERP Agent (5 MCP Tools)
+  Portal Driver or External ERP Agent (9 MCP Tools)
      │  short IDs only (never keys or JWTs)
      ├────────── lookup & quote ────────────────────▶ Converts units in code, ranks substitutes,
      ▼                                                attaches provenance/certainty claims,
@@ -54,8 +54,8 @@ BUYER SIDE (50-Cover Kitchen)                         VALIO AIMO GATEWAY (:8001)
 | Scenario | Live Flow on Valio Catalog & APIs | Verdict & Cryptographic Outcome |
 |---|---|---|
 | **1. Normal Order** | 10 dairy & dry-goods lines with complete GS1 allergens, recipe `L`/`kg` converted in code (**~EUR 187 excl. VAT**) | **`auto`** — Agent key closes manager's open AP2 mandate -> Valio verifies -> **sandbox payment** -> ES256 receipt |
-| **2. Substitution** | Fresh squeaky cheese `474880` past cut-off. `gemini-decision-1` rejects cheddar sauce `474404` (**1.4%**) & frozen `467148` (**1.0%**); routes chilled *Haapalan* `475072` (**91%** same use, **65%** preference fit) | **`human`** — Telegram alert (link only) -> chef inspects signed claims & clicks **Approve and sign** before cut-off -> manager-signed mandate -> **sandbox payment** -> receipt |
-| **3. Attack** | Bypassed harness sends Valio: (1) over-cap agent mandate, (2) tampered quote, (3) replayed mandate | **`deny` (3x HTTP 403)** — Valio's gateway refuses all three in crimson; recorded in both SHA-256 audit logs |
+| **2. Substitution** | Fresh squeaky cheese `474880` past cut-off. `gemini-decision-1` rejects cheddar sauce `474404` (**1.4%**) & frozen `467148` (**1.0%**); routes chilled *Haapalan* `475072` (**93%** same use, **64%** preference fit) | **`human`** — the agent cannot sign -> chef compares both products on the page & clicks **Approve and sign** before cut-off -> manager-signed mandate -> **sandbox payment** -> receipt |
+| **3. Attack** | Bypassed harness sends Valio: (1) over-cap agent mandate, (2) tampered quote, (3) replayed mandate | **`deny` (3x HTTP 403)** — Valio's gateway refuses all three in crimson; recorded in Valio's SHA-256 audit log (the buyer's log has no line: the harness was bypassed) |
 
 - **Calibrated benchmark (`61` labelled substitution pairs)**: **0 / 50 false `auto` approvals** (100% `auto` precision), **17 / 17** bad substitutes caught below the `15%` floor, **~210 ms** median judge latency, **1–2 ms** deterministic rules + ES256 verification.
 
@@ -67,7 +67,7 @@ BUYER SIDE (50-Cover Kitchen)                         VALIO AIMO GATEWAY (:8001)
 
 | Open Standard We Stand On | Role in Our Stack |
 |---|---|
-| **MCP (`mcp` 2.3)** | 5-tool door for external restaurant/hotel ERP agents alongside Valio's customer portal |
+| **MCP (`mcp` 2.3)** | 9-tool door for external restaurant/hotel ERP agents alongside Valio's customer portal |
 | **UCP `Checkout`** | Canonical shopping-cart quote payload (`line_items`, `totals` in minor units, `expires_at`) |
 | **Google AP2 v0.2** | Open mandates (merchant + **EUR 1,500** `AmountRange` cap) & closed mandates (`checkout_hash` bound, verified by both sides) |
 | **ES256 + OpenAPI** | Deterministic JWT signatures across manager, agent, and Valio keys; strict Pydantic schemas |
@@ -84,11 +84,11 @@ BUYER SIDE (50-Cover Kitchen)                         VALIO AIMO GATEWAY (:8001)
 **Headline**: Portal-first deployment today, open MCP & passkey cryptography tomorrow.
 
 1. **Dual-Door Rollout (Valio Portal First + MCP Second)**
-   - Embed the harness workflow directly inside Valio Aimo's existing web store, recipe, and inventory portal for independent kitchens (zero ERP required), while exposing the **5-tool MCP server** to hotel and restaurant chains with ERP agents — keeping unit math and substitute ranking on Valio's side.
+   - Embed the harness workflow directly inside Valio Aimo's existing web store, recipe, and inventory portal for independent kitchens (zero ERP required), while exposing the **9-tool MCP server** to hotel and restaurant chains with ERP agents — keeping unit math and substitute ranking on Valio's side.
 2. **Browser WebAuthn Passkeys for `sign_human`**
    - Replace the demo's server-held manager key click with a hardware-backed **WebAuthn passkey** signature in the chef's browser using `checkout_hash` as the cryptographic challenge.
 3. **Per-Customer Auth Tokens & Live Kitchen Sync**
-   - Bind customer-specific catalog pricing and negotiated contracts via authenticated gateway tokens, and automate weekly draft reorders from portal inventory counts and reservation cover forecasts.
+   - Bind customer-specific catalog pricing and negotiated contracts via authenticated gateway tokens, and automate weekly draft reorders from portal inventory counts and reservation cover forecasts. Before a standing order is renewed, flag its drift: volume against booked covers, unit cost creeping up, pack sizes that no longer fit.
 4. **Live AP2 Invoice & Payment Settlement**
    - Connect Step 6 from our simulated wholesale invoice **sandbox payment** to Valio Aimo's production ERP billing and AP2 Credential Provider / Payment Processor rails.
 
