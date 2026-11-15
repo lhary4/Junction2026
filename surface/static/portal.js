@@ -144,6 +144,7 @@ const app = {
   recPortions: 50,
   recAdded: false,
   spotlightOpen: false,
+  chatOpen: false,
 };
 
 /* ---------- Small helpers ---------- */
@@ -698,7 +699,7 @@ function drawFlow() {
       .map(
         (item) => `<li>
           <button class="flow__step${item.done ? " is-done" : ""}" type="button" data-step="${item.n}"
-            ${app.step === item.n ? 'aria-current="step"' : ""} ${item.open ? "" : "disabled"}>
+            title="${esc(item.sub)}" ${app.step === item.n ? 'aria-current="step"' : ""} ${item.open ? "" : "disabled"}>
             <span class="flow__n">${item.done ? icon("check") : item.n}</span>
             <span class="flow__text"><b>${item.title}</b><span>${esc(item.sub)}</span></span>
           </button>
@@ -793,8 +794,8 @@ function recipesView() {
     .map(
       (recipe) => `<tr class="pick${recipe === chosen ? " is-chosen" : ""}">
           <td><span class="tag">${esc(recipe.course)}</span></td>
-          <td><button class="pick__btn" type="button" data-recipe="${esc(recipe.id)}" aria-pressed="${recipe === chosen}">
-              <b>${esc(recipe.name)}</b><span>${esc(recipe.with)}</span>
+          <td><button class="pick__btn" type="button" data-recipe="${esc(recipe.id)}" aria-pressed="${recipe === chosen}" title="${esc(recipe.with)}">
+              <b>${esc(recipe.name)}</b>
             </button></td>
           <td class="num">${recipe.ingredients.length}</td>
         </tr>`
@@ -814,8 +815,7 @@ function recipesView() {
     : "";
   return `<div class="head head--with-spotlight">
       <div>
-        <h2 class="display">Recipes on the menu</h2>
-        <p class="head__meta">Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.</p>
+        <h2 class="display" title="Written for ${esc(data?.covers_per_service)} covers a service. Choose a recipe to see what goes into it.">Recipes on the menu</h2>
       </div>
       ${bubble}
     </div>
@@ -860,8 +860,8 @@ function trendRecommendationView() {
         const meta = [ing.origin ? `Origin ${ing.origin}` : null, ing.carbon_kg_per_kg != null ? `${ing.carbon_kg_per_kg} kg CO2e/kg` : null]
           .filter(Boolean)
           .join(" · ");
-        return `<tr>
-          <td><b>${esc(ing.name)}</b>${meta ? `<div class="trend-ing-meta">${esc(meta)}</div>` : ""}</td>
+        return `<tr title="${esc(meta)}">
+          <td><b>${esc(ing.name)}</b></td>
           <td class="num">${esc(qty(ing.amount_per_portion, ing.unit))}</td>
           <td class="num"><b>${esc(qty(total, ing.unit))}</b></td>
           <td class="muted num">#${esc(ing.product_id)}</td>
@@ -874,12 +874,10 @@ function trendRecommendationView() {
         <div class="trend-recipe__head">
           <div>
             <span class="tag">${esc(r.course)}</span>
-            <h4 class="trend-recipe__title">${esc(r.name)}</h4>
-            <p class="trend-recipe__with">${esc(r.with_text)}</p>
+            <h4 class="trend-recipe__title" title="${esc(r.with_text)} — ${esc(r.trend_reason)}">${esc(r.name)}</h4>
           </div>
           <span class="trend-source-tiny">${sourceBadge}</span>
         </div>
-        <p class="trend-recipe__why">${esc(r.trend_reason)}</p>
         <table class="tbl tbl--tight">
           <thead><tr><th>Valio Ingredient</th><th class="num">Per portion</th><th class="num">For ${portions} portions</th><th class="num">Product</th></tr></thead>
           <tbody>${rows}</tbody>
@@ -901,9 +899,8 @@ function trendRecommendationView() {
   return `<div class="panel trend-card">
     <div class="trend-card__head">
       <div>
-        <span class="tag">Valio Aimo Spotlight · Google News Trend</span>
-        <h3 class="panel__title">${esc(activeTrend?.title ?? "Seasonal Food Trend")}</h3>
-        <p class="trend-card__headline">${esc(activeTrend?.headline ?? "")} <span class="muted">(${esc(activeTrend?.source ?? "Google News")} · ${esc(activeTrend?.published_at ?? "")})</span></p>
+        <span class="tag">Valio Aimo Spotlight</span>
+        <h3 class="panel__title" title="${esc(activeTrend?.headline ?? "")} (${esc(activeTrend?.source ?? "Google News")} · ${esc(activeTrend?.published_at ?? "")})">${esc(activeTrend?.title ?? "Seasonal Food Trend")}</h3>
       </div>
     </div>
     ${trends.length > 1 ? `<div class="trend-card__pills">${trendPills}</div>` : ""}
@@ -944,8 +941,8 @@ function stockView() {
     `<button class="chip" type="button" data-filter="${id}" aria-pressed="${app.stockFilter === id}">${label} <span>${count}</span></button>`;
   const changed = changedLines().length;
 
-  // Where things stand, in the line under the title. Without anything to say, it tells where the count comes from.
-  let note = `<p class="head__meta">Counted ${esc(dayLong(stock.counted_at))}, ${esc(stock.counted_by)}. Need is for the ${esc(stock.for_services)} services. You can change any number.</p>`;
+  const stockHint = `Counted ${dayLong(stock.counted_at)}, ${stock.counted_by}. Need is for the ${stock.for_services} services. You can change any number.`;
+  let note = "";
   if (!canEdit()) {
     note = `<p class="note">${icon("lock")}An order is open with these quantities. They are locked until it is signed or rejected.</p>`;
   } else if (app.correcting && !dirty()) {
@@ -955,7 +952,7 @@ function stockView() {
     note = '<p class="note">The quantities changed since the last order. Confirm the stock to prepare a new order.</p>';
   }
   return `<div class="head">
-      <h2 class="display">Stock check</h2>
+      <h2 class="display" title="${esc(stockHint)}">Stock check</h2>
       ${note}
       <div class="chips">
         ${changed && canEdit() ? `<button class="link" type="button" data-action="undo">Undo ${changed} ${changed === 1 ? "change" : "changes"}</button>` : ""}
@@ -979,8 +976,7 @@ function requestTable() {
     .join("");
   const empty = lines.length ? "" : '<p class="note">Everything is covered by the stock: there is nothing to order.</p>';
   return `<div class="head">
-      <h2 class="display">Ready to order</h2>
-      <p class="head__meta">What your assistant will ask Valio Aimo for. Prices and Valio's stock come with the signed quote.</p>
+      <h2 class="display" title="What your assistant will ask Valio Aimo for. Prices and Valio's stock come with the signed quote.">Ready to order</h2>
     </div>
     ${empty}
     <table class="tbl">
@@ -1866,6 +1862,11 @@ document.addEventListener("click", (event) => {
     if (app.spotlightOpen && !app.recommendation && !app.recBusy) {
       fetchRecommendation();
     }
+  } else if (action === "toggle-chat") {
+    app.chatOpen = !app.chatOpen;
+    el("side")?.classList.toggle("is-open", app.chatOpen);
+    el("chat-launcher")?.setAttribute("aria-expanded", String(app.chatOpen));
+    if (app.chatOpen) setTimeout(() => el("ask-text")?.focus(), 0);
   } else if (action === "select-trend") {
     const tid = event.target.closest("[data-trend-id]")?.dataset.trendId;
     if (tid && tid !== app.trendId) {
