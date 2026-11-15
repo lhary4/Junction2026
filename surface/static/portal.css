@@ -588,6 +588,84 @@ input {
   height: 11px;
 }
 
+/* Backend component pill in "Who signs" (Gateway, Harness, Decision API, Surface) */
+.step__actor {
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(0, 74, 88, 0.08);
+  color: var(--petrol);
+}
+
+.step__actor--gateway {
+  background: rgba(0, 74, 88, 0.1);
+  color: var(--petrol);
+}
+
+.step__actor--harness {
+  background: rgba(24, 96, 56, 0.1);
+  color: var(--done);
+}
+
+.step__actor--ai {
+  background: rgba(164, 98, 12, 0.14);
+  color: var(--waiting);
+}
+
+.step__actor--chef {
+  background: rgba(18, 45, 58, 0.1);
+  color: var(--ink);
+}
+
+.step__sub {
+  margin: 4px 0 2px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.step__sub-item {
+  position: relative;
+  padding-left: 10px;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  color: var(--grey);
+}
+
+.step__sub-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--grey);
+}
+
+.step__sub-item--pass::before {
+  background: var(--done);
+}
+
+.step__sub-item--ai::before,
+.step__sub-item--warn::before {
+  background: var(--waiting);
+}
+
+.step__sub-item--ai {
+  color: var(--waiting);
+  font-weight: 600;
+}
+
+.step__sub-item--gateway::before {
+  background: var(--petrol);
+}
+
 .step--done .step__dot {
   background: var(--petrol);
   box-shadow: none;

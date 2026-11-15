@@ -59,6 +59,17 @@ const STEP_WORDS = {
   delivery: "Delivery scheduled",
 };
 
+const STEP_ACTORS = {
+  open_mandate: { label: "Harness · Policy", tone: "harness" },
+  signed_quote: { label: "Valio Gateway", tone: "gateway" },
+  verdict: { label: "Harness Rules", tone: "harness" },
+  closed_mandates: { label: "Harness / Chef", tone: "chef" },
+  merchant_verifies: { label: "Valio Gateway", tone: "gateway" },
+  sandbox_payment: { label: "Valio Gateway", tone: "gateway" },
+  signed_receipt: { label: "Valio Gateway", tone: "gateway" },
+  delivery: { label: "Valio Aimo", tone: "gateway" },
+};
+
 /*
  * One plain sentence for each rule of the harness (harness/rules.py), by outcome.
  * `pass` reads as a reassurance, `human` as the reason the chef is asked, `deny` as the reason it is blocked.
@@ -791,6 +802,71 @@ function sealHtml() {
   return `<p class="seal">${icon("shield")}<span>No signature, no order.</span></p>`;
 }
 
+function stepActor(step, on) {
+  const base = STEP_ACTORS[step.key];
+  if (!base) return "";
+  let { label, tone } = base;
+  if (step.key === "verdict" && on && app.state?.verdict?.judge?.length) {
+    label = "Harness + Decision API";
+    tone = "ai";
+  } else if (step.key === "closed_mandates" && on) {
+    if (step.signer === "agent") {
+      label = "Harness · Agent";
+      tone = "harness";
+    } else if (step.signer === "human" || app.state?.approval) {
+      label = "Surface · Chef";
+      tone = "chef";
+    }
+  }
+  return `<span class="step__actor step__actor--${tone}">${esc(label)}</span>`;
+}
+
+function stepBreakdown(step, on) {
+  if (!on) return "";
+  const lines = [];
+  if (step.key === "signed_quote") {
+    const alts = app.state?.quote?.aimo?.alternatives ?? [];
+    if (alts.length) {
+      lines.push({
+        tone: "gateway",
+        text: `Gateway ranked ${alts.length} catalog substitute${alts.length === 1 ? "" : "s"}`,
+      });
+    }
+  } else if (step.key === "verdict" && app.state?.verdict) {
+    const rules = app.state.verdict.rules ?? [];
+    const judge = app.state.verdict.judge ?? [];
+    const deterministic = judge.length ? rules.filter((r) => r.rule_id !== "substitution-within-preferences") : rules;
+    if (deterministic.length) {
+      const passed = deterministic.filter((r) => r.outcome === "pass").length;
+      const allPass = passed === deterministic.length;
+      lines.push({
+        tone: allPass ? "pass" : "warn",
+        text: `Harness: ${passed}/${deterministic.length} deterministic rules passed`,
+      });
+    }
+    if (judge.length) {
+      const scored = judge.map((j) => j.probability).filter((p) => typeof p === "number");
+      const threshold = judge[0]?.auto_threshold ?? 0.85;
+      if (!scored.length) {
+        lines.push({ tone: "warn", text: "Decision API: unreachable → Human (fail-closed)" });
+      } else {
+        const minProb = Math.min(...scored);
+        const auto = judge.every((j) => j.routed === "auto");
+        lines.push({
+          tone: auto ? "pass" : "ai",
+          text: auto
+            ? `Decision API: ${minProb.toFixed(2)} ≥ ${threshold.toFixed(2)} → Auto`
+            : `Decision API: ${minProb.toFixed(2)} < ${threshold.toFixed(2)} → Human`,
+        });
+      }
+    }
+  }
+  if (!lines.length) return "";
+  return `<ul class="step__sub">${lines
+    .map((line) => `<li class="step__sub-item step__sub-item--${line.tone}">${esc(line.text)}</li>`)
+    .join("")}</ul>`;
+}
+
 function drawTrail() {
   const steps = trailSteps();
   const shown = lit();
@@ -810,7 +886,8 @@ function drawTrail() {
           <span class="step__dot" aria-hidden="true">${mark}</span>
           <div class="step__body">
             <p class="step__title">${esc(STEP_WORDS[step.key] ?? step.title)}${signer}<span class="visually-hidden">, ${esc(state)}</span></p>
-            <p class="step__term">${esc(step.title)}${on && step.proof ? `<span class="step__proof mono" title="Signature: ${esc(step.proof)}">${icon("lock")}${esc(shortProof(step.proof))}</span>` : ""}</p>
+            <p class="step__term">${esc(step.title)}${stepActor(step, on)}${on && step.proof ? `<span class="step__proof mono" title="Signature: ${esc(step.proof)}">${icon("lock")}${esc(shortProof(step.proof))}</span>` : ""}</p>
+            ${stepBreakdown(step, on)}
             ${on && step.detail ? `<p class="step__detail" title="${esc(plainDetail(step.detail))}">${esc(plainDetail(step.detail))}</p>` : ""}
           </div>
         </li>`;
